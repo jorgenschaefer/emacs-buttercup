@@ -1,5 +1,7 @@
 # Buttercup — Behavior-Driven Emacs Lisp Testing
 
+[![Build Status](https://api.travis-ci.org/jorgenschaefer/emacs-buttercup.png?branch=master)](https://travis-ci.org/jorgenschaefer/emacs-buttercup)
+
 Buttercup is a behavior-driven development framework for testing Emacs
 Lisp code. It is heavily inspired by
 [Jasmine](https://jasmine.github.io/). So heavily inspired, in fact,
