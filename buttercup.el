@@ -104,7 +104,10 @@ should describe why a negated matcher failed."
           ,@body)))
 
 (defun buttercup--apply-matcher (matcher args)
+  "Apply MATCHER to ARGS.
 
+MATCHER is either a matcher defined with
+`buttercup-define-matcher', or a function."
   (let ((function (or (get matcher 'buttercup-matcher)
                       matcher)))
     (when (not (functionp function))

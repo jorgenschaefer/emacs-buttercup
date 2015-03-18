@@ -82,11 +82,26 @@
             'buttercup-failed "Explanation")))
 
 (describe "The `buttercup-define-matcher' macro"
-  (it "should add a buttercup-matcher property"
-    (buttercup-define-matcher :test-matcher (a b)
-      (+ a b))
+  (buttercup-define-matcher :test-matcher (a b)
+    (+ a b))
 
-    (expect (funcall (get :test-matcher 'buttercup-matcher)
-                     1 2)
+  (it "should create a matcher usable by apply-matcher"
+    (expect (buttercup--apply-matcher :test-matcher '(1 2))
             :to-equal
-            3)))
+            3))
+
+  (describe "The `buttercup--apply-matcher'"
+    (it "should work with functions"
+      (expect (buttercup--apply-matcher #'+ '(1 2))
+              :to-equal
+              3))
+
+    (it "should work with matchers"
+      (expect (buttercup--apply-matcher :test-matcher '(1 2))
+              :to-equal
+              3))
+
+    (it "should fail if the matcher is not defined"
+      (expect (lambda ()
+                (buttercup--apply-matcher :not-defined '(1 2)))
+              :to-throw))))
