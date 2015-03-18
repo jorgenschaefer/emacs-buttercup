@@ -1,4 +1,4 @@
-;;; buttercup.el --- Behavior-Driven Emacs Lisp Testing
+;;; buttercup.el --- Behavior-Driven Emacs Lisp Testing -*-lexical-binding:t-*-
 
 ;; Copyright (C) 2015  Jorgen Schaefer <contact@jorgenschaefer.de>
 
@@ -228,7 +228,7 @@ MATCHER is either a matcher defined with
        (cons t (format "Expected %S not to throw an error" function)))))))
 
 ;;;;;;;;;;;;;;;;;;;;
-;;; describe: Suites
+;;; Suites: describe
 
 (cl-defstruct buttercup-suite
   description
