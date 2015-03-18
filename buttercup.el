@@ -114,6 +114,9 @@ MATCHER is either a matcher defined with
       (error "Not a test: %S" matcher))
     (apply function args)))
 
+;;;;;;;;;;;;;;;;;;;;;
+;;; Built-in matchers
+
 (buttercup-define-matcher :not (obj matcher &rest args)
   (let ((result (buttercup--apply-matcher matcher (cons obj args))))
     (if (consp result)
