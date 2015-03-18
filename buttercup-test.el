@@ -107,20 +107,22 @@
   (it "should create a matcher usable by apply-matcher"
     (expect (buttercup--apply-matcher :test-matcher '(1 2))
             :to-equal
+            3)))
+
+(describe "The `buttercup--apply-matcher'"
+  (it "should work with functions"
+    (expect (buttercup--apply-matcher #'+ '(1 2))
+            :to-equal
             3))
 
-  (describe "The `buttercup--apply-matcher'"
-    (it "should work with functions"
-      (expect (buttercup--apply-matcher #'+ '(1 2))
-              :to-equal
-              3))
+  (it "should work with matchers"
+    (expect (buttercup--apply-matcher :test-matcher '(1 2))
+            :to-equal
+            3))
 
-    (it "should work with matchers"
-      (expect (buttercup--apply-matcher :test-matcher '(1 2))
-              :to-equal
-              3))
+  (it "should fail if the matcher is not defined"
+    (expect (lambda ()
+              (buttercup--apply-matcher :not-defined '(1 2)))
+            :to-throw)))
 
-    (it "should fail if the matcher is not defined"
-      (expect (lambda ()
-                (buttercup--apply-matcher :not-defined '(1 2)))
-              :to-throw))))
+;; Built-in matchers are tested in README.md

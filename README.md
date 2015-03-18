@@ -137,11 +137,22 @@ that are not included below.
       (expect pi :not :to-be-close-to e 2)
       (expect pi :to-be-close-to e 0)))
 
-  (it "The :to-throw matcher is for testing if a function throws an exception"
-    (let ((foo (lambda () (+ 1 2)))
-          (bar (lambda () (+ a 1))))
-      (expect foo :not :to-throw)
-      (expect bar :to-throw))))
+  (describe "The :to-throw matcher"
+    (it "is for testing if a function throws an exception"
+      (let ((foo (lambda () (+ 1 2)))
+            (bar (lambda () (+ a 1))))
+        (expect foo :not :to-throw)
+        (expect bar :to-throw)))
+    (it "accepts a symbol to check for the signal thrown"
+      (let ((foo (lambda () (/ 1 0)))
+            (bar (lambda () (+ a 1))))
+        (expect foo :not :to-throw 'void-variable)
+        (expect bar :to-throw 'void-variable)))
+    (it "optionally matches arguments to signals"
+      (let ((foo (lambda () (+ a 1)))
+            (bar (lambda () (+ a 1))))
+        (expect foo :not :to-throw 'void-variable '(b))
+        (expect bar :to-throw 'void-variable '(a))))))
 ```
 
 ## Spies
