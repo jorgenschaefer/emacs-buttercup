@@ -32,6 +32,10 @@
 ;;;;;;;;;;;;;;;;;
 ;;; Compatibility
 
+;; Introduced in 24.3
+(when (not (fboundp 'cl-defstruct))
+  (defalias 'cl-defstruct 'defstruct))
+
 ;; Introduced in 24.4
 (when (not (fboundp 'define-error))
   (defun define-error (name message &optional parent)
