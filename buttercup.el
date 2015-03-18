@@ -141,8 +141,8 @@ should describe why a negated matcher failed."
     (error
      (cons t (format "Expected %S not to throw an error" function)))))
 
-;;;;;;;;;;
-;;; Suites
+;;;;;;;;;;;;;;;;;;;;
+;;; describe: Suites
 
 (cl-defstruct buttercup-suite
   description
@@ -154,9 +154,6 @@ should describe why a negated matcher failed."
   (setf (buttercup-suite-nested parent)
         (append (buttercup-suite-nested parent)
                 (list child))))
-
-;;;;;;;;;;;;
-;;; describe
 
 (defvar buttercup-suites nil
   "The list of all currently defined Buttercup suites.")
@@ -184,8 +181,12 @@ form.")
       (setq buttercup-suites (append buttercup-suites
                                      (list buttercup--current-suite))))))
 
-;;;;;;
-;;; it
+;;;;;;;;;;;;;
+;;; Specs: it
+
+(cl-defstruct buttercup-spec
+  description
+  function)
 
 (defmacro it (description &rest body)
   "Define a spec."
@@ -197,8 +198,9 @@ form.")
   (when (not description)
     (error "`it' has to be called from within a `describe' form."))
   (buttercup-suite-add-nested buttercup--current-suite
-                              (cons description
-                                    body-function)))
+                              (make-buttercup-spec
+                               :description description
+                               :function body-function)))
 
 ;; (let* ((buttercup--descriptions (cons description
 ;;                                       buttercup--descriptions))
@@ -244,14 +246,15 @@ form.")
          (indent (make-string (* 2 level) ?\s)))
     (message "%s%s\n" indent (buttercup-suite-description suite))
     (dolist (sub (buttercup-suite-nested suite))
-      (if (buttercup-suite-p sub)
-          (progn
-            (message "")
-            (buttercup-run-suite sub (1+ level)))
+      (cond
+       ((buttercup-suite-p sub)
+        (message "")
+        (buttercup-run-suite sub (1+ level)))
+       ((buttercup-spec-p sub)
         (message "%s%s"
                  (make-string (* 2 (1+ level)) ?\s)
-                 (car sub))
-        (funcall (cdr sub))))
+                 (buttercup-spec-description sub)))
+        (funcall (buttercup-spec-function sub))))
     (message "")))
 
 (defun buttercup-markdown-runner ()
