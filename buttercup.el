@@ -38,29 +38,58 @@
 (define-error 'buttercup-error
   "Buttercup test raised an error")
 
-(defun expect (arg &optional matcher &rest args)
+(defmacro expect (arg &optional matcher &rest args)
+  "Expect a condition to be true.
+
+This macro knows three forms:
+
+\(expect arg :matcher args...)
+  Fail the current test iff the matcher does not match these arguments.
+  See `buttercup-define-matcher' for more information on matchers.
+
+\(expect (function arg...))
+  Fail the current test iff the function call does not return a true value.
+
+\(expect ARG)
+  Fail the current test iff ARG is not true."
+  (cond
+   ((and (not matcher)
+         (consp arg))
+    `(buttercup-expect ,(cadr arg)
+                       #',(car arg)
+                       ,@(cddr arg)))
+   ((and (not matcher)
+         (not (consp arg)))
+    `(buttercup-expect ,arg))
+   (t
+    `(buttercup-expect ,arg ,matcher ,@args))))
+
+(defun buttercup-expect (arg &optional matcher &rest args)
+  "The function for the `expect' macro.
+
+See the macro documentation for details."
   (if (not matcher)
       (when (not arg)
-        (signal 'buttercup-failed
-                (format "Expected %S to be non-nil" arg)))
+        (buttercup-fail "Expected %S to be non-nil" arg))
     (let ((result (buttercup--apply-matcher matcher (cons arg args))))
       (if (consp result)
           (when (not (car result))
-            (signal 'buttercup-failed
-                    (cdr result)))
+            (buttercup-fail "%s" (cdr result)))
         (when (not result)
-          (signal 'buttercup-failed
-                  (format "Expected %S %S %S"
+          (buttercup-fail "Expected %S %S %S"
                           arg
                           matcher
                           (mapconcat (lambda (obj)
                                        (format "%S" obj))
                                      args
-                                     " "))))))))
+                                     " ")))))))
 
-(defun buttercup-fail (explanation form)
-  (signal 'buttercup-failed (cons explanation
-                                  form)))
+(defun buttercup-fail (format &rest args)
+  "Fail the current test with the given description.
+
+This is the mechanism underlying `expect'. You can use it
+directly if you want to write your own testing functionality."
+  (signal 'buttercup-failed (apply #'format format args)))
 
 (defmacro buttercup-define-matcher (matcher args &rest body)
   "Define a matcher to be used in `expect'.
@@ -75,6 +104,7 @@ should describe why a negated matcher failed."
           ,@body)))
 
 (defun buttercup--apply-matcher (matcher args)
+
   (let ((function (or (get matcher 'buttercup-matcher)
                       matcher)))
     (when (not (functionp function))
@@ -133,13 +163,34 @@ should describe why a negated matcher failed."
     (cons nil (format "Expected %S to be greater than %S to %s positions"
                       a b precision))))
 
-(buttercup-define-matcher :to-throw (function)
+(buttercup-define-matcher :to-throw (function &optional signal signal-args)
   (condition-case err
       (progn
         (funcall function)
         (cons nil (format "Expected %S to throw an error" function)))
     (error
-     (cons t (format "Expected %S not to throw an error" function)))))
+     (cond
+      ((and signal signal-args)
+       (cond
+        ((not (memq signal (get (car err) 'error-conditions)))
+         (cons nil (format "Expected %S to throw a child signal of %S, not %S"
+                           function signal (car err))))
+        ((not (equal signal-args (cdr err)))
+         (cons nil (format "Expected %S to throw %S with args %S, not %S with %S"
+                           function signal signal-args (car err) (cdr err))))
+        (t
+         (cons t (format (concat "Expected %S not to throw a child signal "
+                                 "of %S with args %S, but it did throw %S")
+                         function signal signal-args (car err))))))
+      (signal
+       (if (not (memq signal (get (car err) 'error-conditions)))
+           (cons nil (format "Expected %S to throw a child signal of %S, not %S"
+                             function signal (car err)))
+         (cons t (format (concat "Expected %S not to throw a child signal "
+                                 "of %S, but it threw %S")
+                         function signal (car err)))))
+      (t
+       (cons t (format "Expected %S not to throw an error" function)))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 ;;; describe: Suites
@@ -244,17 +295,16 @@ form.")
 (defun buttercup-run-suite (suite &optional level)
   (let* ((level (or level 0))
          (indent (make-string (* 2 level) ?\s)))
-    (message "%s%s\n" indent (buttercup-suite-description suite))
+    (message "%s%s" indent (buttercup-suite-description suite))
     (dolist (sub (buttercup-suite-nested suite))
       (cond
        ((buttercup-suite-p sub)
-        (message "")
         (buttercup-run-suite sub (1+ level)))
        ((buttercup-spec-p sub)
         (message "%s%s"
                  (make-string (* 2 (1+ level)) ?\s)
-                 (buttercup-spec-description sub)))
-        (funcall (buttercup-spec-function sub))))
+                 (buttercup-spec-description sub))
+        (funcall (buttercup-spec-function sub)))))
     (message "")))
 
 (defun buttercup-markdown-runner ()
