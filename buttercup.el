@@ -353,8 +353,9 @@ form.")
             (with-current-buffer lisp-buffer
               (insert code))))))
     (with-current-buffer lisp-buffer
-      (setq lexical-binding t)
-      (eval-buffer))
+      (setq-local lexical-binding t)
+      (eval-region (point-min)
+                   (point-max)))
     (buttercup-run)))
 
 (provide 'buttercup)
