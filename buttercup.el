@@ -232,13 +232,12 @@ MATCHER is either a matcher defined with
 
 (cl-defstruct buttercup-suite
   description
-  nested
-  specs)
+  children)
 
-(defun buttercup-suite-add-nested (parent child)
-  "Add a CHILD suite as a nested suite to a PARENT suite."
-  (setf (buttercup-suite-nested parent)
-        (append (buttercup-suite-nested parent)
+(defun buttercup-suite-add-child (parent child)
+  "Add a CHILD suite to a PARENT suite."
+  (setf (buttercup-suite-children parent)
+        (append (buttercup-suite-children parent)
                 (list child))))
 
 (defvar buttercup-suites nil
@@ -262,8 +261,8 @@ form.")
                                     :description description)))
     (funcall body-function)
     (if enclosing-suite
-        (buttercup-suite-add-nested enclosing-suite
-                                    buttercup--current-suite)
+        (buttercup-suite-add-child enclosing-suite
+                                   buttercup--current-suite)
       (setq buttercup-suites (append buttercup-suites
                                      (list buttercup--current-suite))))))
 
@@ -283,10 +282,10 @@ form.")
   "Function to handle an `it' form."
   (when (not description)
     (error "`it' has to be called from within a `describe' form."))
-  (buttercup-suite-add-nested buttercup--current-suite
-                              (make-buttercup-spec
-                               :description description
-                               :function body-function)))
+  (buttercup-suite-add-child buttercup--current-suite
+                             (make-buttercup-spec
+                              :description description
+                              :function body-function)))
 
 ;; (let* ((buttercup--descriptions (cons description
 ;;                                       buttercup--descriptions))
@@ -331,7 +330,7 @@ form.")
   (let* ((level (or level 0))
          (indent (make-string (* 2 level) ?\s)))
     (message "%s%s" indent (buttercup-suite-description suite))
-    (dolist (sub (buttercup-suite-nested suite))
+    (dolist (sub (buttercup-suite-children suite))
       (cond
        ((buttercup-suite-p sub)
         (buttercup-run-suite sub (1+ level)))

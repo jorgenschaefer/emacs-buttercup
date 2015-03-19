@@ -126,3 +126,22 @@
             :to-throw)))
 
 ;; Built-in matchers are tested in README.md
+
+(describe "The `buttercup-suite-add-child' function"
+  (it "should add an element at the end of the list"
+    (let ((suite (make-buttercup-suite :children '(1 2 3))))
+
+      (buttercup-suite-add-child suite 4)
+
+      (expect (buttercup-suite-children suite)
+              :to-equal
+              '(1 2 3 4))))
+
+  (it "should add an element even if the list is empty"
+    (let ((suite (make-buttercup-suite :children nil)))
+
+      (buttercup-suite-add-child suite 23)
+
+      (expect (buttercup-suite-children suite)
+              :to-equal
+              '(23)))))
