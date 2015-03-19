@@ -151,3 +151,38 @@
     (expect (macroexpand '(describe "description" (+ 1 1)))
             :to-equal
             '(buttercup-describe "description" (lambda () (+ 1 1))))))
+
+(describe "The `buttercup-describe' function"
+  (it "should run the enclosing body"
+    (let ((it-ran nil))
+      (buttercup-describe "foo" (lambda () (setq it-ran t)))
+      (expect it-ran)))
+
+  (it "should set the `buttercup-suites' variable"
+    (let ((buttercup-suites nil)
+          (description "test to set global value"))
+      (buttercup-describe description (lambda () nil))
+      (expect (buttercup-suite-description (car buttercup-suites))
+              :to-equal
+              description)))
+
+  (it "should add child suites when called nested"
+    (let ((buttercup-suites nil)
+          (desc1 "description1")
+          (desc2 "description2"))
+
+      (buttercup-describe
+       desc1
+       (lambda ()
+         (buttercup-describe
+          desc2
+          (lambda () nil))))
+
+      (expect (buttercup-suite-description (car buttercup-suites))
+              :to-equal
+              desc1)
+      (let ((child-suite (car (buttercup-suite-children
+                               (car buttercup-suites)))))
+        (expect (buttercup-suite-description child-suite)
+                :to-equal
+                desc2)))))
