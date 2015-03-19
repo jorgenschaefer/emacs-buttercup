@@ -5,13 +5,6 @@ the stuff in
 [Jasmine’s introduction](https://jasmine.github.io/edge/introduction.html).
 At this time, this is missing:
 
-## Setup and Teardown
-
-The forms `(before-each body ...)` and `(after-each body ...)`
-(likewise, `before-all` and `after-all`) to add functions to the
-current suite. Test runners will then call these in turn for each spec
-being run.
-
 ## Test Runners
 
 This would also be a great time to write useful test runners. For the
