@@ -186,3 +186,28 @@
         (expect (buttercup-suite-description child-suite)
                 :to-equal
                 desc2)))))
+
+(describe "The `it' macro"
+  (it "should expand to a call to the `buttercup-it' function"
+    (expect (macroexpand '(it "description" body))
+            :to-equal
+            '(buttercup-it "description" (lambda () body)))))
+
+(describe "The `buttercup-it' function"
+  (it "should fail if not called from within a describe form"
+    (expect (lambda ()
+              (let ((buttercup--current-suite nil))
+                (buttercup-it "" (lambda ()))))
+            :to-throw))
+
+  (it "should add a spec to the current suite"
+    (let ((buttercup--current-suite (make-buttercup-suite)))
+      (buttercup-it "the test spec"
+                    (lambda () 23))
+      (let ((spec (car (buttercup-suite-children buttercup--current-suite))))
+        (expect (buttercup-spec-description spec)
+                :to-equal
+                "the test spec")
+        (expect (funcall (buttercup-spec-function spec))
+                :to-equal
+                23)))))

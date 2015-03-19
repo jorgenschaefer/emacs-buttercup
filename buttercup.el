@@ -276,11 +276,11 @@ form.")
 (defmacro it (description &rest body)
   "Define a spec."
   (declare (indent 1))
-  `(buttercup--it-internal ,description (lambda () ,@body)))
+  `(buttercup-it ,description (lambda () ,@body)))
 
-(defun buttercup--it-internal (description body-function)
+(defun buttercup-it (description body-function)
   "Function to handle an `it' form."
-  (when (not description)
+  (when (not buttercup--current-suite)
     (error "`it' has to be called from within a `describe' form."))
   (buttercup-suite-add-child buttercup--current-suite
                              (make-buttercup-spec
