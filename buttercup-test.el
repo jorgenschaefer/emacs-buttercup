@@ -19,6 +19,9 @@
 
 (require 'buttercup)
 
+;;;;;;;;;;
+;;; expect
+
 (describe "The buttercup-failed signal"
   (it "can be raised"
     (expect (lambda ()
@@ -125,7 +128,13 @@
               (buttercup--apply-matcher :not-defined '(1 2)))
             :to-throw)))
 
-;; Built-in matchers are tested in README.md
+;;;;;;;;;;;;;;;;;;;;;
+;;; Built-in matchers
+
+;; Are tested in README.md
+
+;;;;;;;;;;;;;;;;;;;;
+;;; Suites: describe
 
 (describe "The `buttercup-suite-add-child' function"
   (it "should add an element at the end of the list"
@@ -187,6 +196,9 @@
                 :to-equal
                 desc2)))))
 
+;;;;;;;;;;;;;
+;;; Specs: it
+
 (describe "The `it' macro"
   (it "should expand to a call to the `buttercup-it' function"
     (expect (macroexpand '(it "description" body))
@@ -211,3 +223,70 @@
         (expect (funcall (buttercup-spec-function spec))
                 :to-equal
                 23)))))
+
+;;;;;;;;;;;;;;;;;;;;;;
+;;; Setup and Teardown
+
+(describe "The `before-each' macro"
+  (it "expands to a function call"
+    (expect (macroexpand '(before-each (+ 1 1)))
+            :to-equal
+            '(buttercup-before-each (lambda () (+ 1 1))))))
+
+(describe "The `buttercup-before-each' function"
+  (it "adds its argument to the before-each list of the current suite"
+    (let* ((suite (make-buttercup-suite))
+           (buttercup--current-suite suite))
+      (buttercup-before-each 23)
+
+      (expect (buttercup-suite-before-each suite)
+              :to-equal
+              (list 23)))))
+
+(describe "The `after-each' macro"
+  (it "expands to a function call"
+    (expect (macroexpand '(after-each (+ 1 1)))
+            :to-equal
+            '(buttercup-after-each (lambda () (+ 1 1))))))
+
+(describe "The `buttercup-after-each' function"
+  (it "adds its argument to the after-each list of the current suite"
+    (let* ((suite (make-buttercup-suite))
+           (buttercup--current-suite suite))
+      (buttercup-after-each 23)
+
+      (expect (buttercup-suite-after-each suite)
+              :to-equal
+              (list 23)))))
+
+(describe "The `before-all' macro"
+  (it "expands to a function call"
+    (expect (macroexpand '(before-all (+ 1 1)))
+            :to-equal
+            '(buttercup-before-all (lambda () (+ 1 1))))))
+
+(describe "The `buttercup-before-all' function"
+  (it "adds its argument to the before-all list of the current suite"
+    (let* ((suite (make-buttercup-suite))
+           (buttercup--current-suite suite))
+      (buttercup-before-all 23)
+
+      (expect (buttercup-suite-before-all suite)
+              :to-equal
+              (list 23)))))
+
+(describe "The `after-all' macro"
+  (it "expands to a function call"
+    (expect (macroexpand '(after-all (+ 1 1)))
+            :to-equal
+            '(buttercup-after-all (lambda () (+ 1 1))))))
+
+(describe "The `buttercup-after-all' function"
+  (it "adds its argument to the after-all list of the current suite"
+    (let* ((suite (make-buttercup-suite))
+           (buttercup--current-suite suite))
+      (buttercup-after-all 23)
+
+      (expect (buttercup-suite-after-all suite)
+              :to-equal
+              (list 23)))))

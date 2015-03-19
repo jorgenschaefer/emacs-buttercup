@@ -232,7 +232,11 @@ MATCHER is either a matcher defined with
 
 (cl-defstruct buttercup-suite
   description
-  children)
+  children
+  before-each
+  after-each
+  before-all
+  after-all)
 
 (defun buttercup-suite-add-child (parent child)
   "Add a CHILD suite to a PARENT suite."
@@ -287,6 +291,46 @@ form.")
                               :description description
                               :function body-function)))
 
+;;;;;;;;;;;;;;;;;;;;;;
+;;; Setup and Teardown
+
+(defmacro before-each (&rest body)
+  (declare (indent 0))
+  `(buttercup-before-each (lambda () ,@body)))
+
+(defun buttercup-before-each (function)
+  (setf (buttercup-suite-before-each buttercup--current-suite)
+        (append (buttercup-suite-before-each buttercup--current-suite)
+                (list function))))
+
+(defmacro after-each (&rest body)
+  (declare (indent 0))
+  `(buttercup-after-each (lambda () ,@body)))
+
+(defun buttercup-after-each (function)
+  (setf (buttercup-suite-after-each buttercup--current-suite)
+        (append (buttercup-suite-after-each buttercup--current-suite)
+                (list function))))
+
+(defmacro before-all (&rest body)
+  (declare (indent 0))
+  `(buttercup-before-all (lambda () ,@body)))
+
+(defun buttercup-before-all (function)
+  (setf (buttercup-suite-before-all buttercup--current-suite)
+        (append (buttercup-suite-before-all buttercup--current-suite)
+                (list function))))
+
+(defmacro after-all (&rest body)
+  (declare (indent 0))
+  `(buttercup-after-all (lambda () ,@body)))
+
+(defun buttercup-after-all (function)
+  (setf (buttercup-suite-after-all buttercup--current-suite)
+        (append (buttercup-suite-after-all buttercup--current-suite)
+                (list function))))
+
+
 ;; (let* ((buttercup--descriptions (cons description
 ;;                                       buttercup--descriptions))
 ;;        (debugger (lambda (&rest args)
@@ -326,10 +370,26 @@ form.")
       (mapc #'buttercup-run-suite buttercup-suites)
     (error "No suites defined")))
 
+(defvar buttercup--before-each nil
+  "A list of functions to call before each spec.
+
+Do not change the global value.")
+
+(defvar buttercup--after-each nil
+  "A list of functions to call after each spec.
+
+Do not change the global value.")
+
 (defun buttercup-run-suite (suite &optional level)
   (let* ((level (or level 0))
-         (indent (make-string (* 2 level) ?\s)))
+         (indent (make-string (* 2 level) ?\s))
+         (buttercup--before-each (append buttercup--before-each
+                                         (buttercup-suite-before-each suite)))
+         (buttercup--after-each (append (buttercup-suite-after-each suite)
+                                        buttercup--after-each)))
     (message "%s%s" indent (buttercup-suite-description suite))
+    (dolist (f (buttercup-suite-before-all suite))
+      (funcall f))
     (dolist (sub (buttercup-suite-children suite))
       (cond
        ((buttercup-suite-p sub)
@@ -338,8 +398,20 @@ form.")
         (message "%s%s"
                  (make-string (* 2 (1+ level)) ?\s)
                  (buttercup-spec-description sub))
-        (funcall (buttercup-spec-function sub)))))
+        (dolist (f buttercup--before-each)
+          (funcall f))
+        (funcall (buttercup-spec-function sub))
+        (dolist (f buttercup--after-each)
+          (funcall f)))))
+    (dolist (f (buttercup-suite-after-all suite))
+      (funcall f))
     (message "")))
+
+(defun buttercup-run-at-point ()
+  (let ((buttercup-suites nil)
+        (lexical-binding t))
+    (eval-defun nil)
+    (buttercup-run)))
 
 (defun buttercup-markdown-runner ()
   (let ((lisp-buffer (generate-new-buffer "elisp")))
@@ -352,7 +424,8 @@ form.")
             (with-current-buffer lisp-buffer
               (insert code))))))
     (with-current-buffer lisp-buffer
-      (setq lexical-binding t)
+      (setq lexical-binding t
+            debug-on-error t)
       (eval-region (point-min)
                    (point-max)))
     (buttercup-run)))

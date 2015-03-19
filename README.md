@@ -155,11 +155,122 @@ that are not included below.
         (expect bar :to-throw 'void-variable '(a))))))
 ```
 
-## Spies
+## Grouping Related Specs with `describe`
 
-Buttercup provides a way of _spying_ on a function, something usually
-called mocking, but Jasmine calls it _spies_, and so do we. Did I
-mention Buttercup is heavily inspired by Jasmine?
+The `describe` macro is for grouping related specs. The string
+parameter is for naming the collection of specs, and will be
+concatenated with specs to make a spec’s full name. This aids in
+finding specs in a large suite. If you name them well, your specs read
+as full sentences in traditional
+[BDD](http://en.wikipedia.org/wiki/Behavior-driven_development) style.
+
+```Lisp
+(describe "A spec"
+  (it "is just a function, so it can contain any code"
+    (let ((foo 0))
+      (setq foo (1+ foo))
+
+      (expect foo :to-equal 1)))
+
+  (it "can have more than one expectation"
+    (let ((foo 0))
+      (setq foo (1+ foo))
+
+      (expect foo :to-equal 1)
+      (expect t :to-equal t))))
+```
+
+### Setup and Teardown
+
+To help a test suite DRY up any duplicated setup and teardown code,
+Buttercup provides the `before-each`, `after-each`, `before-all` and
+`after-all` special forms.
+
+As the name implies, code blocks defined with `before-each` are called
+once before each spec in the `describe` is run, and the `after-each`
+code blocks are called once after each spec.
+
+Here is the same set of specs written a little differently. The
+variable under test is defined at the top-level scope — the `describe`
+block — and initialization code is moved into a `before-each` block.
+The `after-each` block resets the variable before continuing.
+
+```Lisp
+(describe "A spec using `before-each' and `after-each'"
+  (let ((foo 0))
+    (before-each
+     (setq foo (1+ foo)))
+
+    (after-each
+     (setq foo 0))
+
+    (it "is just a function, so it can contain any code"
+      (expect foo :to-equal 1))
+
+    (it "can have more than one expectation"
+      (expect foo :to-equal 1)
+      (expect t :to-equal t))))
+```
+
+The `before-all` form is called only once before all the specs in
+`describe` are run, and the `after-all` form is called after all specs
+finish. These functions can be used to speed up test suites with
+expensive setup and teardown.
+
+However, be careful using `before-all` and `after-all`! Since they are
+not reset between specs, it is easy to accidentally leak state between
+your specs so that they erroneously pass or fail.
+
+```Lisp
+(describe "A spec using `before-all' and `after-all'"
+  (let (foo)
+    (before-all
+     (setq foo 1))
+
+    (after-all
+     (setq foo 0))
+
+    (it "sets the iniital value of foo before specs run"
+      (expect foo :to-equal 1)
+      (setq foo (1+ foo)))
+
+    (it "does not reset foo between specs"
+      (expect foo :to-equal 2))))
+```
+
+### Nesting `describe` Blocks
+
+Calls to `describe` can be nested, with specs defined at any level.
+This allows a suite to be composed as a tree of functions. Before a
+spec is executed, Buttercup walks down the tree executing each
+`before-each` function in order. After the spec is executed, Buttercup
+walks through the `after-each` functions similarly.
+
+```Lisp
+(describe "A spec"
+  (let (foo)
+    (before-each
+     (setq foo 0)
+     (setq foo (1+ foo)))
+
+    (after-each
+     (setq foo 0))
+
+    (it "is just a function, so it can contain any code"
+      (expect foo :to-equal 1))
+
+    (it "can have more than one expectation"
+      (expect foo :to-equal 1)
+      (expect t :to-equal t))
+
+    (describe "nested inside a second describe"
+      (let (bar)
+        (before-each
+         (setq bar 1))
+
+        (it "can reference both scopes as needed"
+          (expect foo :to-equal bar))))))
+```
 
 ## Test Runners
 
@@ -167,13 +278,12 @@ Evaluating `describe` forms just stores the suites. You need to use a
 test runner to actually evaluate them. Buttercup comes with two test
 runners by default:
 
-- `buttercup-run-suite-at-point` — Evaluate the topmost `describe`
-  form at point and run the suite it creates directly. Useful for
-  interactive development. But be careful, this uses your current
-  environment, which might not be clean (due to said interactive
-  development).
-- `buttercup-discover` — Find files in directories specified on the
-  command line, load them, and then run all suites defined therein.
-  Useful for being run in batch mode.
-- `buttercup-markdown-runner` — Run code in markdown files. Used to
+- `buttercup-run-at-point` — Evaluate the topmost `describe` form at
+  point and run the suite it creates directly. Useful for interactive
+  development. But be careful, this uses your current environment,
+  which might not be clean (due to said interactive development).
+- `buttercup-run-discover` — Find files in directories specified on
+  the command line, load them, and then run all suites defined
+  therein. Useful for being run in batch mode.
+- `buttercup-run-markdown` — Run code in markdown files. Used to
   run this file’s code.
