@@ -252,9 +252,9 @@ form.")
 (defmacro describe (description &rest body)
   "Describe a suite of tests."
   (declare (indent 1))
-  `(buttercup--describe-internal ,description (lambda () ,@body)))
+  `(buttercup-describe ,description (lambda () ,@body)))
 
-(defun buttercup--describe-internal (description body-function)
+(defun buttercup-describe (description body-function)
   "Function to handle a `describe' form."
   (let* ((enclosing-suite buttercup--current-suite)
          (buttercup--current-suite (make-buttercup-suite

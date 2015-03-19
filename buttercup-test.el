@@ -145,3 +145,9 @@
       (expect (buttercup-suite-children suite)
               :to-equal
               '(23)))))
+
+(describe "The `describe' macro"
+  (it "should expand to a simple call to the describe function"
+    (expect (macroexpand '(describe "description" (+ 1 1)))
+            :to-equal
+            '(buttercup-describe "description" (lambda () (+ 1 1))))))
