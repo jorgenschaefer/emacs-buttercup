@@ -50,6 +50,15 @@ Example code:
 
 # Version 1.1: The Missing Features
 
+## Pending Specs
+
+The following phrases were left out from `introduction.js`, and should
+be implemented still:
+
+> Pending specs do not run, _but their names will show up in the results as pending._
+
+> And if you call the function `pending` anywhere in the spec body, no matter the expectations, the spec will be marked pending. A string passed to pending will be treated as a reason and displayed when the suite finishes.
+
 ## Return of the Backtrace
 
 Suite execution should catch errors and include a backtrace in the

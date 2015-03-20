@@ -290,3 +290,37 @@
       (expect (buttercup-suite-after-all suite)
               :to-equal
               (list 23)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Disabled Suites: xdescribe
+
+(describe "The `xdescribe' macro"
+  (it "expands directly to a function call"
+    (expect (macroexpand '(xdescribe "bla bla" (+ 1 1)))
+            :to-equal
+            '(buttercup-xdescribe "bla bla" (lambda () (+ 1 1))))))
+
+(describe "The `buttercup-xdescribe' function"
+  (it "should be a no-op"
+    (expect (lambda ()
+              (buttercup-xdescribe
+               "bla bla"
+               (lambda () (error "should not happen"))))
+            :not :to-throw)))
+
+;;;;;;;;;;;;;;;;;;;;;;
+;;; Pending Specs: xit
+
+(describe "The `xit' macro"
+  (it "expands directly to a function call"
+    (expect (macroexpand '(xit "bla bla" (+ 1 1)))
+            :to-equal
+            '(buttercup-xit "bla bla" (lambda () (+ 1 1))))))
+
+(describe "The `buttercup-xit' function"
+  (it "should be a no-op"
+    (expect (lambda ()
+              (buttercup-xit
+               "bla bla"
+               (lambda () (error "should not happen"))))
+            :not :to-throw)))

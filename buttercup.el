@@ -330,6 +330,37 @@ form.")
         (append (buttercup-suite-after-all buttercup--current-suite)
                 (list function))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Disabled Suites: xdescribe
+
+(defmacro xdescribe (description &rest body)
+  "Like `describe', but mark the suite as disabled.
+
+A disabled suite is not run."
+  (declare (indent 1))
+  `(buttercup-xdescribe ,description (lambda () ,@body)))
+
+(defun buttercup-xdescribe (description function)
+  "Like `buttercup-describe', but mark the suite as disabled.
+
+A disabled suite is not run."
+  nil)
+
+;;;;;;;;;;;;;;;;;;;;;;
+;;; Pending Specs: xit
+
+(defmacro xit (description &rest body)
+  "Like `it', but mark the spec as disabled.
+
+A disabled spec is not run."
+  (declare (indent 1))
+  `(buttercup-xit ,description (lambda () ,@body)))
+
+(defun buttercup-xit (description function)
+  "Like `buttercup-it', but mark the spec as disabled.
+
+A disabled spec is not run."
+  nil)
 
 ;; (let* ((buttercup--descriptions (cons description
 ;;                                       buttercup--descriptions))

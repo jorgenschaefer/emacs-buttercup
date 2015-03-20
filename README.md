@@ -272,6 +272,41 @@ walks through the `after-each` functions similarly.
           (expect foo :to-equal bar))))))
 ```
 
+## Disabling Suites
+
+Suites and specs can be disabled with the `xdescribe` and `xit`
+macros, respectively. These suites and any specs inside them are
+skipped when run and thus their results will not appear in the
+results.
+
+```Lisp
+(xdescribe "A spec"
+  (let (foo)
+    (before-each
+      (setq foo 0)
+      (setq foo (1+ foo)))
+
+    (it "is just a function, so it can contain any code"
+      (expect foo :to-equal 1))))
+```
+
+## Pending Specs
+
+Pending specs do not run.
+
+Any spec declared with `xit` is marked as pending.
+
+Any spec declared without a function body will also be marked as
+pending in results.
+
+```Lisp
+(describe "Pending specs"
+  (xit "can be declared using `xit'"
+    (expect t :to-be nil))
+
+  (it "can be declared with `it' but without a body"))
+```
+
 ## Test Runners
 
 Evaluating `describe` forms just stores the suites. You need to use a
