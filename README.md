@@ -307,6 +307,43 @@ pending in results.
   (it "can be declared with `it' but without a body"))
 ```
 
+## Spies
+
+Buttercup has test double functions called spies. While other
+frameworks call these mocks and similar, we call them spies, because
+their main job is to spy in on function calls. Also, Jasmine calls
+them spies, and so do we. A spy can stub any function and tracks calls
+to it and all arguments. A spy only exists in the `describe` or `it`
+block it is defined in, and will be removed after each spec. There are
+special matchers for interacting with spies. The
+`:to-have-been-called` matcher will return true if the spy was called
+at all. The `:to-have-been-called-with` matcher will return true if
+the argument list matches any of the recorded calls to the spy.
+
+```Lisp
+(describe "A spy"
+  (let (foo bar)
+    (before-each
+     (setf (symbol-function 'foo)
+           (lambda (value)
+             (setq bar value)))
+
+     (spy-on 'foo)
+
+     (foo 123)
+     (foo 456 "another param"))
+
+    (it "tracks that the spy was called"
+      (expect 'foo :to-have-been-called))
+
+    (it "tracks all arguments of its calls"
+      (expect 'foo :to-have-been-called-with 123)
+      (expect 'foo :to-have-been-called-with 456 "another param"))
+
+    (it "stops all execution on a function"
+      (expect bar :to-be nil))))
+```
+
 ## Test Runners
 
 Evaluating `describe` forms just stores the suites. You need to use a

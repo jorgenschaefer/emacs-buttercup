@@ -362,6 +362,53 @@ A disabled spec is not run."
 A disabled spec is not run."
   nil)
 
+;;;;;;;;;
+;;; Spies
+
+(defvar buttercup--spy-calls (make-hash-table :test 'eq
+                                              :weakness 'key))
+
+(defun spy-on (symbol)
+  (letrec ((old-value (symbol-function symbol))
+           (new-value (lambda (&rest args)
+                        (buttercup--spy-add-call new-value args)
+                        nil)))
+    (fset symbol new-value)
+    (buttercup--add-cleanup (lambda () (fset symbol old-value)))))
+
+(defun buttercup--add-cleanup (function)
+  (if buttercup--current-suite
+      (buttercup-after-each function)
+    (setq buttercup--cleanup-forms
+          (append buttercup--cleanup-forms
+                  (list function)))))
+
+(defun buttercup--spy-add-call (spy args)
+  (puthash spy
+           (append (buttercup--spy-calls spy)
+                   (list args))
+           buttercup--spy-calls))
+
+(defun buttercup--spy-calls (spy)
+  (gethash spy buttercup--spy-calls))
+
+(buttercup-define-matcher :to-have-been-called (spy)
+  (let ((spy (if (symbolp spy)
+                 (symbol-function spy)
+               spy)))
+    (if (buttercup--spy-calls spy)
+        t
+      nil)))
+
+(buttercup-define-matcher :to-have-been-called-with (spy &rest args)
+  (let* ((spy (if (symbolp spy)
+                  (symbol-function spy)
+                spy))
+         (calls (buttercup--spy-calls spy)))
+    (if (member args calls)
+        t
+      nil)))
+
 ;; (let* ((buttercup--descriptions (cons description
 ;;                                       buttercup--descriptions))
 ;;        (debugger (lambda (&rest args)
@@ -417,7 +464,8 @@ Do not change the global value.")
          (buttercup--before-each (append buttercup--before-each
                                          (buttercup-suite-before-each suite)))
          (buttercup--after-each (append (buttercup-suite-after-each suite)
-                                        buttercup--after-each)))
+                                        buttercup--after-each))
+         (debug-on-error t))
     (message "%s%s" indent (buttercup-suite-description suite))
     (dolist (f (buttercup-suite-before-all suite))
       (funcall f))
@@ -426,17 +474,26 @@ Do not change the global value.")
        ((buttercup-suite-p sub)
         (buttercup-run-suite sub (1+ level)))
        ((buttercup-spec-p sub)
-        (message "%s%s"
-                 (make-string (* 2 (1+ level)) ?\s)
-                 (buttercup-spec-description sub))
-        (dolist (f buttercup--before-each)
-          (funcall f))
-        (funcall (buttercup-spec-function sub))
-        (dolist (f buttercup--after-each)
-          (funcall f)))))
+        (buttercup-run-spec sub (1+ level)))))
     (dolist (f (buttercup-suite-after-all suite))
       (funcall f))
     (message "")))
+
+(defvar buttercup--cleanup-forms nil
+  "")
+
+(defun buttercup-run-spec (spec level)
+  (let ((buttercup--cleanup-forms nil))
+    (message "%s%s"
+             (make-string (* 2 level) ?\s)
+             (buttercup-spec-description spec))
+    (dolist (f buttercup--before-each)
+      (funcall f))
+    (funcall (buttercup-spec-function spec))
+    (dolist (f buttercup--cleanup-forms)
+      (funcall f))
+    (dolist (f buttercup--after-each)
+      (funcall f))))
 
 (defun buttercup-run-at-point ()
   (let ((buttercup-suites nil)
@@ -455,8 +512,7 @@ Do not change the global value.")
             (with-current-buffer lisp-buffer
               (insert code))))))
     (with-current-buffer lisp-buffer
-      (setq lexical-binding t
-            debug-on-error t)
+      (setq lexical-binding t)
       (eval-region (point-min)
                    (point-max)))
     (buttercup-run)))

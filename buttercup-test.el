@@ -324,3 +324,56 @@
                "bla bla"
                (lambda () (error "should not happen"))))
             :not :to-throw)))
+
+;;;;;;;;;
+;;; Spies
+
+(defun test-function (a b)
+  (+ a b))
+
+(describe "The `spy-on' function"
+  (it "replaces a symbol's function slot"
+    (spy-on 'test-function)
+    (expect (test-function 1 2) :to-be nil))
+
+  (it "restores the old value after a spec run"
+    (expect (test-function 1 2) :to-equal 3)))
+
+(describe "The :to-have-been-called matcher"
+  (before-each
+    (spy-on 'test-function))
+
+  (it "returns false if the spy was not called"
+    (expect (buttercup--apply-matcher :to-have-been-called '(test-function))
+            :to-be
+            nil))
+
+  (it "returns true if the spy was called at all"
+    (test-function 1 2 3)
+    (expect (buttercup--apply-matcher :to-have-been-called '(test-function))
+            :to-be
+            t)))
+
+(describe "The :to-have-been-called-with matcher"
+  (before-each
+    (spy-on 'test-function))
+
+  (it "returns false if the spy was not called at all"
+    (expect (buttercup--apply-matcher
+             :to-have-been-called-with '(test-function 1 2 3))
+            :to-be
+            nil))
+
+  (it "returns false if the spy was called with different arguments"
+    (test-function 3 2 1)
+    (expect (buttercup--apply-matcher
+             :to-have-been-called-with '(test-function 1 2 3))
+            :to-be
+            nil))
+
+  (it "returns true if the spy was called with those arguments"
+    (test-function 1 2 3)
+    (expect (buttercup--apply-matcher
+             :to-have-been-called-with '(test-function 1 2 3))
+            :to-be
+            t)))
