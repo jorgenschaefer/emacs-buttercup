@@ -368,11 +368,18 @@ A disabled spec is not run."
 (defvar buttercup--spy-calls (make-hash-table :test 'eq
                                               :weakness 'key))
 
-(defun spy-on (symbol)
-  (letrec ((old-value (symbol-function symbol))
-           (new-value (lambda (&rest args)
+(defun spy-on (symbol &rest keyword-args)
+  (let ((old-value (symbol-function symbol))
+        (new-value nil))
+    (cond
+     ((equal keyword-args '(:and-call-through))
+      (setq new-value (lambda (&rest args)
                         (buttercup--spy-add-call new-value args)
-                        nil)))
+                        (apply old-value args))))
+     ((equal keyword-args nil)
+      (setq new-value (lambda (&rest args)
+                        (buttercup--spy-add-call new-value args)
+                        nil))))
     (fset symbol new-value)
     (buttercup--add-cleanup (lambda () (fset symbol old-value)))))
 

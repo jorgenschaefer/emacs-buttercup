@@ -344,6 +344,32 @@ the argument list matches any of the recorded calls to the spy.
       (expect bar :to-be nil))))
 ```
 
+### Spies: `:and-call-through`
+
+The keyword argument `:and-call-through` to `spy-on` will make the spy
+call the original function instead of returning `nil`.
+
+```Lisp
+(describe "A spy, when configured to call through"
+  (let (bar set-bar get-bar fetched-bar)
+    (before-each
+      (fset 'set-bar (lambda (val)
+                       (setq bar val)))
+      (fset 'get-bar (lambda ()
+                       bar))
+
+      (spy-on 'get-bar :and-call-through)
+
+      (set-bar 123)
+      (setq fetched-bar (get-bar)))
+
+    (it "tracks that the spy was called"
+      (expect 'get-bar :to-have-been-called))
+
+    (it "should not affect other functions"
+      (expect bar :to-equal 123))))
+```
+
 ## Test Runners
 
 Evaluating `describe` forms just stores the suites. You need to use a

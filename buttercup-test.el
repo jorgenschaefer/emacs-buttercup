@@ -377,3 +377,17 @@
              :to-have-been-called-with '(test-function 1 2 3))
             :to-be
             t)))
+
+(describe "The :and-call-through keyword functionality"
+  (before-each
+    (spy-on 'test-function :and-call-through))
+
+  (it "tracks calls to the function"
+    (test-function 42 23)
+
+    (expect 'test-function :to-have-been-called))
+
+  (it "passes the arguments to the original function"
+    (expect (test-function 2 3)
+            :to-equal
+            5)))
