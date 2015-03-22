@@ -431,6 +431,27 @@ function.
       (expect fetched-bar :to-equal 1001))))
 ```
 
+### Spies: `:and-throw-error`
+
+With the keyword argument `:and-throw-error`, all calls to the spy
+will `signal` the specified value as an error.
+
+```Lisp
+(describe "A spy, when configured to throw an error"
+  (let (bar set-bar get-bar fetched-bar)
+    (before-each
+      (fset 'set-bar (lambda (val)
+                       (setq bar val)))
+      (fset 'get-bar (lambda ()
+                       bar))
+
+      (spy-on 'get-bar :and-throw-error 'error))
+
+    (it "throws the error"
+      (expect (lambda () (get-bar))
+              :to-throw 'error))))
+```
+
 
 ## Test Runners
 

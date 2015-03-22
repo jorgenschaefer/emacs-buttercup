@@ -419,3 +419,12 @@
     (expect (test-function 2 3)
             :to-equal
             1001)))
+
+(describe "The :and-throw-error keyword functionality"
+  (before-each
+    (spy-on 'test-function :and-throw-error 'error))
+
+  (it "throws an error when called"
+    (expect (lambda () (test-function 1 2))
+            :to-throw
+            'error "Stubbed error")))
