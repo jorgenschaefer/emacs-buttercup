@@ -367,7 +367,39 @@ call the original function instead of returning `nil`.
       (expect 'get-bar :to-have-been-called))
 
     (it "should not affect other functions"
-      (expect bar :to-equal 123))))
+      (expect bar :to-equal 123))
+
+    (it "when called returns the requested value"
+      (expect fetched-bar :to-equal 123))))
+```
+
+### Spies: `:and-return-value`
+
+The keyword argument `:and-return-value` specifies the value the
+spied-on function should return.
+
+```Lisp
+(describe "A spy, when configured to fake a return value"
+  (let (bar set-bar get-bar fetched-bar)
+    (before-each
+      (fset 'set-bar (lambda (val)
+                       (setq bar val)))
+      (fset 'get-bar (lambda ()
+                       bar))
+
+      (spy-on 'get-bar :and-return-value 745)
+
+      (set-bar 123)
+      (setq fetched-bar (get-bar)))
+
+    (it "tracks that the spy was called"
+      (expect 'get-bar :to-have-been-called))
+
+    (it "should not affect other functions"
+      (expect bar :to-equal 123))
+
+    (it "when called returns the requested value"
+      (expect fetched-bar :to-equal 745))))
 ```
 
 ## Test Runners

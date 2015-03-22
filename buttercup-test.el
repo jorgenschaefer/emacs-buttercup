@@ -391,3 +391,17 @@
     (expect (test-function 2 3)
             :to-equal
             5)))
+
+(describe "The :and-return-value keyword functionality"
+  (before-each
+    (spy-on 'test-function :and-return-value 23))
+
+  (it "tracks calls to the function"
+    (test-function 42 23)
+
+    (expect 'test-function :to-have-been-called))
+
+  (it "returns the specified value"
+    (expect (test-function 2 3)
+            :to-equal
+            23)))
