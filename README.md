@@ -402,6 +402,36 @@ spied-on function should return.
       (expect fetched-bar :to-equal 745))))
 ```
 
+### Spies: `:and-call-fake`
+
+The keyword argument `:and-call-fake` delegates calls to a supplied
+function.
+
+```Lisp
+(describe "A spy, when configured with an alternate implementation"
+  (let (bar set-bar get-bar fetched-bar)
+    (before-each
+      (fset 'set-bar (lambda (val)
+                       (setq bar val)))
+      (fset 'get-bar (lambda ()
+                       bar))
+
+      (spy-on 'get-bar :and-call-fake (lambda () 1001))
+
+      (set-bar 123)
+      (setq fetched-bar (get-bar)))
+
+    (it "tracks that the spy was called"
+      (expect 'get-bar :to-have-been-called))
+
+    (it "should not affect other functions"
+      (expect bar :to-equal 123))
+
+    (it "when called returns the requested value"
+      (expect fetched-bar :to-equal 1001))))
+```
+
+
 ## Test Runners
 
 Evaluating `describe` forms just stores the suites. You need to use a

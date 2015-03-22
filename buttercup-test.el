@@ -405,3 +405,17 @@
     (expect (test-function 2 3)
             :to-equal
             23)))
+
+(describe "The :and-call-fake keyword functionality"
+  (before-each
+    (spy-on 'test-function :and-call-fake (lambda (a b) 1001)))
+
+  (it "tracks calls to the function"
+    (test-function 42 23)
+
+    (expect 'test-function :to-have-been-called))
+
+  (it "returns the specified value"
+    (expect (test-function 2 3)
+            :to-equal
+            1001)))
