@@ -489,37 +489,6 @@ KEYWORD can have one of the following values:
   "Return the context of the first call to SPY."
   (car (spy-calls-all spy)))
 
-;; (let* ((buttercup--descriptions (cons description
-;;                                       buttercup--descriptions))
-;;        (debugger (lambda (&rest args)
-;;                    (let ((backtrace (buttercup--backtrace)))
-;;                      ;; If we do not do this, Emacs will not this
-;;                      ;; handler on subsequent calls. Thanks to ert
-;;                      ;; for this.
-;;                      (cl-incf num-nonmacro-input-events)
-;;                      (signal 'buttercup-error (cons args backtrace)))))
-;;        (debug-on-error t)
-;;        (debug-ignored-errors '(buttercup-failed buttercup-error)))
-;;   (buttercup-report 'enter nil buttercup--descriptions)
-;;   (condition-case sig
-;;       (progn
-;;         (funcall body-function)
-;;         (buttercup-report 'success nil buttercup--descriptions))
-;;     (buttercup-failed
-;;      (buttercup-report 'failure (cdr sig) buttercup--descriptions))
-;;     (buttercup-error
-;;      (buttercup-report 'error (cdr sig) buttercup--descriptions))))
-
-;; (defun buttercup--backtrace ()
-;;   (let* ((n 5)
-;;          (frame (backtrace-frame n))
-;;          (frame-list nil))
-;;     (while frame
-;;       (push frame frame-list)
-;;       (setq n (1+ n)
-;;             frame (backtrace-frame n)))
-;;     frame-list))
-
 ;;;;;;;;;;;;;;;;
 ;;; Test Runners
 
