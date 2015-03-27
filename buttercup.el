@@ -373,8 +373,8 @@ A disabled spec is not run."
 ;;;;;;;;;
 ;;; Spies
 
-(defvar buttercup--spy-calls (make-hash-table :test 'eq
-                                              :weakness 'key)
+(defvar buttercup--spy-contexts (make-hash-table :test 'eq
+                                                 :weakness 'key)
   "A mapping of currently-defined spies to their contexts.")
 
 (cl-defstruct spy-context
@@ -436,7 +436,7 @@ KEYWORD can have one of the following values:
     (setq this-spy-function
           (lambda (&rest args)
             (let ((return-value (apply fake-function args)))
-              (buttercup--spy-add-call
+              (buttercup--spy-calls-add
                this-spy-function
                (make-spy-context :args args
                                  :return-value return-value
@@ -451,47 +451,49 @@ KEYWORD can have one of the following values:
           (append buttercup--cleanup-forms
                   (list function)))))
 
-(defun buttercup--spy-add-call (spy context)
-  "Add CONTEXT to the recorded calls to SPY."
-  (puthash spy
-           (append (buttercup--spy-calls spy)
-                   (list context))
-           buttercup--spy-calls))
-
-(defun buttercup--spy-calls (spy)
+(defun spy-calls-all (spy)
   "Return the contexts of calls to SPY."
-  (gethash spy buttercup--spy-calls))
+  (gethash (symbol-function spy)
+           buttercup--spy-contexts))
+
+(defun buttercup--spy-calls-add (spy-function context)
+  "Add CONTEXT to the recorded calls to SPY."
+  (puthash spy-function
+           (append (gethash spy-function
+                            buttercup--spy-contexts)
+                   (list context))
+           buttercup--spy-contexts))
+
+(defun spy-calls-reset (spy)
+  "Reset SPY, removing all recorded calls."
+  (puthash (symbol-function spy)
+           nil
+           buttercup--spy-contexts))
 
 (buttercup-define-matcher :to-have-been-called (spy)
-  (let ((spy (if (symbolp spy)
-                 (symbol-function spy)
-               spy)))
-    (if (buttercup--spy-calls spy)
-        t
-      nil)))
+  (if (spy-calls-all spy)
+      t
+    nil))
 
 (buttercup-define-matcher :to-have-been-called-with (spy &rest args)
-  (let* ((spy (if (symbolp spy)
-                  (symbol-function spy)
-                spy))
-         (calls (mapcar 'spy-context-args (buttercup--spy-calls spy))))
+  (let* ((calls (mapcar 'spy-context-args (spy-calls-all spy))))
     (if (member args calls)
         t
       nil)))
 
 (defun spy-calls-any (spy)
   "Return t iff SPY has been called at all, nil otherwise."
-  (if (buttercup--spy-calls (symbol-function spy))
+  (if (spy-calls-all spy)
       t
     nil))
 
 (defun spy-calls-count (spy)
   "Return the number of times SPY has been called so far."
-  (length (buttercup--spy-calls (symbol-function spy))))
+  (length (spy-calls-all spy)))
 
 (defun spy-calls-args-for (spy index)
   "Return the context of the INDEXth call to SPY."
-  (let ((context (elt (buttercup--spy-calls (symbol-function spy))
+  (let ((context (elt (spy-calls-all spy)
                       index)))
     (if context
         (spy-context-args context)
@@ -499,25 +501,15 @@ KEYWORD can have one of the following values:
 
 (defun spy-calls-all-args (spy)
   "Return the arguments to all calls to SPY."
-  (mapcar 'spy-context-args (buttercup--spy-calls (symbol-function spy))))
-
-(defun spy-calls-all (spy)
-  "Return the contexts of all calls to SPY."
-  (buttercup--spy-calls (symbol-function spy)))
+  (mapcar 'spy-context-args (spy-calls-all spy)))
 
 (defun spy-calls-most-recent (spy)
   "Return the context of the most recent call to SPY."
-  (car (last (buttercup--spy-calls (symbol-function spy)))))
+  (car (last (spy-calls-all spy))))
 
 (defun spy-calls-first (spy)
   "Return the context of the first call to SPY."
-  (car (buttercup--spy-calls (symbol-function spy))))
-
-(defun spy-calls-reset (spy)
-  "Reset SPY, removing all recorded calls."
-  (puthash (symbol-function spy)
-           nil
-           buttercup--spy-calls))
+  (car (spy-calls-all spy)))
 
 ;; (let* ((buttercup--descriptions (cons description
 ;;                                       buttercup--descriptions))
