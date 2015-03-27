@@ -432,9 +432,4 @@
       (it "throws an error when called"
         (expect (lambda () (test-function 1 2))
                 :to-throw
-                'error "Stubbed error")))
-
-
-
-    )
-  )
+                'error "Stubbed error")))))

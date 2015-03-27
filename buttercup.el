@@ -374,39 +374,46 @@ A disabled spec is not run."
   current-buffer)
 
 (defun spy-on (symbol &optional keyword arg)
-  (let ((old-value (symbol-function symbol))
-        (new-value nil))
-    (cond
-     ((eq keyword :and-call-through)
-      (setq new-value (lambda (&rest args)
-                        (let ((return-value (apply old-value args)))
-                          (buttercup--spy-add-call new-value
-                                                   args
-                                                   return-value)
-                          return-value))))
-     ((eq keyword :and-return-value)
-      (setq new-value (lambda (&rest args)
-                        (buttercup--spy-add-call new-value
-                                                 args
-                                                 arg)
-                        arg)))
-     ((eq keyword :and-call-fake)
-      (setq new-value (lambda (&rest args)
-                        (let ((return-value (apply arg args)))
-                          (buttercup--spy-add-call new-value
-                                                   args
-                                                   return-value)
-                          return-value))))
-     ((eq keyword :and-throw-error)
-      (setq new-value (lambda (&rest args)
-                        (buttercup--spy-add-call new-value args nil)
-                        (signal arg "Stubbed error"))))
-     ((not keyword)
-      (setq new-value (lambda (&rest args)
-                        (buttercup--spy-add-call new-value args nil)
-                        nil))))
-    (fset symbol new-value)
-    (buttercup--add-cleanup (lambda () (fset symbol old-value)))))
+  (cond
+   ((eq keyword :and-call-through)
+    (let ((orig (symbol-function symbol)))
+      (buttercup--spy-on-and-call-fake symbol
+                                       (lambda (&rest args)
+                                         (apply orig args)))))
+   ((eq keyword :and-return-value)
+    (buttercup--spy-on-and-call-fake symbol
+                                     (lambda (&rest args)
+                                       arg)))
+   ((eq keyword :and-call-fake)
+    (buttercup--spy-on-and-call-fake symbol
+                                     arg))
+   ((eq keyword :and-throw-error)
+    (buttercup--spy-on-and-call-fake symbol
+                                     (lambda (&rest args)
+                                       (signal arg "Stubbed error"))))
+   (t
+    (buttercup--spy-on-and-call-fake symbol
+                                     (lambda (&rest args)
+                                       nil)))))
+
+(defun buttercup--spy-on-and-call-fake (spy fake-function)
+  (let ((orig-function (symbol-function spy)))
+    (fset spy (buttercup--make-spy fake-function))
+    (buttercup--add-cleanup (lambda ()
+                              (fset spy orig-function)))))
+
+(defun buttercup--make-spy (fake-function)
+  (let (this-spy-function)
+    (setq this-spy-function
+          (lambda (&rest args)
+            (let ((return-value (apply fake-function args)))
+              (buttercup--spy-add-call
+               this-spy-function
+               (make-spy-context :args args
+                                 :return-value return-value
+                                 :current-buffer (current-buffer)))
+              return-value)))
+    this-spy-function))
 
 (defun buttercup--add-cleanup (function)
   (if buttercup--current-suite
@@ -415,12 +422,10 @@ A disabled spec is not run."
           (append buttercup--cleanup-forms
                   (list function)))))
 
-(defun buttercup--spy-add-call (spy args return-value)
+(defun buttercup--spy-add-call (spy context)
   (puthash spy
            (append (buttercup--spy-calls spy)
-                   (list (make-spy-context :current-buffer (current-buffer)
-                                           :args args
-                                           :return-value return-value)))
+                   (list context))
            buttercup--spy-calls))
 
 (defun buttercup--spy-calls (spy)
