@@ -1,23 +1,3 @@
-# Version 1.0: Jasmine’s introduction.html
-
-I will declare buttercup ready to be used once it implements most of
-the stuff in
-[Jasmine’s introduction](https://jasmine.github.io/edge/introduction.html).
-At this time, this is missing:
-
-## Test Runners
-
-This would also be a great time to write useful test runners. For the
-first release, there should be `buttercup-run-discover`,
-`buttercup-run-markdown`, and `buttercup-run-at-point`.
-
-## Suite Execution
-
-All of those can use the same `buttercup-run` function, which should
-run a list of suites and call a reporter with results. All execution
-should happen with `debug-on-error` set. We’ll deal with backtraces
-later.
-
 # Version 1.1: The Missing Features
 
 ## Pending Specs

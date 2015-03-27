@@ -28,35 +28,7 @@
 ;;; Code:
 
 (require 'cl)
-
-;;;;;;;;;;;;;;;;;
-;;; Compatibility
-
-;; Introduced in 24.3
-(when (not (fboundp 'cl-defstruct))
-  (defalias 'cl-defstruct 'defstruct))
-
-;; Introduced in 24.4
-(when (not (fboundp 'define-error))
-  (defun define-error (name message &optional parent)
-    "Define NAME as a new error signal.
-MESSAGE is a string that will be output to the echo area if such an error
-is signaled without being caught by a `condition-case'.
-PARENT is either a signal or a list of signals from which it inherits.
-Defaults to `error'."
-    (unless parent (setq parent 'error))
-    (let ((conditions
-           (if (consp parent)
-               (apply #'append
-                      (mapcar (lambda (parent)
-                                (cons parent
-                                      (or (get parent 'error-conditions)
-                                          (error "Unknown signal `%s'" parent))))
-                              parent))
-             (cons parent (get parent 'error-conditions)))))
-      (put name 'error-conditions
-           (delete-dups (copy-sequence (cons name conditions))))
-      (when message (put name 'error-message message)))))
+(require 'buttercup-compat)
 
 ;;;;;;;;;;
 ;;; expect
@@ -551,60 +523,27 @@ KEYWORD can have one of the following values:
 ;;;;;;;;;;;;;;;;
 ;;; Test Runners
 
-(defun buttercup-run ()
-  (if buttercup-suites
-      (mapc #'buttercup-run-suite buttercup-suites)
-    (error "No suites defined")))
-
-(defvar buttercup--before-each nil
-  "A list of functions to call before each spec.
-
-Do not change the global value.")
-
-(defvar buttercup--after-each nil
-  "A list of functions to call after each spec.
-
-Do not change the global value.")
-
-(defun buttercup-run-suite (suite &optional level)
-  (let* ((level (or level 0))
-         (indent (make-string (* 2 level) ?\s))
-         (buttercup--before-each (append buttercup--before-each
-                                         (buttercup-suite-before-each suite)))
-         (buttercup--after-each (append (buttercup-suite-after-each suite)
-                                        buttercup--after-each))
-         (debug-on-error t))
-    (message "%s%s" indent (buttercup-suite-description suite))
-    (dolist (f (buttercup-suite-before-all suite))
-      (funcall f))
-    (dolist (sub (buttercup-suite-children suite))
-      (cond
-       ((buttercup-suite-p sub)
-        (buttercup-run-suite sub (1+ level)))
-       ((buttercup-spec-p sub)
-        (buttercup-run-spec sub (1+ level)))))
-    (dolist (f (buttercup-suite-after-all suite))
-      (funcall f))
-    (message "")))
-
-(defun buttercup-run-spec (spec level)
-  (message "%s%s"
-           (make-string (* 2 level) ?\s)
-           (buttercup-spec-description spec))
-  (buttercup--with-cleanup
-   (dolist (f buttercup--before-each)
-     (funcall f))
-   (funcall (buttercup-spec-function spec))
-   (dolist (f buttercup--after-each)
-     (funcall f))))
-
 (defun buttercup-run-at-point ()
+  "Run the buttercup suite at point."
+  (interactive)
   (let ((buttercup-suites nil)
         (lexical-binding t))
     (eval-defun nil)
-    (buttercup-run)))
+    (buttercup-run)
+    (message "Suite executed successfully")))
 
-(defun buttercup-markdown-runner ()
+(defun buttercup-run-discover ()
+  "Discover and load test files, then run all defined suites.
+
+Takes directories as command line arguments, defaulting to the
+current directory."
+  (dolist (dir (or command-line-args-left '(".")))
+    (dolist (file (directory-files-recursively dir
+                                               "\\'test-\\|-test.el\\'"))
+      (load file nil t)))
+  (buttercup-run))
+
+(defun buttercup-run-markdown ()
   (let ((lisp-buffer (generate-new-buffer "elisp")))
     (dolist (file command-line-args-left)
       (with-current-buffer (find-file-noselect file)
@@ -619,6 +558,53 @@ Do not change the global value.")
       (eval-region (point-min)
                    (point-max)))
     (buttercup-run)))
+
+(defun buttercup-run ()
+  (if buttercup-suites
+      (mapc #'buttercup--run-suite buttercup-suites)
+    (error "No suites defined")))
+
+(defvar buttercup--before-each nil
+  "A list of functions to call before each spec.
+
+Do not change the global value.")
+
+(defvar buttercup--after-each nil
+  "A list of functions to call after each spec.
+
+Do not change the global value.")
+
+(defun buttercup--run-suite (suite &optional level)
+  (let* ((level (or level 0))
+         (indent (make-string (* 2 level) ?\s))
+         (buttercup--before-each (append buttercup--before-each
+                                         (buttercup-suite-before-each suite)))
+         (buttercup--after-each (append (buttercup-suite-after-each suite)
+                                        buttercup--after-each))
+         (debug-on-error t))
+    (message "%s%s" indent (buttercup-suite-description suite))
+    (dolist (f (buttercup-suite-before-all suite))
+      (funcall f))
+    (dolist (sub (buttercup-suite-children suite))
+      (cond
+       ((buttercup-suite-p sub)
+        (buttercup--run-suite sub (1+ level)))
+       ((buttercup-spec-p sub)
+        (buttercup--run-spec sub (1+ level)))))
+    (dolist (f (buttercup-suite-after-all suite))
+      (funcall f))
+    (message "")))
+
+(defun buttercup--run-spec (spec level)
+  (message "%s%s"
+           (make-string (* 2 level) ?\s)
+           (buttercup-spec-description spec))
+  (buttercup--with-cleanup
+   (dolist (f buttercup--before-each)
+     (funcall f))
+   (funcall (buttercup-spec-function spec))
+   (dolist (f buttercup--after-each)
+     (funcall f))))
 
 (provide 'buttercup)
 ;;; buttercup.el ends here

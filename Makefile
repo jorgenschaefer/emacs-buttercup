@@ -5,5 +5,5 @@ EMACS := emacs
 all: test
 
 test:
-	$(EMACS) -batch -L . -l buttercup.el -f buttercup-markdown-runner README.md
-	$(EMACS) -batch -L . -l buttercup-test.el -f buttercup-run
+	$(EMACS) -batch -L . -l buttercup.el -f buttercup-run-markdown README.md
+	$(EMACS) -batch -L . -l buttercup.el -f buttercup-run-discover
