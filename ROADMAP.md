@@ -18,36 +18,6 @@ run a list of suites and call a reporter with results. All execution
 should happen with `debug-on-error` set. We’ll deal with backtraces
 later.
 
-## Spies
-
-It’s only sensible for Emacs Lisp to spy on functions, so that’s what
-we should support. The best way of tracking the calls for a function
-is likely a key-weak hash table of function objects to a call list.
-
-Of the following, `:and-call-fake` is probably going to be the
-primitive version. The basic stub would record any arguments in the
-hash table.
-
-Example code:
-
-```Lisp
-(spy-on 'function-name)
-(spy-on 'function-name :and-call-through)
-(spy-on 'function-name :and-return-value 23)
-(spy-on 'function-name :and-call-fake function)
-(spy-on 'function-name :and-throw-error 'arith-error)
-
-(expect 'spied-function :to-have-been-called)
-(expect 'spied-function :to-have-been-called-with 1 2 3)
-(spy-calls-any 'spied-function)
-(spy-calls-count 'spied-function)
-(spy-calls-args-for 'spied-function index)
-(spy-calls-all-args 'spied-function)
-(spy-calls-most-recent 'spied-function)
-(spy-calls-first 'spied-function)
-(spy-calls-reset 'spied-function)
-```
-
 # Version 1.1: The Missing Features
 
 ## Pending Specs
