@@ -444,12 +444,18 @@ KEYWORD can have one of the following values:
               return-value)))
     this-spy-function))
 
+(defvar buttercup--cleanup-functions nil)
+
+(defmacro buttercup--with-cleanup (&rest body)
+  `(let ((buttercup--cleanup-functions nil))
+     (unwind-protect (progn ,@body)
+       (dolist (fun buttercup--cleanup-functions)
+         (ignore-errors
+           (funcall fun))))))
+
 (defun buttercup--add-cleanup (function)
-  (if buttercup--current-suite
-      (buttercup-after-each function)
-    (setq buttercup--cleanup-forms
-          (append buttercup--cleanup-forms
-                  (list function)))))
+  (setq buttercup--cleanup-functions
+        (cons function buttercup--cleanup-functions)))
 
 (defun spy-calls-all (spy)
   "Return the contexts of calls to SPY."
@@ -581,21 +587,16 @@ Do not change the global value.")
       (funcall f))
     (message "")))
 
-(defvar buttercup--cleanup-forms nil
-  "")
-
 (defun buttercup-run-spec (spec level)
-  (let ((buttercup--cleanup-forms nil))
-    (message "%s%s"
-             (make-string (* 2 level) ?\s)
-             (buttercup-spec-description spec))
-    (dolist (f buttercup--before-each)
-      (funcall f))
-    (funcall (buttercup-spec-function spec))
-    (dolist (f buttercup--cleanup-forms)
-      (funcall f))
-    (dolist (f buttercup--after-each)
-      (funcall f))))
+  (message "%s%s"
+           (make-string (* 2 level) ?\s)
+           (buttercup-spec-description spec))
+  (buttercup--with-cleanup
+   (dolist (f buttercup--before-each)
+     (funcall f))
+   (funcall (buttercup-spec-function spec))
+   (dolist (f buttercup--after-each)
+     (funcall f))))
 
 (defun buttercup-run-at-point ()
   (let ((buttercup-suites nil)
