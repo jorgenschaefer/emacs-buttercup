@@ -295,37 +295,45 @@ form.")
 ;;; Setup and Teardown
 
 (defmacro before-each (&rest body)
+  "Run BODY before each spec in the current suite."
   (declare (indent 0))
   `(buttercup-before-each (lambda () ,@body)))
 
 (defun buttercup-before-each (function)
+  "The function to handle a `before-each' form."
   (setf (buttercup-suite-before-each buttercup--current-suite)
         (append (buttercup-suite-before-each buttercup--current-suite)
                 (list function))))
 
 (defmacro after-each (&rest body)
+  "Run BODY after each spec in the current suite."
   (declare (indent 0))
   `(buttercup-after-each (lambda () ,@body)))
 
 (defun buttercup-after-each (function)
+  "The function to handle an `after-each' form."
   (setf (buttercup-suite-after-each buttercup--current-suite)
         (append (buttercup-suite-after-each buttercup--current-suite)
                 (list function))))
 
 (defmacro before-all (&rest body)
+  "Run BODY before every spec in the current suite."
   (declare (indent 0))
   `(buttercup-before-all (lambda () ,@body)))
 
 (defun buttercup-before-all (function)
+  "The function to handle a `before-all' form."
   (setf (buttercup-suite-before-all buttercup--current-suite)
         (append (buttercup-suite-before-all buttercup--current-suite)
                 (list function))))
 
 (defmacro after-all (&rest body)
+  "Run BODY after every spec in the current suite."
   (declare (indent 0))
   `(buttercup-after-all (lambda () ,@body)))
 
 (defun buttercup-after-all (function)
+  "The function to handle an `after-all' form."
   (setf (buttercup-suite-after-all buttercup--current-suite)
         (append (buttercup-suite-after-all buttercup--current-suite)
                 (list function))))
@@ -366,7 +374,8 @@ A disabled spec is not run."
 ;;; Spies
 
 (defvar buttercup--spy-calls (make-hash-table :test 'eq
-                                              :weakness 'key))
+                                              :weakness 'key)
+  "A mapping of currently-defined spies to their contexts.")
 
 (cl-defstruct spy-context
   args
@@ -374,6 +383,24 @@ A disabled spec is not run."
   current-buffer)
 
 (defun spy-on (symbol &optional keyword arg)
+  "Create a spy (mock) for the function SYMBOL.
+
+KEYWORD can have one of the following values:
+
+  :and-call-through -- Track calls, but call the original
+      function.
+
+  :and-return-value -- Track calls, but return ARG instead of
+      calling the original function.
+
+  :and-call-fake -- Track calls, but call ARG instead of the
+      original function.
+
+  :and-throw-error -- Signal ARG as an error instead of calling
+      the original function.
+
+  nil -- Track calls, but simply return nil instead of calling
+      the original function."
   (cond
    ((eq keyword :and-call-through)
     (let ((orig (symbol-function symbol)))
@@ -397,12 +424,14 @@ A disabled spec is not run."
                                        nil)))))
 
 (defun buttercup--spy-on-and-call-fake (spy fake-function)
+  "Replace the function in symbol SPY with a spy that calls FAKE-FUNCTION."
   (let ((orig-function (symbol-function spy)))
     (fset spy (buttercup--make-spy fake-function))
     (buttercup--add-cleanup (lambda ()
                               (fset spy orig-function)))))
 
 (defun buttercup--make-spy (fake-function)
+  "Create a new spy function which tracks calls to itself."
   (let (this-spy-function)
     (setq this-spy-function
           (lambda (&rest args)
@@ -423,12 +452,14 @@ A disabled spec is not run."
                   (list function)))))
 
 (defun buttercup--spy-add-call (spy context)
+  "Add CONTEXT to the recorded calls to SPY."
   (puthash spy
            (append (buttercup--spy-calls spy)
                    (list context))
            buttercup--spy-calls))
 
 (defun buttercup--spy-calls (spy)
+  "Return the contexts of calls to SPY."
   (gethash spy buttercup--spy-calls))
 
 (buttercup-define-matcher :to-have-been-called (spy)
@@ -449,14 +480,17 @@ A disabled spec is not run."
       nil)))
 
 (defun spy-calls-any (spy)
+  "Return t iff SPY has been called at all, nil otherwise."
   (if (buttercup--spy-calls (symbol-function spy))
       t
     nil))
 
 (defun spy-calls-count (spy)
+  "Return the number of times SPY has been called so far."
   (length (buttercup--spy-calls (symbol-function spy))))
 
 (defun spy-calls-args-for (spy index)
+  "Return the context of the INDEXth call to SPY."
   (let ((context (elt (buttercup--spy-calls (symbol-function spy))
                       index)))
     (if context
@@ -464,18 +498,23 @@ A disabled spec is not run."
       nil)))
 
 (defun spy-calls-all-args (spy)
+  "Return the arguments to all calls to SPY."
   (mapcar 'spy-context-args (buttercup--spy-calls (symbol-function spy))))
 
 (defun spy-calls-all (spy)
+  "Return the contexts of all calls to SPY."
   (buttercup--spy-calls (symbol-function spy)))
 
 (defun spy-calls-most-recent (spy)
+  "Return the context of the most recent call to SPY."
   (car (last (buttercup--spy-calls (symbol-function spy)))))
 
 (defun spy-calls-first (spy)
+  "Return the context of the first call to SPY."
   (car (buttercup--spy-calls (symbol-function spy))))
 
 (defun spy-calls-reset (spy)
+  "Reset SPY, removing all recorded calls."
   (puthash (symbol-function spy)
            nil
            buttercup--spy-calls))
