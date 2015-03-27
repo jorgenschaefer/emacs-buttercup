@@ -9,11 +9,6 @@ be implemented still:
 
 > And if you call the function `pending` anywhere in the spec body, no matter the expectations, the spec will be marked pending. A string passed to pending will be treated as a reason and displayed when the suite finishes.
 
-## Return of the Backtrace
-
-Suite execution should catch errors and include a backtrace in the
-result.
-
 ## Reporter
 
 A reporter is a function that is called with various events during the
@@ -24,11 +19,10 @@ for a list of useful events.
 By default, I’d like to have a `buttercup-reporter-batch` and
 `buttercup-reporter-interactive`.
 
-## Disabling Suites and Pending Specs
+## Return of the Backtrace
 
-The `xdescribe`/`xit` macros and associated functions. A possible
-initial implementation would be just noops. We’ll deal with them fully
-in 1.2.
+Suite execution should catch errors and include a backtrace in the
+result.
 
 # Version 1.2: Nice to Have
 
