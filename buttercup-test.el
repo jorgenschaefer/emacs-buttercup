@@ -328,103 +328,113 @@
 ;;;;;;;;;
 ;;; Spies
 
-(defun test-function (a b)
-  (+ a b))
+(describe "The Spy "
+  (let (test-function)
+    (before-each
+      (fset 'test-function (lambda (a b)
+                             (+ a b))))
 
-(describe "The `spy-on' function"
-  (it "replaces a symbol's function slot"
-    (spy-on 'test-function)
-    (expect (test-function 1 2) :to-be nil))
+    (describe "`spy-on' function"
+      (it "replaces a symbol's function slot"
+        (spy-on 'test-function)
+        (expect (test-function 1 2) :to-be nil))
 
-  (it "restores the old value after a spec run"
-    (expect (test-function 1 2) :to-equal 3)))
+      (it "restores the old value after a spec run"
+        (expect (test-function 1 2) :to-equal 3)))
 
-(describe "The :to-have-been-called matcher"
-  (before-each
-    (spy-on 'test-function))
+    (describe ":to-have-been-called matcher"
+      (before-each
+        (spy-on 'test-function))
 
-  (it "returns false if the spy was not called"
-    (expect (buttercup--apply-matcher :to-have-been-called '(test-function))
-            :to-be
-            nil))
+      (it "returns false if the spy was not called"
+        (expect (buttercup--apply-matcher :to-have-been-called
+                                          '(test-function))
+                :to-be
+                nil))
 
-  (it "returns true if the spy was called at all"
-    (test-function 1 2 3)
-    (expect (buttercup--apply-matcher :to-have-been-called '(test-function))
-            :to-be
-            t)))
+      (it "returns true if the spy was called at all"
+        (test-function 1 2 3)
+        (expect (buttercup--apply-matcher :to-have-been-called
+                                          '(test-function))
+                :to-be
+                t)))
 
-(describe "The :to-have-been-called-with matcher"
-  (before-each
-    (spy-on 'test-function))
+    (describe ":to-have-been-called-with matcher"
+      (before-each
+        (spy-on 'test-function))
 
-  (it "returns false if the spy was not called at all"
-    (expect (buttercup--apply-matcher
-             :to-have-been-called-with '(test-function 1 2 3))
-            :to-be
-            nil))
+      (it "returns false if the spy was not called at all"
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-with '(test-function 1 2 3))
+                :to-be
+                nil))
 
-  (it "returns false if the spy was called with different arguments"
-    (test-function 3 2 1)
-    (expect (buttercup--apply-matcher
-             :to-have-been-called-with '(test-function 1 2 3))
-            :to-be
-            nil))
+      (it "returns false if the spy was called with different arguments"
+        (test-function 3 2 1)
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-with '(test-function 1 2 3))
+                :to-be
+                nil))
 
-  (it "returns true if the spy was called with those arguments"
-    (test-function 1 2 3)
-    (expect (buttercup--apply-matcher
-             :to-have-been-called-with '(test-function 1 2 3))
-            :to-be
-            t)))
+      (it "returns true if the spy was called with those arguments"
+        (test-function 1 2 3)
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-with '(test-function 1 2 3))
+                :to-be
+                t)))
 
-(describe "The :and-call-through keyword functionality"
-  (before-each
-    (spy-on 'test-function :and-call-through))
+    (describe ":and-call-through keyword functionality"
+      (before-each
+        (spy-on 'test-function :and-call-through))
 
-  (it "tracks calls to the function"
-    (test-function 42 23)
+      (it "tracks calls to the function"
+        (test-function 42 23)
 
-    (expect 'test-function :to-have-been-called))
+        (expect 'test-function :to-have-been-called))
 
-  (it "passes the arguments to the original function"
-    (expect (test-function 2 3)
-            :to-equal
-            5)))
+      (it "passes the arguments to the original function"
+        (expect (test-function 2 3)
+                :to-equal
+                5)))
 
-(describe "The :and-return-value keyword functionality"
-  (before-each
-    (spy-on 'test-function :and-return-value 23))
+    (describe ":and-return-value keyword functionality"
+      (before-each
+        (spy-on 'test-function :and-return-value 23))
 
-  (it "tracks calls to the function"
-    (test-function 42 23)
+      (it "tracks calls to the function"
+        (test-function 42 23)
 
-    (expect 'test-function :to-have-been-called))
+        (expect 'test-function :to-have-been-called))
 
-  (it "returns the specified value"
-    (expect (test-function 2 3)
-            :to-equal
-            23)))
+      (it "returns the specified value"
+        (expect (test-function 2 3)
+                :to-equal
+                23)))
 
-(describe "The :and-call-fake keyword functionality"
-  (before-each
-    (spy-on 'test-function :and-call-fake (lambda (a b) 1001)))
+    (describe ":and-call-fake keyword functionality"
+      (before-each
+        (spy-on 'test-function :and-call-fake (lambda (a b) 1001)))
 
-  (it "tracks calls to the function"
-    (test-function 42 23)
+      (it "tracks calls to the function"
+        (test-function 42 23)
 
-    (expect 'test-function :to-have-been-called))
+        (expect 'test-function :to-have-been-called))
 
-  (it "returns the specified value"
-    (expect (test-function 2 3)
-            :to-equal
-            1001)))
+      (it "returns the specified value"
+        (expect (test-function 2 3)
+                :to-equal
+                1001)))
 
-(describe "The :and-throw-error keyword functionality"
-  (before-each
-    (spy-on 'test-function :and-throw-error 'error))
+    (describe ":and-throw-error keyword functionality"
+      (before-each
+        (spy-on 'test-function :and-throw-error 'error))
 
-  (it "throws an error when called"
-    (expect (lambda () (test-function 1 2))
-            :to-throw
-            'error "Stubbed error")))
+      (it "throws an error when called"
+        (expect (lambda () (test-function 1 2))
+                :to-throw
+                'error "Stubbed error")))
+
+
+
+    )
+  )

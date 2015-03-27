@@ -452,6 +452,119 @@ will `signal` the specified value as an error.
               :to-throw 'error))))
 ```
 
+### Other tracking properties
+
+Every call to a spy is tracked and exposed using the `spy-calls`
+accessor.
+
+`spy-calls-any` returns `nil` if the spy has not been called at all,
+and then `t` once at least one call happens. `spy-calls-count` returns
+the number of times the spy was called. `spy-calls-args-for` returns
+the arguments passed to a given call (by index). `spy-calls-all-args`
+returns the arguments to all calls. `spy-calls-all` returns the
+current buffer and arguments passed to all calls.
+`spy-calls-most-recent` returns the current buffer and arguments for
+the most recent call. `spy-calls-first` returns the current buffer and
+arguments for the first call.
+
+Finally, `spy-calls-reset` clears all tracking for a spy.
+
+```Lisp
+(describe "A spy"
+  (let (set-foo foo)
+    (before-each
+      (fset 'set-foo (lambda (val &rest ignored)
+                       (setq foo val)))
+      (spy-on 'set-foo))
+
+    (it "tracks if it was called at all"
+      (expect (spy-calls-any 'set-foo)
+              :to-equal
+              nil)
+
+      (set-foo 5)
+
+      (expect (spy-calls-any 'set-foo)
+              :to-equal
+              t))
+
+    (it "tracks the number of times it was called"
+      (expect (spy-calls-count 'set-foo)
+              :to-equal
+              0)
+
+      (set-foo 2)
+      (set-foo 3)
+
+      (expect (spy-calls-count 'set-foo)
+              :to-equal
+              2))
+
+    (it "tracks the arguments of each call"
+      (set-foo 123)
+      (set-foo 456 "baz")
+
+      (expect (spy-calls-args-for 'set-foo 0)
+              :to-equal
+              '(123))
+
+      (expect (spy-calls-args-for 'set-foo 1)
+              :to-equal
+              '(456 "baz")))
+
+    (it "tracks the arguments of all calls"
+      (set-foo 123)
+      (set-foo 456 "baz")
+
+      (expect (spy-calls-all-args 'set-foo)
+              :to-equal
+              '((123)
+                (456 "baz"))))
+
+    (it "can provide the context and arguments to all calls"
+      (set-foo 123)
+
+      (expect (spy-calls-all 'set-foo)
+              :to-equal
+              `(,(make-spy-context :current-buffer (current-buffer)
+                                   :args '(123)
+                                   :return-value nil))))
+
+    (it "has a shortcut to the most recent call"
+      (set-foo 123)
+      (set-foo 456 "baz")
+
+      (expect (spy-calls-most-recent 'set-foo)
+              :to-equal
+              (make-spy-context :current-buffer (current-buffer)
+                                :args '(456 "baz")
+                                :return-value nil)))
+
+    (it "has a shortcut to the first call"
+      (set-foo 123)
+      (set-foo 456 "baz")
+
+      (expect (spy-calls-first 'set-foo)
+              :to-equal
+              (make-spy-context :current-buffer (current-buffer)
+                                :args '(123)
+                                :return-value nil)))
+
+    (it "can be reset"
+      (set-foo 123)
+      (set-foo 456 "baz")
+
+      (expect (spy-calls-any 'set-foo)
+              :to-be
+              t)
+
+      (spy-calls-reset 'set-foo)
+
+      (expect (spy-calls-any 'set-foo)
+              :to-be
+              nil))))
+```
+
 
 ## Test Runners
 

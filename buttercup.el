@@ -368,29 +368,42 @@ A disabled spec is not run."
 (defvar buttercup--spy-calls (make-hash-table :test 'eq
                                               :weakness 'key))
 
+(cl-defstruct spy-context
+  args
+  return-value
+  current-buffer)
+
 (defun spy-on (symbol &optional keyword arg)
   (let ((old-value (symbol-function symbol))
         (new-value nil))
     (cond
      ((eq keyword :and-call-through)
       (setq new-value (lambda (&rest args)
-                        (buttercup--spy-add-call new-value args)
-                        (apply old-value args))))
+                        (let ((return-value (apply old-value args)))
+                          (buttercup--spy-add-call new-value
+                                                   args
+                                                   return-value)
+                          return-value))))
      ((eq keyword :and-return-value)
       (setq new-value (lambda (&rest args)
-                        (buttercup--spy-add-call new-value args)
+                        (buttercup--spy-add-call new-value
+                                                 args
+                                                 arg)
                         arg)))
      ((eq keyword :and-call-fake)
       (setq new-value (lambda (&rest args)
-                        (buttercup--spy-add-call new-value args)
-                        (apply arg args))))
+                        (let ((return-value (apply arg args)))
+                          (buttercup--spy-add-call new-value
+                                                   args
+                                                   return-value)
+                          return-value))))
      ((eq keyword :and-throw-error)
       (setq new-value (lambda (&rest args)
-                        (buttercup--spy-add-call new-value args)
+                        (buttercup--spy-add-call new-value args nil)
                         (signal arg "Stubbed error"))))
      ((not keyword)
       (setq new-value (lambda (&rest args)
-                        (buttercup--spy-add-call new-value args)
+                        (buttercup--spy-add-call new-value args nil)
                         nil))))
     (fset symbol new-value)
     (buttercup--add-cleanup (lambda () (fset symbol old-value)))))
@@ -402,10 +415,12 @@ A disabled spec is not run."
           (append buttercup--cleanup-forms
                   (list function)))))
 
-(defun buttercup--spy-add-call (spy args)
+(defun buttercup--spy-add-call (spy args return-value)
   (puthash spy
            (append (buttercup--spy-calls spy)
-                   (list args))
+                   (list (make-spy-context :current-buffer (current-buffer)
+                                           :args args
+                                           :return-value return-value)))
            buttercup--spy-calls))
 
 (defun buttercup--spy-calls (spy)
@@ -423,10 +438,42 @@ A disabled spec is not run."
   (let* ((spy (if (symbolp spy)
                   (symbol-function spy)
                 spy))
-         (calls (buttercup--spy-calls spy)))
+         (calls (mapcar 'spy-context-args (buttercup--spy-calls spy))))
     (if (member args calls)
         t
       nil)))
+
+(defun spy-calls-any (spy)
+  (if (buttercup--spy-calls (symbol-function spy))
+      t
+    nil))
+
+(defun spy-calls-count (spy)
+  (length (buttercup--spy-calls (symbol-function spy))))
+
+(defun spy-calls-args-for (spy index)
+  (let ((context (elt (buttercup--spy-calls (symbol-function spy))
+                      index)))
+    (if context
+        (spy-context-args context)
+      nil)))
+
+(defun spy-calls-all-args (spy)
+  (mapcar 'spy-context-args (buttercup--spy-calls (symbol-function spy))))
+
+(defun spy-calls-all (spy)
+  (buttercup--spy-calls (symbol-function spy)))
+
+(defun spy-calls-most-recent (spy)
+  (car (last (buttercup--spy-calls (symbol-function spy)))))
+
+(defun spy-calls-first (spy)
+  (car (buttercup--spy-calls (symbol-function spy))))
+
+(defun spy-calls-reset (spy)
+  (puthash (symbol-function spy)
+           nil
+           buttercup--spy-calls))
 
 ;; (let* ((buttercup--descriptions (cons description
 ;;                                       buttercup--descriptions))
