@@ -227,7 +227,7 @@ form.")
 
 (defmacro describe (description &rest body)
   "Describe a suite of tests."
-  (declare (indent 1))
+  (declare (indent 1) (debug (&define sexp def-body)))
   `(buttercup-describe ,description (lambda () ,@body)))
 
 (defun buttercup-describe (description body-function)
@@ -251,7 +251,7 @@ form.")
 
 (defmacro it (description &rest body)
   "Define a spec."
-  (declare (indent 1))
+  (declare (indent 1) (debug (&define sexp def-body)))
   `(buttercup-it ,description (lambda () ,@body)))
 
 (defun buttercup-it (description body-function)
@@ -268,7 +268,7 @@ form.")
 
 (defmacro before-each (&rest body)
   "Run BODY before each spec in the current suite."
-  (declare (indent 0))
+  (declare (indent 0) (debug (&define def-body)))
   `(buttercup-before-each (lambda () ,@body)))
 
 (defun buttercup-before-each (function)
@@ -279,7 +279,7 @@ form.")
 
 (defmacro after-each (&rest body)
   "Run BODY after each spec in the current suite."
-  (declare (indent 0))
+  (declare (indent 0) (debug (&define def-body)))
   `(buttercup-after-each (lambda () ,@body)))
 
 (defun buttercup-after-each (function)
@@ -290,7 +290,7 @@ form.")
 
 (defmacro before-all (&rest body)
   "Run BODY before every spec in the current suite."
-  (declare (indent 0))
+  (declare (indent 0) (debug (&define def-body)))
   `(buttercup-before-all (lambda () ,@body)))
 
 (defun buttercup-before-all (function)
@@ -301,7 +301,7 @@ form.")
 
 (defmacro after-all (&rest body)
   "Run BODY after every spec in the current suite."
-  (declare (indent 0))
+  (declare (indent 0) (debug (&define def-body)))
   `(buttercup-after-all (lambda () ,@body)))
 
 (defun buttercup-after-all (function)
