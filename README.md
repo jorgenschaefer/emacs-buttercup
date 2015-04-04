@@ -230,7 +230,7 @@ your specs so that they erroneously pass or fail.
     (after-all
      (setq foo 0))
 
-    (it "sets the iniital value of foo before specs run"
+    (it "sets the initial value of foo before specs run"
       (expect foo :to-equal 1)
       (setq foo (1+ foo)))
 
