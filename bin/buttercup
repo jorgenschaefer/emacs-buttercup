@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if [ -n "$INSIDE_EMACS" ]
+then
+    EMACS_BIN="emacs"
+else
+    EMACS_BIN="${EMACS:-emacs}"
+fi
+
+exec "$EMACS_BIN" -batch "$@" -l buttercup -f buttercup-run-discover
