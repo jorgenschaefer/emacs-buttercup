@@ -523,7 +523,8 @@ current directory."
   (dolist (dir (or command-line-args-left '(".")))
     (dolist (file (directory-files-recursively dir
                                                "\\'test-\\|-test.el\\'"))
-      (load file nil t)))
+      (when (not (string-match "/\\." file))
+        (load file nil t))))
   (buttercup-run))
 
 ;;;###autoload
