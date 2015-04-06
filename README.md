@@ -12,6 +12,72 @@ All code in this file can be run by Buttercup’s built-in markdown test
 runner. Just use `make test` in the project directory to see the
 output.
 
+## Getting Started
+
+You can install buttercup from
+[MELPA Stable](http://stable.melpa.org/). Add the following to your
+`init.el` or `.emacs` file:
+
+```
+(require 'package)
+(add-to-list 'package-archives
+             '("melpa-stable" . "http://stable.melpa.org/packages/") t)
+```
+
+This should allow you to `M-x package-install RET buttercup RET`.
+Afterwards, in an otherwise empty directory, create a file called
+`some-test.el` with the following contents:
+
+```Lisp
+(describe "A suite"
+  (it "contains a spec with an expectation"
+    (expect t :to-be t)))
+```
+
+You can now use buttercup to run this test:
+
+```
+$ emacs -batch -f package-initialize -l buttercup -f buttercup-run-discover
+A suite
+  contains a spec with an expectation
+```
+
+Congratulations, you just ran your first tests!
+
+## Full Project Example
+
+Tests should be run in an environment separate from your interactive
+Emacs. To get such an environment and install packages into it, you
+can use [Cask](https://github.com/cask/cask). For installation
+instructions see there.
+
+In the directory from above, create a new file called `Cask` with the
+following contents:
+
+```
+(source gnu)
+(source melpa-stable)
+
+(development
+ (depends-on "buttercup"))
+```
+
+Now you can tell cask to download and install the depended-on packages
+in the environment of the current directory:
+
+```
+$ cask install
+```
+
+You only need to do this once. Subsequently, you can run buttercup
+tests simply by invoking buttercup using cask:
+
+```
+$ cask exec buttercup
+A suite
+  contains a spec with an expectation
+```
+
 ## Suites: `describe` Your Tests
 
 A test suite begins with a call to the Buttercup macro `describe` with
