@@ -11,6 +11,12 @@ test:
 	$(EMACS) -batch -L . -l buttercup.el -f buttercup-run-markdown README.md
 	./bin/buttercup -L .
 
-tar:
+compile:
+	$(EMACS) -batch -L . -f batch-byte-compile *.el
+
+release: clean test
 	mkdir -p dist
 	tar -c $(DISTFILES) --transform "s,^,buttercup-$(VERSION)/," --transform 's/README.md/README.txt/' > "dist/buttercup-$(VERSION).tar"
+
+clean:
+	rm -f *.elc
