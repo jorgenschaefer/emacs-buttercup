@@ -217,16 +217,43 @@ MATCHER is either a matcher defined with
 (cl-defstruct buttercup-suite
   description
   children
+  parent
   before-each
   after-each
   before-all
   after-all)
 
+;; Have to define the spec up here instead of with the specs where it
+;; belongs because we `setf' to it here.
+(cl-defstruct buttercup-spec
+  description
+  parent
+  function)
+
 (defun buttercup-suite-add-child (parent child)
   "Add a CHILD suite to a PARENT suite."
   (setf (buttercup-suite-children parent)
         (append (buttercup-suite-children parent)
-                (list child))))
+                (list child)))
+  (if (buttercup-suite-p child)
+      (setf (buttercup-suite-parent child)
+            parent)
+    (setf (buttercup-spec-parent child)
+          parent)))
+
+(defun buttercup-suite-parents (suite)
+  "Return a list of parents of SUITE."
+  (if (buttercup-suite-parent suite)
+      (cons (buttercup-suite-parent suite)
+            (buttercup-suite-parents (buttercup-suite-parent suite)))
+    nil))
+
+(defun buttercup-spec-parents (spec)
+  "Return a list of parents of SPEC."
+  (if (buttercup-spec-parent spec)
+      (cons (buttercup-spec-parent spec)
+            (buttercup-suite-parents (buttercup-spec-parent spec)))
+    nil))
 
 (defvar buttercup-suites nil
   "The list of all currently defined Buttercup suites.")
@@ -256,10 +283,6 @@ form.")
 
 ;;;;;;;;;;;;;
 ;;; Specs: it
-
-(cl-defstruct buttercup-spec
-  description
-  function)
 
 (defmacro it (description &rest body)
   "Define a spec."
@@ -546,7 +569,10 @@ current directory."
 
 (defun buttercup-run ()
   (if buttercup-suites
-      (mapc #'buttercup--run-suite buttercup-suites)
+      (progn
+        (funcall buttercup-reporter 'buttercup-started buttercup-suites)
+        (mapc #'buttercup--run-suite buttercup-suites)
+        (funcall buttercup-reporter 'buttercup-done buttercup-suites))
     (error "No suites defined")))
 
 (defvar buttercup--before-each nil
@@ -559,37 +585,70 @@ Do not change the global value.")
 
 Do not change the global value.")
 
-(defun buttercup--run-suite (suite &optional level)
-  (let* ((level (or level 0))
-         (indent (make-string (* 2 level) ?\s))
-         (buttercup--before-each (append buttercup--before-each
+(defun buttercup--run-suite (suite)
+  (let* ((buttercup--before-each (append buttercup--before-each
                                          (buttercup-suite-before-each suite)))
          (buttercup--after-each (append (buttercup-suite-after-each suite)
                                         buttercup--after-each))
          (debug-on-error t))
-    (message "%s%s" indent (buttercup-suite-description suite))
+    (funcall buttercup-reporter 'suite-started suite)
     (dolist (f (buttercup-suite-before-all suite))
       (funcall f))
     (dolist (sub (buttercup-suite-children suite))
       (cond
        ((buttercup-suite-p sub)
-        (buttercup--run-suite sub (1+ level)))
+        (buttercup--run-suite sub))
        ((buttercup-spec-p sub)
-        (buttercup--run-spec sub (1+ level)))))
+        (buttercup--run-spec sub))))
     (dolist (f (buttercup-suite-after-all suite))
       (funcall f))
-    (message "")))
+    (funcall buttercup-reporter 'suite-done suite)))
 
-(defun buttercup--run-spec (spec level)
-  (message "%s%s"
-           (make-string (* 2 level) ?\s)
-           (buttercup-spec-description spec))
+(defun buttercup--run-spec (spec)
+  (funcall buttercup-reporter 'spec-started spec)
   (buttercup--with-cleanup
    (dolist (f buttercup--before-each)
      (funcall f))
    (funcall (buttercup-spec-function spec))
    (dolist (f buttercup--after-each)
-     (funcall f))))
+     (funcall f)))
+  (funcall buttercup-reporter 'spec-done spec))
+
+;;;;;;;;;;;;;
+;;; Reporters
+
+(defvar buttercup-reporter #'buttercup-reporter-batch
+  "The reporter function for buttercup test runs.")
+
+(defun buttercup-reporter-batch (event arg)
+  (pcase event
+    (`buttercup-started
+     t)
+
+    (`suite-started
+     (let ((level (length (buttercup-suite-parents arg))))
+       (message "%s%s"
+                (make-string (* 2 level) ?\s)
+                (buttercup-suite-description arg))))
+
+    (`spec-started
+     (let ((level (length (buttercup-spec-parents arg))))
+       (message "%s%s"
+                (make-string (* 2 level) ?\s)
+                (buttercup-spec-description arg))))
+
+    (`spec-done
+     t)
+
+    (`suite-done
+     (when (= 0 (length (buttercup-suite-parents arg)))
+       (message "")))
+
+    (`buttercup-done
+     t)
+
+    (t
+     (error "Unknown event %s" event))))
 
 (provide 'buttercup)
 ;;; buttercup.el ends here

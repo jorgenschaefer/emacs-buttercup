@@ -138,22 +138,61 @@
 
 (describe "The `buttercup-suite-add-child' function"
   (it "should add an element at the end of the list"
-    (let ((suite (make-buttercup-suite :children '(1 2 3))))
+    (let* ((specs (list (make-buttercup-spec)
+                        (make-buttercup-spec)
+                        (make-buttercup-spec)))
+           (suite (make-buttercup-suite :children specs))
+           (spec (make-buttercup-spec)))
 
-      (buttercup-suite-add-child suite 4)
+      (buttercup-suite-add-child suite spec)
 
       (expect (buttercup-suite-children suite)
               :to-equal
-              '(1 2 3 4))))
+              (append specs (list spec)))))
 
   (it "should add an element even if the list is empty"
-    (let ((suite (make-buttercup-suite :children nil)))
+    (let ((suite (make-buttercup-suite :children nil))
+          (spec (make-buttercup-spec)))
 
-      (buttercup-suite-add-child suite 23)
+      (buttercup-suite-add-child suite spec)
 
       (expect (buttercup-suite-children suite)
               :to-equal
-              '(23)))))
+              (list spec))))
+
+  (it "should add the parent to the child"
+    (let ((parent (make-buttercup-suite))
+          (child (make-buttercup-suite)))
+
+      (buttercup-suite-add-child parent child)
+
+      (expect (buttercup-suite-parent child)
+              :to-equal
+              parent))))
+
+(describe "The `buttercup-suite-parents' function"
+  (it "should return the list of parents for a suite"
+    (let ((grandparent (make-buttercup-suite))
+          (parent (make-buttercup-suite))
+          (child (make-buttercup-suite)))
+      (buttercup-suite-add-child grandparent parent)
+      (buttercup-suite-add-child parent child)
+
+      (expect (buttercup-suite-parents child)
+              :to-equal
+              (list parent grandparent)))))
+
+(describe "The `buttercup-spec-parents' function"
+  (it "should return the list of parents for a spec"
+    (let ((grandparent (make-buttercup-suite))
+          (parent (make-buttercup-suite))
+          (child (make-buttercup-spec)))
+      (buttercup-suite-add-child grandparent parent)
+      (buttercup-suite-add-child parent child)
+
+      (expect (buttercup-spec-parents child)
+              :to-equal
+              (list parent grandparent)))))
 
 (describe "The `describe' macro"
   (it "should expand to a simple call to the describe function"
