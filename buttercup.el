@@ -504,6 +504,7 @@ KEYWORD can have one of the following values:
 ;;;;;;;;;;;;;;;;
 ;;; Test Runners
 
+;;;###autoload
 (defun buttercup-run-at-point ()
   "Run the buttercup suite at point."
   (interactive)
@@ -513,6 +514,7 @@ KEYWORD can have one of the following values:
     (buttercup-run)
     (message "Suite executed successfully")))
 
+;;;###autoload
 (defun buttercup-run-discover ()
   "Discover and load test files, then run all defined suites.
 
@@ -524,6 +526,7 @@ current directory."
       (load file nil t)))
   (buttercup-run))
 
+;;;###autoload
 (defun buttercup-run-markdown ()
   (let ((lisp-buffer (generate-new-buffer "elisp")))
     (dolist (file command-line-args-left)
