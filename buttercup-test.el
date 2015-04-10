@@ -576,3 +576,21 @@
 
     (it "should handle the end event"
       (buttercup-reporter-batch 'buttercup-done nil))))
+
+;;;;;;;;;;;;;
+;;; Utilities
+
+(describe "The `buttercup--funcall' function'"
+  (it "should return passed if everything works fine"
+    (let ((res (buttercup--funcall (lambda () (+ 2 3)))))
+      (expect res
+              :to-equal
+              (list 'passed 5 nil))))
+
+  (it "should return failed with the correct stack if an exception occurred"
+    (let ((res (buttercup--funcall (lambda () (/ 1 0)))))
+      (expect res
+              :to-equal
+              (list 'failed
+                    '(error (arith-error))
+                    (list '(t / 1 0)))))))

@@ -707,5 +707,53 @@ buttercup-done -- All suites have run, the test run is over.")
     (t
      (error "Unknown event %s" event))))
 
+;;;;;;;;;;;;;
+;;; Utilities
+
+(defun buttercup--funcall (function &rest arguments)
+  "Call FUNCTION with ARGUMENTS.
+
+Returns a list of three values. The first is the state:
+
+passed -- The second value is the return value of the function
+  call, the third is nil.
+
+failed -- The second value is the error that occurred, the third
+  is the stack trace."
+  (catch 'buttercup-debugger-continue
+    (let ((debugger #'buttercup--debugger)
+          (debug-on-error t)
+          (debug-ignored-errors nil))
+      (list 'passed
+            (apply function arguments)
+            nil))))
+
+(defun buttercup--debugger (&rest args)
+  ;; If we do not do this, Emacs will not run this handler on
+  ;; subsequent calls. Thanks to ert for this.
+  (setq num-nonmacro-input-events (1+ num-nonmacro-input-events))
+  (throw 'buttercup-debugger-continue
+         (list 'failed args (buttercup--backtrace))))
+
+
+(defun buttercup--backtrace ()
+  (let* ((n 0)
+         (frame (backtrace-frame n))
+         (frame-list nil)
+         (in-program-stack nil))
+    (while frame
+      (when in-program-stack
+        (push frame frame-list))
+      (when (eq (elt frame 1)
+                'buttercup--debugger)
+        (setq in-program-stack t))
+      (when (eq (elt frame 1)
+                'buttercup--funcall)
+        (setq in-program-stack nil
+              frame-list (nthcdr 6 frame-list)))
+      (setq n (1+ n)
+            frame (backtrace-frame n)))
+    frame-list))
+
 (provide 'buttercup)
 ;;; buttercup.el ends here
