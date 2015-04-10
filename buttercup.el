@@ -618,7 +618,29 @@ Do not change the global value.")
 ;;; Reporters
 
 (defvar buttercup-reporter #'buttercup-reporter-batch
-  "The reporter function for buttercup test runs.")
+  "The reporter function for buttercup test runs.
+
+During a run of buttercup, the value of this variable is called
+as a function with two arguments. The first argument is a symbol
+describing the event, the second depends on the event.
+
+The following events are known:
+
+buttercup-started -- The test run is starting. The argument is a
+  list of suites this run will execute.
+
+suite-started -- A suite is starting. The argument is the suite.
+  See `make-buttercup-suite' for details on this structure.
+
+spec-started -- A spec in is starting. The argument is the spec.
+  See `make-buttercup-spec' for details on this structure.
+
+spec-done -- A spec has finished executing. The argument is the
+  spec.
+
+suite-done -- A suite has finished. The argument is the spec.
+
+buttercup-done -- All suites have run, the test run is over.")
 
 (defun buttercup-reporter-batch (event arg)
   (pcase event
