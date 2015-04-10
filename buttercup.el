@@ -278,6 +278,15 @@ MATCHER is either a matcher defined with
                (reverse name-parts)
                " ")))
 
+(defun buttercup-spec-full-name (spec)
+  "Return the full name of SPEC, which includes the full name of its suite."
+  (let ((parent (buttercup-spec-parent spec)))
+    (if parent
+        (concat (buttercup-suite-full-name parent)
+                " "
+                (buttercup-spec-description spec))
+      (buttercup-spec-description spec))))
+
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
 

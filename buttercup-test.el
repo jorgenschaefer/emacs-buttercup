@@ -225,6 +225,26 @@
               :to-equal
               "su1 su2"))))
 
+(describe "The `buttercup-spec-full-name' function"
+  (let (su1 su2 sp1)
+    (before-each
+      (setq su1 (make-buttercup-suite :description "su1")
+            su2 (make-buttercup-suite :description "su2")
+            sp1 (make-buttercup-spec :description "sp1")
+            sp2 (make-buttercup-spec :description "sp2"))
+      (buttercup-suite-add-child su1 su2)
+      (buttercup-suite-add-child su2 sp2))
+
+    (it "should return the full name of a spec without parents"
+      (expect (buttercup-spec-full-name sp1)
+              :to-equal
+              "sp1"))
+
+    (it "should return the full name of a spec with parents"
+      (expect (buttercup-spec-full-name sp2)
+              :to-equal
+              "su1 su2 sp2"))))
+
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
 
