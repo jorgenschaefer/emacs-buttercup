@@ -211,8 +211,8 @@ MATCHER is either a matcher defined with
       (t
        (cons t (format "Expected %S not to throw an error" function)))))))
 
-;;;;;;;;;;;;;;;;;;;;
-;;; Suites: describe
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Suite and spec data structures
 
 (cl-defstruct buttercup-suite
   description
@@ -254,6 +254,24 @@ MATCHER is either a matcher defined with
       (cons (buttercup-spec-parent spec)
             (buttercup-suite-parents (buttercup-spec-parent spec)))
     nil))
+
+(defun buttercup-suites-total-specs-defined (suite-list)
+  "Return the number of specs defined in all suites in SUITE-LIST."
+  (let ((nspecs 0))
+    (dolist (suite suite-list)
+      (setq nspecs (+ nspecs
+                      (buttercup--total-specs-defined suite))))
+    nspecs))
+
+(defun buttercup--total-specs-defined (suite-or-spec)
+  "Return the number of specs defined in SUITE-OR-SPEC and its children."
+  (if (buttercup-spec-p suite-or-spec)
+      1
+    (apply #'+ (mapcar #'buttercup--total-specs-defined
+                       (buttercup-suite-children suite-or-spec)))))
+
+;;;;;;;;;;;;;;;;;;;;
+;;; Suites: describe
 
 (defvar buttercup-suites nil
   "The list of all currently defined Buttercup suites.")

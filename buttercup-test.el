@@ -133,8 +133,8 @@
 
 ;; Are tested in README.md
 
-;;;;;;;;;;;;;;;;;;;;
-;;; Suites: describe
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Suite and spec data structures
 
 (describe "The `buttercup-suite-add-child' function"
   (it "should add an element at the end of the list"
@@ -193,6 +193,23 @@
       (expect (buttercup-spec-parents child)
               :to-equal
               (list parent grandparent)))))
+
+(describe "The `buttercup-suites-total-specs-defined' function"
+  (it "should return the number of specs in a list of suites"
+    (let ((su1 (make-buttercup-suite :description "su1"))
+          (su2 (make-buttercup-suite :description "su2"))
+          (sp1 (make-buttercup-spec :description "sp1"))
+          (sp2 (make-buttercup-spec :description "sp2")))
+      (buttercup-suite-add-child su1 su2)
+      (buttercup-suite-add-child su1 sp1)
+      (buttercup-suite-add-child su2 sp2)
+
+      (expect (buttercup-suites-total-specs-defined (list su1))
+              :to-equal
+              2))))
+
+;;;;;;;;;;;;;;;;;;;;
+;;; Suites: describe
 
 (describe "The `describe' macro"
   (it "should expand to a simple call to the describe function"
