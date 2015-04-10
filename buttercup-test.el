@@ -472,3 +472,53 @@
         (expect (lambda () (test-function 1 2))
                 :to-throw
                 'error "Stubbed error")))))
+
+;;;;;;;;;;;;;
+;;; Reporters
+
+(describe "The batch reporter"
+  (let (parent-suite child-suite spec)
+    (before-each
+      (setq parent-suite (make-buttercup-suite :description "parent-suite")
+            child-suite (make-buttercup-suite :description "child-suite")
+            spec (make-buttercup-spec :description "spec"))
+      (buttercup-suite-add-child parent-suite child-suite)
+      (buttercup-suite-add-child child-suite spec)
+      (spy-on 'message))
+
+    (it "should handle the start event"
+      (buttercup-reporter-batch 'buttercup-started nil))
+
+    (it "should emit an indented suite description on suite start"
+      (buttercup-reporter-batch 'suite-started child-suite)
+
+      (expect 'message
+              :to-have-been-called-with
+              "%s%s"
+              "  "
+              "child-suite"))
+
+    (it "should emit an indented spec description on spec start"
+      (buttercup-reporter-batch 'spec-started spec)
+
+      (expect 'message
+              :to-have-been-called-with
+              "%s%s"
+              "    "
+              "spec"))
+
+    (it "should handle the spec done event"
+      (buttercup-reporter-batch 'spec-done spec))
+
+    (it "should emit a newline at the end of the top-level suite"
+      (buttercup-reporter-batch 'suite-done parent-suite)
+
+      (expect 'message :to-have-been-called-with ""))
+
+    (it "should not emit anything at the end of other suites"
+      (buttercup-reporter-batch 'suite-done child-suite)
+
+      (expect 'message :not :to-have-been-called))
+
+    (it "should handle the end event"
+      (buttercup-reporter-batch 'buttercup-done nil))))
