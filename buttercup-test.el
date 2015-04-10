@@ -208,6 +208,23 @@
               :to-equal
               2))))
 
+(describe "The `buttercup-suite-full-name' function"
+  (let (su1 su2)
+    (before-each
+      (setq su1 (make-buttercup-suite :description "su1")
+            su2 (make-buttercup-suite :description "su2"))
+      (buttercup-suite-add-child su1 su2))
+
+    (it "should return the full name of a suite without parents"
+      (expect (buttercup-suite-full-name su1)
+              :to-equal
+              "su1"))
+
+    (it "should return the full name of a suite with parents"
+      (expect (buttercup-suite-full-name su2)
+              :to-equal
+              "su1 su2"))))
+
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
 

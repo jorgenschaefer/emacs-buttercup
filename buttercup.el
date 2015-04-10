@@ -270,6 +270,14 @@ MATCHER is either a matcher defined with
     (apply #'+ (mapcar #'buttercup--total-specs-defined
                        (buttercup-suite-children suite-or-spec)))))
 
+(defun buttercup-suite-full-name (suite)
+  "Return the full name of SUITE, which includes the names of the parents."
+  (let ((name-parts (mapcar #'buttercup-suite-description
+                            (cons suite (buttercup-suite-parents suite)))))
+    (mapconcat #'identity
+               (reverse name-parts)
+               " ")))
+
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
 
