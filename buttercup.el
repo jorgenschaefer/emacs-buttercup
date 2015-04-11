@@ -686,7 +686,7 @@ Do not change the global value.")
 ;;;;;;;;;;;;;
 ;;; Reporters
 
-(defvar buttercup-reporter #'buttercup-reporter-batch
+(defvar buttercup-reporter #'buttercup-reporter-adaptive
   "The reporter function for buttercup test runs.
 
 During a run of buttercup, the value of this variable is called
@@ -710,6 +710,15 @@ spec-done -- A spec has finished executing. The argument is the
 suite-done -- A suite has finished. The argument is the spec.
 
 buttercup-done -- All suites have run, the test run is over.")
+
+(defun buttercup-reporter-adaptive (event arg)
+  "A reporter that handles both interactive and noninteractive sessions.
+
+Calls either `buttercup-reporter-batch' or
+`buttercup-reporter-interactive', depending."
+  (if noninteractive
+      (buttercup-reporter-batch event arg)
+    (buttercup-reporter-interactive event arg)))
 
 (defvar buttercup-reporter-batch--start-time nil
   "The time the last batch report started.")
@@ -789,6 +798,25 @@ buttercup-done -- All suites have run, the test run is over.")
 
 (defun buttercup--print (fmt &rest args)
   (send-string-to-terminal (apply #'format fmt args)))
+
+(defun buttercup-reporter-interactive (event arg)
+  "Reporter for interactive uses."
+  ;; This is a bit rudimentary ...
+  (with-current-buffer (get-buffer-create "*Buttercup*")
+    (when (eq event 'buttercup-started)
+      (erase-buffer)
+      (view-mode 1)
+      (display-buffer (current-buffer)))
+    (let ((old-print (symbol-function 'buttercup--print))
+          (buf (current-buffer)))
+      (fset 'buttercup--print (lambda (fmt &rest args)
+                                (with-current-buffer buf
+                                  (let ((inhibit-read-only t))
+                                    (goto-char (point-max))
+                                    (insert (apply 'format fmt args))))))
+      (unwind-protect
+          (buttercup-reporter-batch event arg)
+        (fset 'buttercup--print old-print)))))
 
 ;;;;;;;;;;;;;
 ;;; Utilities
