@@ -29,13 +29,6 @@
             :to-throw
             'buttercup-failed)))
 
-(describe "The buttercup-error signal"
-  (it "can be raised"
-    (expect (lambda ()
-              (signal 'buttercup-error t))
-            :to-throw
-            'buttercup-error)))
-
 (describe "The `expect' form"
   (it "with a matcher should translate directly to the function call"
     (expect (macroexpand '(expect (+ 1 1) :to-equal 2))
@@ -207,6 +200,21 @@
       (expect (buttercup-suites-total-specs-defined (list su1))
               :to-equal
               2))))
+
+(describe "The `buttercup-suites-total-specs-failed' function"
+  (it "should return the number of failed specs in a list of suites"
+    (let ((su1 (make-buttercup-suite :description "su1"))
+          (su2 (make-buttercup-suite :description "su2"))
+          (sp1 (make-buttercup-spec :description "sp1"))
+          (sp2 (make-buttercup-spec :description "sp2"
+                                    :status 'failed)))
+      (buttercup-suite-add-child su1 su2)
+      (buttercup-suite-add-child su1 sp1)
+      (buttercup-suite-add-child su2 sp2)
+
+      (expect (buttercup-suites-total-specs-failed (list su1))
+              :to-equal
+              1))))
 
 (describe "The `buttercup-suite-full-name' function"
   (let (su1 su2)
@@ -538,7 +546,7 @@
             spec (make-buttercup-spec :description "spec"))
       (buttercup-suite-add-child parent-suite child-suite)
       (buttercup-suite-add-child child-suite spec)
-      (spy-on 'message))
+      (spy-on 'buttercup--print))
 
     (it "should handle the start event"
       (buttercup-reporter-batch 'buttercup-started nil))
@@ -546,18 +554,18 @@
     (it "should emit an indented suite description on suite start"
       (buttercup-reporter-batch 'suite-started child-suite)
 
-      (expect 'message
+      (expect 'buttercup--print
               :to-have-been-called-with
-              "%s%s"
+              "%s%s\n"
               "  "
               "child-suite"))
 
     (it "should emit an indented spec description on spec start"
       (buttercup-reporter-batch 'spec-started spec)
 
-      (expect 'message
+      (expect 'buttercup--print
               :to-have-been-called-with
-              "%s%s"
+              "%s%s\n"
               "    "
               "spec"))
 
@@ -567,12 +575,12 @@
     (it "should emit a newline at the end of the top-level suite"
       (buttercup-reporter-batch 'suite-done parent-suite)
 
-      (expect 'message :to-have-been-called-with ""))
+      (expect 'buttercup--print :to-have-been-called-with "\n"))
 
     (it "should not emit anything at the end of other suites"
       (buttercup-reporter-batch 'suite-done child-suite)
 
-      (expect 'message :not :to-have-been-called))
+      (expect 'buttercup--print :not :to-have-been-called))
 
     (it "should handle the end event"
       (buttercup-reporter-batch 'buttercup-done nil))))
@@ -580,17 +588,24 @@
 ;;;;;;;;;;;;;
 ;;; Utilities
 
-(describe "The `buttercup--funcall' function'"
-  (it "should return passed if everything works fine"
-    (let ((res (buttercup--funcall (lambda () (+ 2 3)))))
-      (expect res
-              :to-equal
-              (list 'passed 5 nil))))
+;; We can't test `buttercup--funcall' with buttercup, because the way
+;; we get the backtrace from Emacs does not nest.
 
-  (it "should return failed with the correct stack if an exception occurred"
-    (let ((res (buttercup--funcall (lambda () (/ 1 0)))))
-      (expect res
-              :to-equal
-              (list 'failed
-                    '(error (arith-error))
-                    (list '(t / 1 0)))))))
+(let ((res (buttercup--funcall (lambda () (+ 2 3)))))
+  (when (not (equal res (list 'passed 5 nil)))
+    (error "Expected passing buttercup--funcall not to return %S"
+           res)))
+
+(let ((res (buttercup--funcall (lambda () (buttercup-fail "Bla")))))
+  (when (not (equal res (list 'failed
+                              "Bla"
+                              nil)))
+    (error "Expected failing buttercup--funcall not to return %S"
+           res)))
+
+(let ((res (buttercup--funcall (lambda () (/ 1 0)))))
+  (when (not (equal res (list 'error
+                              '(error (arith-error))
+                              (list '(t / 1 0)))))
+    (error "Expected erroring buttercup--funcall not to return %S"
+           res)))

@@ -48,9 +48,6 @@
 (define-error 'buttercup-failed
   "Buttercup test failed")
 
-(define-error 'buttercup-error
-  "Buttercup test raised an error")
-
 (defmacro expect (arg &optional matcher &rest args)
   "Expect a condition to be true.
 
@@ -215,20 +212,36 @@ MATCHER is either a matcher defined with
 ;;; Suite and spec data structures
 
 (cl-defstruct buttercup-suite
+  ;; The name of this specific suite
   description
+  ;; Any children of this suite, both suites and specs
   children
+  ;; The parent of this suite, another suite
   parent
+  ;; Closure to run before and after each spec in this suite and its
+  ;; children
   before-each
   after-each
+  ;; Likewise, but before and after all specs.
   before-all
-  after-all)
+  after-all
+  ;; These are set if there are errors in after-all.
+  ;; One of: passed failed pending
+  status
+  failure-description
+  failure-stack)
 
-;; Have to define the spec up here instead of with the specs where it
-;; belongs because we `setf' to it here.
 (cl-defstruct buttercup-spec
+  ;; The description of the it form this was generated from
   description
+  ;; The suite this spec is a member of
   parent
-  function)
+  ;; The closure to run for this spec
+  function
+  ;; One of: passed failed pending
+  status
+  failure-description
+  failure-stack)
 
 (defun buttercup-suite-add-child (parent child)
   "Add a CHILD suite to a PARENT suite."
@@ -258,17 +271,32 @@ MATCHER is either a matcher defined with
 (defun buttercup-suites-total-specs-defined (suite-list)
   "Return the number of specs defined in all suites in SUITE-LIST."
   (let ((nspecs 0))
-    (dolist (suite suite-list)
-      (setq nspecs (+ nspecs
-                      (buttercup--total-specs-defined suite))))
+    (dolist (spec-or-suite (buttercup--specs-and-suites suite-list))
+      (when (buttercup-spec-p spec-or-suite)
+        (setq nspecs (1+ nspecs))))
     nspecs))
 
-(defun buttercup--total-specs-defined (suite-or-spec)
+(defun buttercup-suites-total-specs-failed (suite-list)
+  "Return the number of failed specs in all suites in SUITE-LIST."
+  (let ((nspecs 0))
+    (dolist (spec-or-suite (buttercup--specs-and-suites suite-list))
+      (when (and (buttercup-spec-p spec-or-suite)
+                 (eq (buttercup-spec-status spec-or-suite) 'failed))
+        (setq nspecs (1+ nspecs))))
+    nspecs))
+
+(defun buttercup--specs-and-suites (spec-or-suite-list)
   "Return the number of specs defined in SUITE-OR-SPEC and its children."
-  (if (buttercup-spec-p suite-or-spec)
-      1
-    (apply #'+ (mapcar #'buttercup--total-specs-defined
-                       (buttercup-suite-children suite-or-spec)))))
+  (let ((specs-and-suites nil))
+    (dolist (spec-or-suite spec-or-suite-list)
+      (setq specs-and-suites (append specs-and-suites
+                                     (list spec-or-suite)))
+      (when (buttercup-suite-p spec-or-suite)
+        (setq specs-and-suites
+              (append specs-and-suites
+                      (buttercup--specs-and-suites
+                       (buttercup-suite-children spec-or-suite))))))
+    specs-and-suites))
 
 (defun buttercup-suite-full-name (suite)
   "Return the full name of SUITE, which includes the names of the parents."
@@ -624,8 +652,7 @@ Do not change the global value.")
   (let* ((buttercup--before-each (append buttercup--before-each
                                          (buttercup-suite-before-each suite)))
          (buttercup--after-each (append (buttercup-suite-after-each suite)
-                                        buttercup--after-each))
-         (debug-on-error t))
+                                        buttercup--after-each)))
     (funcall buttercup-reporter 'suite-started suite)
     (dolist (f (buttercup-suite-before-all suite))
       (funcall f))
@@ -644,7 +671,13 @@ Do not change the global value.")
   (buttercup--with-cleanup
    (dolist (f buttercup--before-each)
      (funcall f))
-   (funcall (buttercup-spec-function spec))
+   (let ((res (buttercup--funcall (buttercup-spec-function spec))))
+     (setf (buttercup-spec-status spec)
+           (elt res 0))
+     (setf (buttercup-spec-failure-description spec)
+           (elt res 1))
+     (setf (buttercup-spec-failure-stack spec)
+           (elt res 2)))
    (dolist (f buttercup--after-each)
      (funcall f)))
   (funcall buttercup-reporter 'spec-done spec))
@@ -680,32 +713,58 @@ buttercup-done -- All suites have run, the test run is over.")
 (defun buttercup-reporter-batch (event arg)
   (pcase event
     (`buttercup-started
-     t)
+     (buttercup--print "Running %s specs.\n\n"
+                       (buttercup-suites-total-specs-defined arg)))
 
     (`suite-started
      (let ((level (length (buttercup-suite-parents arg))))
-       (message "%s%s"
-                (make-string (* 2 level) ?\s)
-                (buttercup-suite-description arg))))
+       (buttercup--print "%s%s\n"
+                         (make-string (* 2 level) ?\s)
+                         (buttercup-suite-description arg))))
 
     (`spec-started
      (let ((level (length (buttercup-spec-parents arg))))
-       (message "%s%s"
-                (make-string (* 2 level) ?\s)
-                (buttercup-spec-description arg))))
+       (buttercup--print "%s%s\n"
+                         (make-string (* 2 level) ?\s)
+                         (buttercup-spec-description arg))))
 
     (`spec-done
-     t)
+     (cond
+      ((eq (buttercup-spec-status arg) 'passed)
+       t)
+      ((eq (buttercup-spec-status arg) 'failed)
+       (let ((description (buttercup-spec-failure-description arg))
+             (stack (buttercup-spec-failure-stack arg)))
+         (when stack
+           (buttercup--print "\nTraceback (most recent call last):\n")
+           (dolist (frame stack)
+             (buttercup--print "  %S\n" (cdr frame))))
+         (if (stringp description)
+             (buttercup--print "FAILED: %s\n"
+                               (buttercup-spec-failure-description arg))
+           (buttercup--print "%S: %S\n\n" (car err) (cdr err)))
+         (buttercup--print "\n")))
+      (t
+       (buttercup--print "??? %S\n" (buttercup-spec-status arg)))))
 
     (`suite-done
      (when (= 0 (length (buttercup-suite-parents arg)))
-       (message "")))
+       (buttercup--print "\n")))
 
     (`buttercup-done
-     t)
+     (buttercup--print "Ran %s specs, %s failed.\n"
+                       (buttercup-suites-total-specs-defined arg)
+                       (buttercup-suites-total-specs-failed arg)
+                       )
+     (when (> (buttercup-suites-total-specs-failed arg) 0)
+       (error "")))
 
     (t
      (error "Unknown event %s" event))))
+
+(defun buttercup--print (fmt &rest args)
+  (let ((print-escape-newlines t))
+    (princ (apply #'format fmt args))))
 
 ;;;;;;;;;;;;;
 ;;; Utilities
@@ -718,8 +777,8 @@ Returns a list of three values. The first is the state:
 passed -- The second value is the return value of the function
   call, the third is nil.
 
-failed -- The second value is the error that occurred, the third
-  is the stack trace."
+failed -- The second value is the description of the expectation
+  which failed or the error, the third is the backtrace or nil."
   (catch 'buttercup-debugger-continue
     (let ((debugger #'buttercup--debugger)
           (debug-on-error t)
@@ -733,8 +792,10 @@ failed -- The second value is the error that occurred, the third
   ;; subsequent calls. Thanks to ert for this.
   (setq num-nonmacro-input-events (1+ num-nonmacro-input-events))
   (throw 'buttercup-debugger-continue
-         (list 'failed args (buttercup--backtrace))))
-
+         (if (and (eq (elt args 0) 'error)
+                  (eq (car (elt args 1)) 'buttercup-failed))
+             (list 'failed (cdr (elt args 1)) nil)
+           (list 'error args (buttercup--backtrace)))))
 
 (defun buttercup--backtrace ()
   (let* ((n 0)
