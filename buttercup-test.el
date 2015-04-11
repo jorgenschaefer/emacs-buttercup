@@ -629,6 +629,17 @@
                   (buttercup-reporter-batch 'unknown-event nil))
                 :to-throw)))))
 
+(describe "The `buttercup--print' function"
+  (before-each
+    (spy-on 'send-string-to-terminal))
+
+  (it "should send a formatted string to the terminal"
+    (buttercup--print "Hello, %s" "world")
+
+    (expect 'send-string-to-terminal
+            :to-have-been-called-with
+            "Hello, world")))
+
 ;;;;;;;;;;;;;
 ;;; Utilities
 
