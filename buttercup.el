@@ -227,7 +227,7 @@ MATCHER is either a matcher defined with
   after-all
   ;; These are set if there are errors in after-all.
   ;; One of: passed failed pending
-  status
+  (status 'passed)
   failure-description
   failure-stack)
 
@@ -239,7 +239,7 @@ MATCHER is either a matcher defined with
   ;; The closure to run for this spec
   function
   ;; One of: passed failed pending
-  status
+  (status 'passed)
   failure-description
   failure-stack)
 
@@ -795,7 +795,7 @@ failed -- The second value is the description of the expectation
          (if (and (eq (elt args 0) 'error)
                   (eq (car (elt args 1)) 'buttercup-failed))
              (list 'failed (cdr (elt args 1)) nil)
-           (list 'error args (buttercup--backtrace)))))
+           (list 'failed args (buttercup--backtrace)))))
 
 (defun buttercup--backtrace ()
   (let* ((n 0)

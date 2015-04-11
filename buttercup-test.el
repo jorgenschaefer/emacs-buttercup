@@ -604,7 +604,7 @@
            res)))
 
 (let ((res (buttercup--funcall (lambda () (/ 1 0)))))
-  (when (not (equal res (list 'error
+  (when (not (equal res (list 'failed
                               '(error (arith-error))
                               (list '(t / 1 0)))))
     (error "Expected erroring buttercup--funcall not to return %S"
