@@ -548,42 +548,86 @@
       (buttercup-suite-add-child child-suite spec)
       (spy-on 'buttercup--print))
 
-    (it "should handle the start event"
-      (buttercup-reporter-batch 'buttercup-started nil))
+    (describe "on the buttercup-started event"
+      (it "should emit the number of specs"
+        (let ((buttercup-reporter-batch--start-time nil))
+          (buttercup-reporter-batch 'buttercup-started (list parent-suite)))
 
-    (it "should emit an indented suite description on suite start"
-      (buttercup-reporter-batch 'suite-started child-suite)
+        (expect 'buttercup--print
+                :to-have-been-called-with
+                "Running %s specs.\n\n"
+                1)))
 
-      (expect 'buttercup--print
-              :to-have-been-called-with
-              "%s%s\n"
-              "  "
-              "child-suite"))
+    (describe "on the suite-started event"
+      (it "should emit an indented suite description"
+        (buttercup-reporter-batch 'suite-started child-suite)
 
-    (it "should emit an indented spec description on spec start"
-      (buttercup-reporter-batch 'spec-started spec)
+        (expect 'buttercup--print
+                :to-have-been-called-with
+                "%s%s\n"
+                "  "
+                "child-suite")))
 
-      (expect 'buttercup--print
-              :to-have-been-called-with
-              "%s%s"
-              "    "
-              "spec"))
+    (describe "on the spec-started event"
+      (it "should emit an indented spec description"
+        (buttercup-reporter-batch 'spec-started spec)
 
-    (it "should handle the spec done event"
-      (buttercup-reporter-batch 'spec-done spec))
+        (expect 'buttercup--print
+                :to-have-been-called-with
+                "%s%s"
+                "    "
+                "spec")))
 
-    (it "should emit a newline at the end of the top-level suite"
-      (buttercup-reporter-batch 'suite-done parent-suite)
+    (describe "on the spec-done event"
+      (it "should simply emit a newline for a passed spec"
+        (buttercup-reporter-batch 'spec-done spec)
 
-      (expect 'buttercup--print :to-have-been-called-with "\n"))
+        (expect 'buttercup--print :to-have-been-called-with "\n"))
 
-    (it "should not emit anything at the end of other suites"
-      (buttercup-reporter-batch 'suite-done child-suite)
+      (it "should say FAILED for a failed spec"
+        (setf (buttercup-spec-status spec) 'failed)
 
-      (expect 'buttercup--print :not :to-have-been-called))
+        (let ((buttercup-reporter-batch--failures nil))
+          (buttercup-reporter-batch 'spec-done spec))
 
-    (it "should handle the end event"
-      (buttercup-reporter-batch 'buttercup-done nil))))
+        (expect 'buttercup--print :to-have-been-called-with "  FAILED\n"))
+
+      (it "should throw an error for an unknown spec status"
+        (setf (buttercup-spec-status spec) 'unknown)
+
+        (expect (lambda ()
+                  (buttercup-reporter-batch 'spec-done spec))
+                :to-throw)))
+
+    (describe "on the suite-done event"
+      (it "should emit a newline at the end of the top-level suite"
+        (buttercup-reporter-batch 'suite-done parent-suite)
+
+        (expect 'buttercup--print :to-have-been-called-with "\n"))
+
+      (it "should not emit anything at the end of other suites"
+        (buttercup-reporter-batch 'suite-done child-suite)
+
+        (expect 'buttercup--print :not :to-have-been-called)))
+
+    (describe "on the buttercup-done event"
+      ;; This is a lie. It should do a ton more stuff. We should test
+      ;; that, too.
+      (it "should handle the end event"
+        (buttercup-reporter-batch 'buttercup-done nil))
+
+      (it "should raise an error if at least one spec failed"
+        (setf (buttercup-spec-status spec) 'failed)
+
+        (expect (lambda ()
+                  (buttercup-reporter-batch 'buttercup-done (list spec)))
+                :to-throw)))
+
+    (describe "on an unknown event"
+      (it "should raise an error"
+        (expect (lambda ()
+                  (buttercup-reporter-batch 'unknown-event nil))
+                :to-throw)))))
 
 ;;;;;;;;;;;;;
 ;;; Utilities
