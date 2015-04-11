@@ -565,7 +565,7 @@
 
       (expect 'buttercup--print
               :to-have-been-called-with
-              "%s%s\n"
+              "%s%s"
               "    "
               "spec"))
 
