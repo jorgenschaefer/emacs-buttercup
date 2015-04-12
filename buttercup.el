@@ -632,8 +632,7 @@ current directory."
 
 (defun buttercup-run ()
   (if buttercup-suites
-      (let ((print-escape-newlines t)
-            (print-escape-nonascii t))
+      (progn
         (funcall buttercup-reporter 'buttercup-started buttercup-suites)
         (mapc #'buttercup--run-suite buttercup-suites)
         (funcall buttercup-reporter 'buttercup-done buttercup-suites))
@@ -727,74 +726,76 @@ Calls either `buttercup-reporter-batch' or
   "List of failed specs of the current batch report.")
 
 (defun buttercup-reporter-batch (event arg)
-  (pcase event
-    (`buttercup-started
-     (setq buttercup-reporter-batch--start-time (float-time))
-     (buttercup--print "Running %s specs.\n\n"
-                       (buttercup-suites-total-specs-defined arg)))
+  (let ((print-escape-newlines t)
+        (print-escape-nonascii t))
+    (pcase event
+      (`buttercup-started
+       (setq buttercup-reporter-batch--start-time (float-time))
+       (buttercup--print "Running %s specs.\n\n"
+                         (buttercup-suites-total-specs-defined arg)))
 
-    (`suite-started
-     (let ((level (length (buttercup-suite-parents arg))))
-       (buttercup--print "%s%s\n"
-                         (make-string (* 2 level) ?\s)
-                         (buttercup-suite-description arg))))
+      (`suite-started
+       (let ((level (length (buttercup-suite-parents arg))))
+         (buttercup--print "%s%s\n"
+                           (make-string (* 2 level) ?\s)
+                           (buttercup-suite-description arg))))
 
-    (`spec-started
-     (let ((level (length (buttercup-spec-parents arg))))
-       (buttercup--print "%s%s"
-                         (make-string (* 2 level) ?\s)
-                         (buttercup-spec-description arg))))
+      (`spec-started
+       (let ((level (length (buttercup-spec-parents arg))))
+         (buttercup--print "%s%s"
+                           (make-string (* 2 level) ?\s)
+                           (buttercup-spec-description arg))))
 
-    (`spec-done
-     (cond
-      ((eq (buttercup-spec-status arg) 'passed)
-       (buttercup--print "\n"))
-      ((eq (buttercup-spec-status arg) 'failed)
-       (buttercup--print "  FAILED\n")
-       (setq buttercup-reporter-batch--failures
-             (append buttercup-reporter-batch--failures
-                     (list arg))))
-      (t
-       (error "Unknown spec status %s" (buttercup-spec-status arg)))))
+      (`spec-done
+       (cond
+        ((eq (buttercup-spec-status arg) 'passed)
+         (buttercup--print "\n"))
+        ((eq (buttercup-spec-status arg) 'failed)
+         (buttercup--print "  FAILED\n")
+         (setq buttercup-reporter-batch--failures
+               (append buttercup-reporter-batch--failures
+                       (list arg))))
+        (t
+         (error "Unknown spec status %s" (buttercup-spec-status arg)))))
 
-    (`suite-done
-     (when (= 0 (length (buttercup-suite-parents arg)))
-       (buttercup--print "\n")))
-
-    (`buttercup-done
-     (dolist (failed buttercup-reporter-batch--failures)
-       (let ((description (buttercup-spec-failure-description failed))
-             (stack (buttercup-spec-failure-stack failed)))
-         (buttercup--print "%s\n" (make-string 40 ?=))
-         (buttercup--print "%s\n" (buttercup-spec-full-name failed))
-         (when stack
-           (buttercup--print "\nTraceback (most recent call last):\n")
-           (dolist (frame stack)
-             (let ((line (format "  %S" (cdr frame))))
-               (when (> (length line) 79)
-                 (setq line (concat (substring line 0 76)
-                                    "...")))
-               (buttercup--print "%s\n" line))))
-         (cond
-          ((stringp description)
-           (buttercup--print "FAILED: %s\n" description))
-          ((eq (car description) 'error)
-           (buttercup--print "%S: %S\n\n"
-                             (car description)
-                             (cadr description)))
-          (t
-           (buttercup--print "FAILED: %S\n" description)))
+      (`suite-done
+       (when (= 0 (length (buttercup-suite-parents arg)))
          (buttercup--print "\n")))
-     (buttercup--print "Ran %s specs, %s failed, in %.1f seconds.\n"
-                       (buttercup-suites-total-specs-defined arg)
-                       (buttercup-suites-total-specs-failed arg)
-                       (- (float-time)
-                          buttercup-reporter-batch--start-time))
-     (when (> (buttercup-suites-total-specs-failed arg) 0)
-       (error "")))
 
-    (t
-     (error "Unknown event %s" event))))
+      (`buttercup-done
+       (dolist (failed buttercup-reporter-batch--failures)
+         (let ((description (buttercup-spec-failure-description failed))
+               (stack (buttercup-spec-failure-stack failed)))
+           (buttercup--print "%s\n" (make-string 40 ?=))
+           (buttercup--print "%s\n" (buttercup-spec-full-name failed))
+           (when stack
+             (buttercup--print "\nTraceback (most recent call last):\n")
+             (dolist (frame stack)
+               (let ((line (format "  %S" (cdr frame))))
+                 (when (> (length line) 79)
+                   (setq line (concat (substring line 0 76)
+                                      "...")))
+                 (buttercup--print "%s\n" line))))
+           (cond
+            ((stringp description)
+             (buttercup--print "FAILED: %s\n" description))
+            ((eq (car description) 'error)
+             (buttercup--print "%S: %S\n\n"
+                               (car description)
+                               (cadr description)))
+            (t
+             (buttercup--print "FAILED: %S\n" description)))
+           (buttercup--print "\n")))
+       (buttercup--print "Ran %s specs, %s failed, in %.1f seconds.\n"
+                         (buttercup-suites-total-specs-defined arg)
+                         (buttercup-suites-total-specs-failed arg)
+                         (- (float-time)
+                            buttercup-reporter-batch--start-time))
+       (when (> (buttercup-suites-total-specs-failed arg) 0)
+         (error "")))
+
+      (t
+       (error "Unknown event %s" event)))))
 
 (defun buttercup--print (fmt &rest args)
   (send-string-to-terminal (apply #'format fmt args)))
