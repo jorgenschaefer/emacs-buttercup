@@ -48,6 +48,9 @@
 (define-error 'buttercup-failed
   "Buttercup test failed")
 
+(define-error 'buttercup-pending
+  "Buttercup test is pending")
+
 (defmacro expect (arg &optional matcher &rest args)
   "Expect a condition to be true.
 
@@ -337,7 +340,11 @@ form.")
   (let* ((enclosing-suite buttercup--current-suite)
          (buttercup--current-suite (make-buttercup-suite
                                     :description description)))
-    (funcall body-function)
+    (condition-case err
+        (funcall body-function)
+      (buttercup-pending
+       (setf (buttercup-suite-status buttercup--current-suite)
+             'pending)))
     (if enclosing-suite
         (buttercup-suite-add-child enclosing-suite
                                    buttercup--current-suite)
@@ -350,7 +357,10 @@ form.")
 (defmacro it (description &rest body)
   "Define a spec."
   (declare (indent 1) (debug (&define sexp def-body)))
-  `(buttercup-it ,description (lambda () ,@body)))
+  (if body
+      `(buttercup-it ,description (lambda () ,@body))
+    `(buttercup-it ,description (lambda ()
+                                  (signal 'buttercup-pending t)))))
 
 (defun buttercup-it (description body-function)
   "Function to handle an `it' form."
@@ -422,7 +432,8 @@ A disabled suite is not run."
   "Like `buttercup-describe', but mark the suite as disabled.
 
 A disabled suite is not run."
-  nil)
+  (buttercup-describe description (lambda ()
+                                    (signal 'buttercup-pending t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;; Pending Specs: xit
@@ -438,7 +449,8 @@ A disabled spec is not run."
   "Like `buttercup-it', but mark the spec as disabled.
 
 A disabled spec is not run."
-  nil)
+  (buttercup-it description (lambda ()
+                              (signal 'buttercup-pending t))))
 
 ;;;;;;;;;
 ;;; Spies
@@ -655,32 +667,52 @@ Do not change the global value.")
                                         buttercup--after-each)))
     (funcall buttercup-reporter 'suite-started suite)
     (dolist (f (buttercup-suite-before-all suite))
-      (funcall f))
-    (dolist (sub (buttercup-suite-children suite))
-      (cond
-       ((buttercup-suite-p sub)
-        (buttercup--run-suite sub))
-       ((buttercup-spec-p sub)
-        (buttercup--run-spec sub))))
+      (buttercup--update-with-funcall suite f))
+    (when (eq (buttercup-suite-status suite) 'passed)
+      (dolist (sub (buttercup-suite-children suite))
+        (cond
+         ((buttercup-suite-p sub)
+          (buttercup--run-suite sub))
+         ((buttercup-spec-p sub)
+          (buttercup--run-spec sub)))))
     (dolist (f (buttercup-suite-after-all suite))
-      (funcall f))
+      (buttercup--update-with-funcall suite f))
     (funcall buttercup-reporter 'suite-done suite)))
 
 (defun buttercup--run-spec (spec)
   (funcall buttercup-reporter 'spec-started spec)
   (buttercup--with-cleanup
    (dolist (f buttercup--before-each)
-     (funcall f))
-   (let ((res (buttercup--funcall (buttercup-spec-function spec))))
-     (setf (buttercup-spec-status spec)
-           (elt res 0))
-     (setf (buttercup-spec-failure-description spec)
-           (elt res 1))
-     (setf (buttercup-spec-failure-stack spec)
-           (elt res 2)))
+     (buttercup--update-with-funcall spec f))
+   (when (eq (buttercup-spec-status spec) 'passed)
+     (buttercup--update-with-funcall spec (buttercup-spec-function spec)))
    (dolist (f buttercup--after-each)
-     (funcall f)))
+     (buttercup--update-with-funcall spec f)))
   (funcall buttercup-reporter 'spec-done spec))
+
+(defun buttercup--update-with-funcall (suite-or-spec function &rest args)
+  (let* ((result (apply 'buttercup--funcall function args))
+         (status (elt result 0))
+         (description (elt result 1))
+         (stack (elt result 2)))
+    (when (eq status 'failed)
+      (pcase description
+        (`(error (buttercup-failed . ,failure-description))
+         (setq description failure-description))
+        (`(error (buttercup-pending . t))
+         (setq status 'pending
+               description "Pending"))))
+    (cond
+     ((buttercup-suite-p suite-or-spec)
+      (when (eq (buttercup-suite-status suite-or-spec) 'passed)
+        (setf (buttercup-suite-status suite-or-spec) status)
+        (setf (buttercup-suite-failure-description suite-or-spec) description)
+        (setf (buttercup-suite-failure-stack suite-or-spec) stack)))
+     (t
+      (when (eq (buttercup-spec-status suite-or-spec) 'passed)
+        (setf (buttercup-spec-status suite-or-spec) status)
+        (setf (buttercup-spec-failure-description suite-or-spec) description)
+        (setf (buttercup-spec-failure-stack suite-or-spec) stack))))))
 
 ;;;;;;;;;;;;;
 ;;; Reporters
@@ -755,6 +787,8 @@ Calls either `buttercup-reporter-batch' or
          (setq buttercup-reporter-batch--failures
                (append buttercup-reporter-batch--failures
                        (list arg))))
+        ((eq (buttercup-spec-status arg) 'pending)
+         (buttercup--print "  PENDING\n"))
         (t
          (error "Unknown spec status %s" (buttercup-spec-status arg)))))
 
@@ -845,10 +879,7 @@ failed -- The second value is the description of the expectation
   ;; subsequent calls. Thanks to ert for this.
   (setq num-nonmacro-input-events (1+ num-nonmacro-input-events))
   (throw 'buttercup-debugger-continue
-         (if (and (eq (elt args 0) 'error)
-                  (eq (car (elt args 1)) 'buttercup-failed))
-             (list 'failed (cdr (elt args 1)) nil)
-           (list 'failed args (buttercup--backtrace)))))
+         (list 'failed args (buttercup--backtrace))))
 
 (defun buttercup--backtrace ()
   (let* ((n 0)

@@ -29,6 +29,13 @@
             :to-throw
             'buttercup-failed)))
 
+(describe "The buttercup-pending signal"
+  (it "can be raised"
+    (expect (lambda ()
+              (signal 'buttercup-pending t))
+            :to-throw
+            'buttercup-pending)))
+
 (describe "The `expect' form"
   (it "with a matcher should translate directly to the function call"
     (expect (macroexpand '(expect (+ 1 1) :to-equal 2))
@@ -304,7 +311,13 @@
   (it "should expand to a call to the `buttercup-it' function"
     (expect (macroexpand '(it "description" body))
             :to-equal
-            '(buttercup-it "description" (lambda () body)))))
+            '(buttercup-it "description" (lambda () body))))
+
+  (it "without argument should expand to a pending signal raiser."
+    (expect (macroexpand '(it "description"))
+            :to-equal
+            '(buttercup-it "description"
+                           (lambda () (signal 'buttercup-pending t))))))
 
 (describe "The `buttercup-it' function"
   (it "should fail if not called from within a describe form"
@@ -407,7 +420,17 @@
               (buttercup-xdescribe
                "bla bla"
                (lambda () (error "should not happen"))))
-            :not :to-throw)))
+            :not :to-throw))
+
+  (it "should add a pending suite"
+    (let ((buttercup--current-suite nil)
+          (buttercup-suites nil))
+      (buttercup-xdescribe
+       "bla bla"
+       (lambda () nil))
+      (expect (buttercup-suite-status (car buttercup-suites))
+              :to-be
+              'pending))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;; Pending Specs: xit
@@ -421,10 +444,19 @@
 (describe "The `buttercup-xit' function"
   (it "should be a no-op"
     (expect (lambda ()
-              (buttercup-xit
-               "bla bla"
-               (lambda () (error "should not happen"))))
-            :not :to-throw)))
+              (let ((buttercup--current-suite (make-buttercup-suite)))
+                (buttercup-xit
+                 "bla bla"
+                 (lambda () (error "should not happen")))))
+            :not :to-throw))
+
+  (it "should add a function that raises a pending signal"
+    (let ((buttercup--current-suite (make-buttercup-suite)))
+      (buttercup-xit "bla bla" (lambda ()
+                                 (error "should not happen")))
+      (expect (buttercup-spec-function
+               (car (buttercup-suite-children buttercup--current-suite)))
+              :to-throw 'buttercup-pending))))
 
 ;;;;;;;;;
 ;;; Spies
@@ -649,13 +681,6 @@
 (let ((res (buttercup--funcall (lambda () (+ 2 3)))))
   (when (not (equal res (list 'passed 5 nil)))
     (error "Expected passing buttercup--funcall not to return %S"
-           res)))
-
-(let ((res (buttercup--funcall (lambda () (buttercup-fail "Bla")))))
-  (when (not (equal res (list 'failed
-                              "Bla"
-                              nil)))
-    (error "Expected failing buttercup--funcall not to return %S"
            res)))
 
 (let ((res (buttercup--funcall (lambda () (/ 1 0)))))
