@@ -620,7 +620,7 @@ Takes directories as command line arguments, defaulting to the
 current directory."
   (dolist (dir (or command-line-args-left '(".")))
     (dolist (file (directory-files-recursively dir
-                                               "\\'test-\\|-test.el\\'"))
+                                               "\\`test-\\|-test.el\\'"))
       (when (not (string-match "/\\." file))
         (load file nil t))))
   (buttercup-run))
