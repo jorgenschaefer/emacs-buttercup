@@ -762,7 +762,8 @@ Calls either `buttercup-reporter-batch' or
         (print-escape-nonascii t))
     (pcase event
       (`buttercup-started
-       (setq buttercup-reporter-batch--start-time (float-time))
+       (setq buttercup-reporter-batch--start-time (float-time)
+             buttercup-reporter-batch--failures nil)
        (buttercup--print "Running %s specs.\n\n"
                          (buttercup-suites-total-specs-defined arg)))
 
@@ -838,12 +839,13 @@ Calls either `buttercup-reporter-batch' or
   "Reporter for interactive uses."
   ;; This is a bit rudimentary ...
   (with-current-buffer (get-buffer-create "*Buttercup*")
-    (when (eq event 'buttercup-started)
-      (erase-buffer)
-      (view-mode 1)
-      (display-buffer (current-buffer)))
     (let ((old-print (symbol-function 'buttercup--print))
-          (buf (current-buffer)))
+          (buf (current-buffer))
+          (inhibit-read-only t))
+      (when (eq event 'buttercup-started)
+        (erase-buffer)
+        (special-mode)
+        (display-buffer (current-buffer)))
       (fset 'buttercup--print (lambda (fmt &rest args)
                                 (with-current-buffer buf
                                   (let ((inhibit-read-only t))
