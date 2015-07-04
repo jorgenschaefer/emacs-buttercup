@@ -619,8 +619,8 @@ KEYWORD can have one of the following values:
 Takes directories as command line arguments, defaulting to the
 current directory."
   (dolist (dir (or command-line-args-left '(".")))
-    (dolist (file (directory-files-recursively dir
-                                               "\\`test-\\|-test.el\\'"))
+    (dolist (file (directory-files-recursively
+                   dir "\\`test-.*\\.el\\'\\|-test\\.el\\'"))
       (when (not (string-match "/\\." (file-relative-name file)))
         (load file nil t))))
   (buttercup-run))
