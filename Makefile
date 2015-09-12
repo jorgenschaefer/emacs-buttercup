@@ -8,7 +8,7 @@ DISTFILES = buttercup.el buttercup-compat.el buttercup-pkg.el README.md
 all: test
 
 test:
-	$(EMACS) -batch -L . -l buttercup.el -f buttercup-run-markdown README.md
+	$(EMACS) -batch -L . -l buttercup.el -f buttercup-run-markdown docs/introduction.md
 	./bin/buttercup -L .
 
 compile:
