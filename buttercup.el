@@ -620,8 +620,9 @@ KEYWORD can have one of the following values:
   (interactive)
   (let ((buttercup-suites nil)
         (lexical-binding t))
-    (eval-defun nil)
-    (buttercup-run)
+    (save-selected-window
+      (eval-defun nil)
+      (buttercup-run))
     (message "Suite executed successfully")))
 
 ;;;###autoload
@@ -865,7 +866,11 @@ Calls either `buttercup-reporter-batch' or
                                     (insert (apply 'format fmt args))))))
       (unwind-protect
           (buttercup-reporter-batch event arg)
-        (fset 'buttercup--print old-print)))))
+        (fset 'buttercup--print old-print)))
+    (let ((w (get-buffer-window (current-buffer))))
+      (when w
+        (with-selected-window w
+          (goto-char (point-max)))))))
 
 ;;;;;;;;;;;;;
 ;;; Utilities

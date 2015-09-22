@@ -103,10 +103,10 @@
             :to-throw
             'buttercup-failed "Explanation")))
 
-(describe "The `buttercup-define-matcher' macro"
-  (buttercup-define-matcher :test-matcher (a b)
-    (+ a b))
+(buttercup-define-matcher :test-matcher (a b)
+  (+ a b))
 
+(describe "The `buttercup-define-matcher' macro"
   (it "should create a matcher usable by apply-matcher"
     (expect (buttercup--apply-matcher :test-matcher '(1 2))
             :to-equal
