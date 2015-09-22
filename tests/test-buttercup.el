@@ -499,15 +499,17 @@
       (it "returns false if the spy was not called at all"
         (expect (buttercup--apply-matcher
                  :to-have-been-called-with '(test-function 1 2 3))
-                :to-be
-                nil))
+                :to-equal
+                (cons nil
+                      "Expected `test-function' to have been called with (1 2 3), but it was not called at all")))
 
       (it "returns false if the spy was called with different arguments"
         (test-function 3 2 1)
         (expect (buttercup--apply-matcher
                  :to-have-been-called-with '(test-function 1 2 3))
-                :to-be
-                nil))
+                :to-equal
+                (cons nil
+                      "Expected `test-function' to have been called with (1 2 3), but it was called with (3 2 1)")))
 
       (it "returns true if the spy was called with those arguments"
         (test-function 1 2 3)

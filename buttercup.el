@@ -565,9 +565,21 @@ KEYWORD can have one of the following values:
 
 (buttercup-define-matcher :to-have-been-called-with (spy &rest args)
   (let* ((calls (mapcar 'spy-context-args (spy-calls-all spy))))
-    (if (member args calls)
-        t
-      nil)))
+    (cond
+     ((not calls)
+      (cons nil
+            (format "Expected `%s' to have been called with %s, but it was not called at all" spy args)))
+     ((not (member args calls))
+      (cons nil
+            (format "Expected `%s' to have been called with %s, but it was called with %s"
+                    spy
+                    args
+                    (mapconcat (lambda (args)
+                                 (format "%S" args))
+                               calls
+                               ", "))))
+     (t
+      t))))
 
 (defun spy-calls-any (spy)
   "Return t iff SPY has been called at all, nil otherwise."
