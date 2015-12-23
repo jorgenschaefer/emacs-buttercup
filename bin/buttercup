@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ -n "$INSIDE_EMACS" ]
 then
@@ -7,4 +7,29 @@ else
     EMACS_BIN="${EMACS:-emacs}"
 fi
 
-exec "$EMACS_BIN" -batch "$@" -l buttercup -f buttercup-run-discover
+EMACS_ARGS=()
+BUTTERCUP_ARGS=()
+
+while [[ "$#" -gt 0 ]]
+do
+    case "$1" in
+        "-L")
+            EMACS_ARGS+=("$1")
+            EMACS_ARGS+=("$2")
+            shift
+            shift
+            ;;
+        "-p"|"--pattern")
+            BUTTERCUP_ARGS+=("$1")
+            BUTTERCUP_ARGS+=("$2")
+            shift
+            shift
+            ;;
+        *)
+            BUTTERCUP_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+exec "$EMACS_BIN" -batch "${EMACS_ARGS[@]}" -l buttercup -f buttercup-run-discover "${BUTTERCUP_ARGS[@]}"

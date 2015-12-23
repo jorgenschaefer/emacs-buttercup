@@ -631,12 +631,43 @@ KEYWORD can have one of the following values:
 
 Takes directories as command line arguments, defaulting to the
 current directory."
-  (dolist (dir (or command-line-args-left '(".")))
-    (dolist (file (directory-files-recursively
-                   dir "\\`test-.*\\.el\\'\\|-test\\.el\\'"))
-      (when (not (string-match "/\\." (file-relative-name file)))
-        (load file nil t))))
-  (buttercup-run))
+  (let ((dirs nil)
+        (patterns nil)
+        (args command-line-args-left))
+    (message "c-l-a-l: %S" args)
+    (while args
+      (cond
+       ((member (car args) '("-p" "--pattern"))
+        (when (not (cdr args))
+          (error "Option requires argument" (car args)))
+        (push (cadr args) patterns)
+        (setq args (cddr args)))
+       (t
+        (push (car args) dirs)
+        (setq args (cdr args)))))
+    (setq command-line-args-left nil)
+    (dolist (dir (or dirs '(".")))
+      (dolist (file (directory-files-recursively
+                     dir "\\`test-.*\\.el\\'\\|-test\\.el\\'"))
+        (when (not (string-match "/\\." (file-relative-name file)))
+          (load file nil t))))
+    (when patterns
+      (let ((suites-or-specs buttercup-suites))
+        (while suites-or-specs
+          (cond
+           ((buttercup-suite-p (car suites-or-specs))
+            (setq suites-or-specs (append suites-or-specs
+                                          (buttercup-suite-children
+                                           (car suites-or-specs)))))
+           ((buttercup-spec-p (car suites-or-specs))
+            (catch 'return
+              (dolist (p patterns)
+                (when (string-match p (buttercup-spec-full-name (car suites-or-specs)))
+                  (throw 'return t)))
+              (setf (buttercup-spec-function (car suites-or-specs))
+                    (lambda () (signal 'buttercup-pending t))))))
+          (setq suites-or-specs (cdr suites-or-specs)))))
+    (buttercup-run)))
 
 ;;;###autoload
 (defun buttercup-run-markdown ()
