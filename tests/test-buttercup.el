@@ -317,7 +317,7 @@
     (expect (macroexpand '(it "description"))
             :to-equal
             '(buttercup-it "description"
-                           (lambda () (signal 'buttercup-pending t))))))
+                           (lambda () (signal 'buttercup-pending "PENDING"))))))
 
 (describe "The `buttercup-it' function"
   (it "should fail if not called from within a describe form"

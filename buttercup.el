@@ -360,7 +360,7 @@ form.")
   (if body
       `(buttercup-it ,description (lambda () ,@body))
     `(buttercup-it ,description (lambda ()
-                                  (signal 'buttercup-pending t)))))
+                                  (signal 'buttercup-pending "PENDING")))))
 
 (defun buttercup-it (description body-function)
   "Function to handle an `it' form."
@@ -433,7 +433,7 @@ A disabled suite is not run."
 
 A disabled suite is not run."
   (buttercup-describe description (lambda ()
-                                    (signal 'buttercup-pending t))))
+                                    (signal 'buttercup-pending "PENDING"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;; Pending Specs: xit
@@ -450,7 +450,7 @@ A disabled spec is not run."
 
 A disabled spec is not run."
   (buttercup-it description (lambda ()
-                              (signal 'buttercup-pending t))))
+                              (signal 'buttercup-pending "PENDING"))))
 
 ;;;;;;;;;
 ;;; Spies
@@ -665,7 +665,7 @@ current directory."
                 (when (string-match p (buttercup-spec-full-name (car suites-or-specs)))
                   (throw 'return t)))
               (setf (buttercup-spec-function (car suites-or-specs))
-                    (lambda () (signal 'buttercup-pending t))))))
+                    (lambda () (signal 'buttercup-pending "SKIPPED"))))))
           (setq suites-or-specs (cdr suites-or-specs)))))
     (buttercup-run)))
 
@@ -743,9 +743,9 @@ Do not change the global value.")
       (pcase description
         (`(error (buttercup-failed . ,failure-description))
          (setq description failure-description))
-        (`(error (buttercup-pending . t))
+        (`(error (buttercup-pending . ,pending-description))
          (setq status 'pending
-               description "Pending"))))
+               description pending-description))))
     (cond
      ((buttercup-suite-p suite-or-spec)
       (when (eq (buttercup-suite-status suite-or-spec) 'passed)
@@ -833,7 +833,7 @@ Calls either `buttercup-reporter-batch' or
                (append buttercup-reporter-batch--failures
                        (list arg))))
         ((eq (buttercup-spec-status arg) 'pending)
-         (buttercup--print "  PENDING\n"))
+         (buttercup--print "  %s\n" (buttercup-spec-failure-description arg)))
         (t
          (error "Unknown spec status %s" (buttercup-spec-status arg)))))
 
