@@ -634,7 +634,6 @@ current directory."
   (let ((dirs nil)
         (patterns nil)
         (args command-line-args-left))
-    (message "c-l-a-l: %S" args)
     (while args
       (cond
        ((member (car args) '("-p" "--pattern"))
