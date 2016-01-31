@@ -25,35 +25,35 @@
 (describe "With temp fs"
 
   (it "should create multiple files"
-    (with-temp-fs '("foo" "bar" "baz")
+    (with-temp-filesystem '("foo" "bar" "baz")
       (expect "foo" :to-be-file)
       (expect "bar" :to-be-file)
       (expect "baz" :to-be-file)))
 
   (it "should create multiple directories and files"
-    (with-temp-fs '("foo/" "bar/" "baz")
+    (with-temp-filesystem '("foo/" "bar/" "baz")
       (expect "foo" :to-be-directory)
       (expect "bar" :to-be-directory)
       (expect "baz" :to-be-file)))
 
   (it "should create nested directories"
-    (with-temp-fs '("foo/bar" "foo/baz/")
+    (with-temp-filesystem '("foo/bar" "foo/baz/")
       (expect "foo/bar" :to-be-file)
       (expect "foo/baz" :to-be-directory)))
 
   (it "should create non-empty file"
-    (with-temp-fs '(("foo" "amazing content"))
+    (with-temp-filesystem '(("foo" "amazing content"))
       (expect "foo" :to-contain "amazing content")))
 
   (it "should create non-empty nested file"
-    (with-temp-fs '(("foo/bar" "amazing content"))
+    (with-temp-filesystem '(("foo/bar" "amazing content"))
       (expect "foo/bar" :to-contain "amazing content")))
 
   (it "should nest files recursively"
-    (with-temp-fs '(("foo" ("bar" "baz" "bam/"))
-                    ("a/b" ("c" "d/"))
-                    ("x" (("y" ("z"))
-                          "w")))
+    (with-temp-filesystem '(("foo" ("bar" "baz" "bam/"))
+                            ("a/b" ("c" "d/"))
+                            ("x" (("y" ("z"))
+                                  "w")))
       (expect "foo/bar" :to-be-file)
       (expect "foo/baz" :to-be-file)
       (expect "foo/bam" :to-be-directory)

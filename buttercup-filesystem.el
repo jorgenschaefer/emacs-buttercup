@@ -33,11 +33,11 @@
 ;; simple DSL which sets up temporary file hierarchies and runs the
 ;; code in that new context (cf. `with-temp-buffer')
 
-;; The entry point is `with-temp-fs' which as first argument accepts
-;; the specification and then variable number of forms (i.e. "body").
-;; To see the documentation of the DSL call:
+;; The entry point is `with-temp-filesystem' which as first argument
+;; accepts the specification and then variable number of forms
+;; (i.e. "body").  To see the documentation of the DSL call:
 ;;
-;;   M-x describe-function RET with-temp-fs RET
+;;   M-x describe-function RET with-temp-filesystem RET
 
 ;;; Code:
 
@@ -73,14 +73,14 @@
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Mock file system
 
-(defun with-temp-fs--make-parent (spec path)
+(defun with-temp-filesystem--make-parent (spec path)
   "If SPEC is a file name, create its parent directory rooted at PATH."
   (save-match-data
     (string-match "\\(.*\\)/" spec)
     (when (match-string 1 spec)
       (make-directory (concat path "/" (match-string 1 spec)) t))))
 
-(defun with-temp-fs--init (spec &optional path)
+(defun with-temp-filesystem--init (spec &optional path)
   "Interpret the SPEC inside PATH."
   (setq path (or path "."))
   (cond
@@ -91,27 +91,27 @@
            (stringp (cadr spec)))
       (when (string-match-p "/\\'" (car spec))
         (error "Invalid syntax: `%s' - cannot create a directory with text content" (car spec)))
-      (with-temp-fs--make-parent (car spec) path)
+      (with-temp-filesystem--make-parent (car spec) path)
       (with-temp-file (concat path "/" (car spec))
         (insert (cadr spec))))
      ;; directory
      ((and (stringp (car spec))
            (consp (cadr spec)))
       (make-directory (concat path "/" (car spec)) t)
-      (mapc (lambda (s) (with-temp-fs--init s (concat path "/" (car spec)))) (cadr spec)))
+      (mapc (lambda (s) (with-temp-filesystem--init s (concat path "/" (car spec)))) (cadr spec)))
      ;; recursive spec, this should probably never happen
-     (t (mapc (lambda (s) (with-temp-fs--init s path)) spec))))
+     (t (mapc (lambda (s) (with-temp-filesystem--init s path)) spec))))
    ;; directory specified using a string
    ((and (stringp spec)
          (string-match-p "/\\'" spec))
     (make-directory (concat path "/" spec) t))
    ;; empty file
    ((stringp spec)
-    (with-temp-fs--make-parent spec path)
+    (with-temp-filesystem--make-parent spec path)
     (write-region "" nil (concat path "/" spec)))
    (t (error "Invalid syntax: `%s'" spec))))
 
-(defmacro with-temp-fs (spec &rest forms)
+(defmacro with-temp-filesystem (spec &rest forms)
   "Create temporary file hierarchy according to SPEC and run FORMS.
 
 SPEC is a list of specifications for file system entities which
@@ -146,7 +146,7 @@ An example showing all the possibilities:
 If we want to run some code in a directory with an empty file
 \"foo.txt\" present, we call:
 
-  (with-temp-fs '(\"foo\")
+  (with-temp-filesystem '(\"foo\")
     (code-here)
     (and-some-more-forms))
 
@@ -162,7 +162,7 @@ for change."
        (unwind-protect
            (progn
              (setq default-directory ,temp-root)
-             (mapc (lambda (s) (with-temp-fs--init s ".")) ,spec)
+             (mapc (lambda (s) (with-temp-filesystem--init s ".")) ,spec)
              ,@forms)
          (delete-directory ,temp-root t)
          (setq default-directory ,old-dd)))))
