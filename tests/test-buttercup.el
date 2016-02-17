@@ -103,6 +103,31 @@
             :to-throw
             'buttercup-failed "Explanation")))
 
+(describe "The `assume' form"
+  (it "should raise a signal if the condition is nil"
+    (expect (lambda ()
+              (assume nil "Explanation"))
+            :to-throw
+            'buttercup-pending "!! CANCELLED !! Explanation"))
+
+  (it "should show the format if no message is given"
+    (expect (lambda ()
+              (assume (< 1 0)))
+            :to-throw
+            'buttercup-pending "!! CANCELLED !! (< 1 0) => nil"))
+
+  (it "should not raise a signal if the condition is non-nil"
+    (expect (lambda ()
+              (assume 'non-nil "Explanation"))
+            :not :to-throw)))
+
+(describe "The `buttercup-skip function"
+  (it "should raise a signal with its arguments"
+    (expect (lambda ()
+              (buttercup-skip "Explanation" ))
+            :to-throw
+            'buttercup-pending "Explanation")))
+
 (buttercup-define-matcher :test-matcher (a b)
   (+ a b))
 
