@@ -104,6 +104,20 @@ This is the mechanism underlying `expect'. You can use it
 directly if you want to write your own testing functionality."
   (signal 'buttercup-failed (apply #'format format args)))
 
+(defun buttercup-skip (format &rest args)
+  "Skip the current test with the given description."
+  (signal 'buttercup-pending (apply #'format format args)))
+
+(defmacro assume (condition &optional message)
+  "Assume CONDITIION for the current test.
+
+Assume that CONDITION evaluates to non-nil in the current test.
+If it evaluates to nil cancel the current test with MESSAGE.  If
+MESSAGE is omitted or nil show the condition form instead."
+  (let ((message (or message (format "%S => nil" condition))))
+    `(unless ,condition
+       (buttercup-skip "!! CANCELLED !! %s" ,message))))
+
 (defmacro buttercup-define-matcher (matcher args &rest body)
   "Define a matcher to be used in `expect'.
 
