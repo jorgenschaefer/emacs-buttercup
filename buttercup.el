@@ -659,6 +659,7 @@ current directory."
         (push (car args) dirs)
         (setq args (cdr args)))))
     (setq command-line-args-left nil)
+    (when (require 'undercover nil t) (undercover))
     (dolist (dir (or dirs '(".")))
       (dolist (file (directory-files-recursively
                      dir "\\`test-.*\\.el\\'\\|-test\\.el\\'"))
