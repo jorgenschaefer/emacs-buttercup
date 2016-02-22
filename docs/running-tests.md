@@ -3,8 +3,8 @@
 Buttercup is primarily meant to be used non-interactively, to
 automatically test a project independent of a user’s setup, before a
 commit and on a continuous integration platform. Because of this, the
-workflow for buttercup does not use interactive commands but instead
-the command line.
+recommended workflow for buttercup does not use interactive commands
+but instead the command line.
 
 ## Cask
 

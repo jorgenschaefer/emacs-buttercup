@@ -16,7 +16,7 @@ The framework is heavily inspired by
 
 ## Example
 
-*Full article: [Introduction](docs/introduction.md)*
+*Full article: [Writing Tests](docs/writing-tests.md)*
 
 A simple test looks like this.
 
@@ -28,7 +28,7 @@ A simple test looks like this.
 
 ## Installation and Usage
 
-*Full article: [Usage](docs/usage.md)*
+*Full article: [Running Tests](docs/running-tests.md)*
 
 You can install buttercup from
 [MELPA Stable](http://stable.melpa.org/). Add the following to your
