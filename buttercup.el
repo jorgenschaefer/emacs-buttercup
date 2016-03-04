@@ -847,7 +847,7 @@ Calls either `buttercup-reporter-batch' or
                        (list arg))))
         ((eq (buttercup-spec-status arg) 'pending)
          (buttercup--print "  %s\n" (buttercup-spec-failure-description arg)))
-        (t
+        (_
          (error "Unknown spec status %s" (buttercup-spec-status arg)))))
 
       (`suite-done
@@ -886,7 +886,7 @@ Calls either `buttercup-reporter-batch' or
        (when (> (buttercup-suites-total-specs-failed arg) 0)
          (error "")))
 
-      (t
+      (_
        (error "Unknown event %s" event)))))
 
 (defun buttercup--print (fmt &rest args)
