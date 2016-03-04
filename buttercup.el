@@ -661,7 +661,7 @@ current directory."
     (setq command-line-args-left nil)
     (dolist (dir (or dirs '(".")))
       (dolist (file (directory-files-recursively
-                     dir "\\`test-.*\\.el\\'\\|-test\\.el\\'"))
+                     dir "\\`test-.*\\.el\\'\\|-tests?\\.el\\'"))
         (when (not (string-match "/\\." (file-relative-name file)))
           (load file nil t))))
     (when patterns

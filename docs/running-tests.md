@@ -25,7 +25,7 @@ for tests. It should look roughly like this:
 ```
 feature/feature.el
         Cask
-        tests/feature.el
+        tests/test-feature.el
 ```
 
 **feature.el**
@@ -94,7 +94,10 @@ The feature
 Ran 1 specs, 0 failed, in 0.0 seconds.
 ```
 
-That’s it.
+That’s it. Buttercup’s built-in discover test runner looks for files
+named `test-*.el`, `*-test.el` or `*-tests.el`. You can specify a
+different pattern using the `--pattern` command line argument to the
+`buttercup` program.
 
 You can run this command whichever way you like. Common choices
 include a makefile or shell scripts.
