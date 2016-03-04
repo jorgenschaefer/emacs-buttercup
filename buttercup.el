@@ -652,7 +652,7 @@ current directory."
       (cond
        ((member (car args) '("-p" "--pattern"))
         (when (not (cdr args))
-          (error "Option requires argument" (car args)))
+          (error "Option requires argument: %s" (car args)))
         (push (cadr args) patterns)
         (setq args (cddr args)))
        (t
