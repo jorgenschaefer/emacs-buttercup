@@ -3,7 +3,7 @@
 [![Build Status](https://api.travis-ci.org/jorgenschaefer/emacs-buttercup.png?branch=master)](https://travis-ci.org/jorgenschaefer/emacs-buttercup)
 [![MELPA Stable](http://stable.melpa.org/packages/buttercup-badge.svg)](http://stable.melpa.org/#/buttercup)
 
-![Build Status](docs/images/buttercup.jpg)
+![Ranculus repens, photo by sannse](docs/images/buttercup.jpg)
 
 Buttercup is a behavior-driven development framework for testing Emacs
 Lisp code. It allows to group related tests so they can share common

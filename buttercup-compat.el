@@ -1,6 +1,7 @@
 ;;; buttercup-compat.el --- Compatibility definitions for buttercup
 
-;; Copyright (C) 2015  Jorgen Schaefer <contact@jorgenschaefer.de>
+;; Copyright (C) 2015  Jorgen Schaefer
+;; Copyright (C) 2015  Free Software Foundation, Inc.
 
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>
 
@@ -22,6 +23,9 @@
 ;; This file provides compatibility definitions for buttercup. These
 ;; are primarily backported features of later versions of Emacs that
 ;; are not available in earlier ones.
+
+;; Most parts of this file are taken from the Emacs source code to
+;; provide the same functionality.
 
 ;;; Code:
 
