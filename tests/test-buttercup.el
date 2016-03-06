@@ -292,7 +292,13 @@
   (it "should expand to a simple call to the describe function"
     (expect (macroexpand '(describe "description" (+ 1 1)))
             :to-equal
-            '(buttercup-describe "description" (lambda () (+ 1 1))))))
+            '(buttercup-describe "description" (lambda () (+ 1 1)))))
+
+  (it "should support the :var argument"
+    (expect (macroexpand '(describe "description" :var (foo bar) (+ foo bar)))
+            :to-equal
+            '(buttercup-describe "description"
+                                 (lambda () (let (foo bar) (+ foo bar)))))))
 
 (describe "The `buttercup-describe' function"
   (it "should run the enclosing body"

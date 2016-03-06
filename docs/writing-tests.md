@@ -44,10 +44,10 @@ make sure to define your spec file to be lexically scoped.
 
 ```Lisp
 (describe "A suite is just a function"
-  (let ((a nil))
-    (it "and so is a spec"
-      (setq a t)
-      (expect a :to-be t))))
+  :var (a)
+  (it "and so is a spec"
+    (setq a t)
+    (expect a :to-be t)))
 ```
 
 ## Expectations
@@ -198,19 +198,21 @@ The `after-each` block resets the variable before continuing.
 
 ```Lisp
 (describe "A spec using `before-each' and `after-each'"
-  (let ((foo 0))
-    (before-each
-     (setq foo (1+ foo)))
-
-    (after-each
+  :var (foo)
+  (before-each
+   (when (not foo)
      (setq foo 0))
+   (setq foo (1+ foo)))
 
-    (it "is just a function, so it can contain any code"
-      (expect foo :to-equal 1))
+  (after-each
+   (setq foo 0))
 
-    (it "can have more than one expectation"
-      (expect foo :to-equal 1)
-      (expect t :to-equal t))))
+  (it "is just a function, so it can contain any code"
+    (expect foo :to-equal 1))
+
+  (it "can have more than one expectation"
+    (expect foo :to-equal 1)
+    (expect t :to-equal t)))
 ```
 
 The `before-all` form is called only once before all the specs in
@@ -224,19 +226,19 @@ your specs so that they erroneously pass or fail.
 
 ```Lisp
 (describe "A spec using `before-all' and `after-all'"
-  (let (foo)
-    (before-all
-     (setq foo 1))
+  :var (foo)
+  (before-all
+   (setq foo 1))
 
-    (after-all
-     (setq foo 0))
+  (after-all
+   (setq foo 0))
 
-    (it "sets the initial value of foo before specs run"
-      (expect foo :to-equal 1)
-      (setq foo (1+ foo)))
+  (it "sets the initial value of foo before specs run"
+    (expect foo :to-equal 1)
+    (setq foo (1+ foo)))
 
-    (it "does not reset foo between specs"
-      (expect foo :to-equal 2))))
+  (it "does not reset foo between specs"
+    (expect foo :to-equal 2)))
 ```
 
 ### Nesting `describe` Blocks
@@ -249,28 +251,28 @@ walks through the `after-each` functions similarly.
 
 ```Lisp
 (describe "A spec"
-  (let (foo)
-    (before-each
-     (setq foo 0)
-     (setq foo (1+ foo)))
+  :var (foo)
+  (before-each
+   (setq foo 0)
+   (setq foo (1+ foo)))
 
-    (after-each
-     (setq foo 0))
+  (after-each
+   (setq foo 0))
 
-    (it "is just a function, so it can contain any code"
-      (expect foo :to-equal 1))
+  (it "is just a function, so it can contain any code"
+    (expect foo :to-equal 1))
 
-    (it "can have more than one expectation"
-      (expect foo :to-equal 1)
-      (expect t :to-equal t))
+  (it "can have more than one expectation"
+    (expect foo :to-equal 1)
+    (expect t :to-equal t))
 
-    (describe "nested inside a second describe"
-      (let (bar)
-        (before-each
-         (setq bar 1))
+  (describe "nested inside a second describe"
+    (let (bar)
+      (before-each
+       (setq bar 1))
 
-        (it "can reference both scopes as needed"
-          (expect foo :to-equal bar))))))
+      (it "can reference both scopes as needed"
+        (expect foo :to-equal bar)))))
 ```
 
 ## Disabling Suites
@@ -282,13 +284,13 @@ results.
 
 ```Lisp
 (xdescribe "A spec"
-  (let (foo)
-    (before-each
-      (setq foo 0)
-      (setq foo (1+ foo)))
+  :var (foo)
+  (before-each
+    (setq foo 0)
+    (setq foo (1+ foo)))
 
-    (it "is just a function, so it can contain any code"
-      (expect foo :to-equal 1))))
+  (it "is just a function, so it can contain any code"
+    (expect foo :to-equal 1)))
 ```
 
 ## Pending Specs
@@ -323,26 +325,26 @@ the argument list matches any of the recorded calls to the spy.
 
 ```Lisp
 (describe "A spy"
-  (let (foo bar)
-    (before-each
-     (setf (symbol-function 'foo)
-           (lambda (value)
-             (setq bar value)))
+  :var (foo bar)
+  (before-each
+   (setf (symbol-function 'foo)
+         (lambda (value)
+           (setq bar value)))
 
-     (spy-on 'foo)
+   (spy-on 'foo)
 
-     (foo 123)
-     (foo 456 "another param"))
+   (foo 123)
+   (foo 456 "another param"))
 
-    (it "tracks that the spy was called"
-      (expect 'foo :to-have-been-called))
+  (it "tracks that the spy was called"
+    (expect 'foo :to-have-been-called))
 
-    (it "tracks all arguments of its calls"
-      (expect 'foo :to-have-been-called-with 123)
-      (expect 'foo :to-have-been-called-with 456 "another param"))
+  (it "tracks all arguments of its calls"
+    (expect 'foo :to-have-been-called-with 123)
+    (expect 'foo :to-have-been-called-with 456 "another param"))
 
-    (it "stops all execution on a function"
-      (expect bar :to-be nil))))
+  (it "stops all execution on a function"
+    (expect bar :to-be nil)))
 ```
 
 ### Spies: `:and-call-through`
@@ -352,26 +354,26 @@ call the original function instead of returning `nil`.
 
 ```Lisp
 (describe "A spy, when configured to call through"
-  (let (bar set-bar get-bar fetched-bar)
-    (before-each
-      (fset 'set-bar (lambda (val)
-                       (setq bar val)))
-      (fset 'get-bar (lambda ()
-                       bar))
+  :var (bar set-bar get-bar fetched-bar)
+  (before-each
+    (fset 'set-bar (lambda (val)
+                     (setq bar val)))
+    (fset 'get-bar (lambda ()
+                     bar))
 
-      (spy-on 'get-bar :and-call-through)
+    (spy-on 'get-bar :and-call-through)
 
-      (set-bar 123)
-      (setq fetched-bar (get-bar)))
+    (set-bar 123)
+    (setq fetched-bar (get-bar)))
 
-    (it "tracks that the spy was called"
-      (expect 'get-bar :to-have-been-called))
+  (it "tracks that the spy was called"
+    (expect 'get-bar :to-have-been-called))
 
-    (it "should not affect other functions"
-      (expect bar :to-equal 123))
+  (it "should not affect other functions"
+    (expect bar :to-equal 123))
 
-    (it "when called returns the requested value"
-      (expect fetched-bar :to-equal 123))))
+  (it "when called returns the requested value"
+    (expect fetched-bar :to-equal 123)))
 ```
 
 ### Spies: `:and-return-value`
@@ -381,26 +383,26 @@ spied-on function should return.
 
 ```Lisp
 (describe "A spy, when configured to fake a return value"
-  (let (bar set-bar get-bar fetched-bar)
-    (before-each
-      (fset 'set-bar (lambda (val)
-                       (setq bar val)))
-      (fset 'get-bar (lambda ()
-                       bar))
+  :var (bar set-bar get-bar fetched-bar)
+  (before-each
+    (fset 'set-bar (lambda (val)
+                     (setq bar val)))
+    (fset 'get-bar (lambda ()
+                     bar))
 
-      (spy-on 'get-bar :and-return-value 745)
+    (spy-on 'get-bar :and-return-value 745)
 
-      (set-bar 123)
-      (setq fetched-bar (get-bar)))
+    (set-bar 123)
+    (setq fetched-bar (get-bar)))
 
-    (it "tracks that the spy was called"
-      (expect 'get-bar :to-have-been-called))
+  (it "tracks that the spy was called"
+    (expect 'get-bar :to-have-been-called))
 
-    (it "should not affect other functions"
-      (expect bar :to-equal 123))
+  (it "should not affect other functions"
+    (expect bar :to-equal 123))
 
-    (it "when called returns the requested value"
-      (expect fetched-bar :to-equal 745))))
+  (it "when called returns the requested value"
+    (expect fetched-bar :to-equal 745)))
 ```
 
 ### Spies: `:and-call-fake`
@@ -410,26 +412,26 @@ function.
 
 ```Lisp
 (describe "A spy, when configured with an alternate implementation"
-  (let (bar set-bar get-bar fetched-bar)
-    (before-each
-      (fset 'set-bar (lambda (val)
-                       (setq bar val)))
-      (fset 'get-bar (lambda ()
-                       bar))
+  :var (bar set-bar get-bar fetched-bar)
+  (before-each
+    (fset 'set-bar (lambda (val)
+                     (setq bar val)))
+    (fset 'get-bar (lambda ()
+                     bar))
 
-      (spy-on 'get-bar :and-call-fake (lambda () 1001))
+    (spy-on 'get-bar :and-call-fake (lambda () 1001))
 
-      (set-bar 123)
-      (setq fetched-bar (get-bar)))
+    (set-bar 123)
+    (setq fetched-bar (get-bar)))
 
-    (it "tracks that the spy was called"
-      (expect 'get-bar :to-have-been-called))
+  (it "tracks that the spy was called"
+    (expect 'get-bar :to-have-been-called))
 
-    (it "should not affect other functions"
-      (expect bar :to-equal 123))
+  (it "should not affect other functions"
+    (expect bar :to-equal 123))
 
-    (it "when called returns the requested value"
-      (expect fetched-bar :to-equal 1001))))
+  (it "when called returns the requested value"
+    (expect fetched-bar :to-equal 1001)))
 ```
 
 ### Spies: `:and-throw-error`
@@ -439,18 +441,18 @@ will `signal` the specified value as an error.
 
 ```Lisp
 (describe "A spy, when configured to throw an error"
-  (let (bar set-bar get-bar fetched-bar)
-    (before-each
-      (fset 'set-bar (lambda (val)
-                       (setq bar val)))
-      (fset 'get-bar (lambda ()
-                       bar))
+  :var (bar set-bar get-bar fetched-bar)
+  (before-each
+    (fset 'set-bar (lambda (val)
+                     (setq bar val)))
+    (fset 'get-bar (lambda ()
+                     bar))
 
-      (spy-on 'get-bar :and-throw-error 'error))
+    (spy-on 'get-bar :and-throw-error 'error))
 
-    (it "throws the error"
-      (expect (lambda () (get-bar))
-              :to-throw 'error))))
+  (it "throws the error"
+    (expect (lambda () (get-bar))
+            :to-throw 'error)))
 ```
 
 ### Other tracking properties
@@ -472,96 +474,96 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
 ```Lisp
 (describe "A spy"
-  (let (set-foo foo)
-    (before-each
-      (fset 'set-foo (lambda (val &rest ignored)
-                       (setq foo val)))
-      (spy-on 'set-foo))
+  :var (set-foo foo)
+  (before-each
+    (fset 'set-foo (lambda (val &rest ignored)
+                     (setq foo val)))
+    (spy-on 'set-foo))
 
-    (it "tracks if it was called at all"
-      (expect (spy-calls-any 'set-foo)
-              :to-equal
-              nil)
+  (it "tracks if it was called at all"
+    (expect (spy-calls-any 'set-foo)
+            :to-equal
+            nil)
 
-      (set-foo 5)
+    (set-foo 5)
 
-      (expect (spy-calls-any 'set-foo)
-              :to-equal
-              t))
+    (expect (spy-calls-any 'set-foo)
+            :to-equal
+            t))
 
-    (it "tracks the number of times it was called"
-      (expect (spy-calls-count 'set-foo)
-              :to-equal
-              0)
+  (it "tracks the number of times it was called"
+    (expect (spy-calls-count 'set-foo)
+            :to-equal
+            0)
 
-      (set-foo 2)
-      (set-foo 3)
+    (set-foo 2)
+    (set-foo 3)
 
-      (expect (spy-calls-count 'set-foo)
-              :to-equal
-              2))
+    (expect (spy-calls-count 'set-foo)
+            :to-equal
+            2))
 
-    (it "tracks the arguments of each call"
-      (set-foo 123)
-      (set-foo 456 "baz")
+  (it "tracks the arguments of each call"
+    (set-foo 123)
+    (set-foo 456 "baz")
 
-      (expect (spy-calls-args-for 'set-foo 0)
-              :to-equal
-              '(123))
+    (expect (spy-calls-args-for 'set-foo 0)
+            :to-equal
+            '(123))
 
-      (expect (spy-calls-args-for 'set-foo 1)
-              :to-equal
-              '(456 "baz")))
+    (expect (spy-calls-args-for 'set-foo 1)
+            :to-equal
+            '(456 "baz")))
 
-    (it "tracks the arguments of all calls"
-      (set-foo 123)
-      (set-foo 456 "baz")
+  (it "tracks the arguments of all calls"
+    (set-foo 123)
+    (set-foo 456 "baz")
 
-      (expect (spy-calls-all-args 'set-foo)
-              :to-equal
-              '((123)
-                (456 "baz"))))
+    (expect (spy-calls-all-args 'set-foo)
+            :to-equal
+            '((123)
+              (456 "baz"))))
 
-    (it "can provide the context and arguments to all calls"
-      (set-foo 123)
+  (it "can provide the context and arguments to all calls"
+    (set-foo 123)
 
-      (expect (spy-calls-all 'set-foo)
-              :to-equal
-              `(,(make-spy-context :current-buffer (current-buffer)
-                                   :args '(123)
-                                   :return-value nil))))
+    (expect (spy-calls-all 'set-foo)
+            :to-equal
+            `(,(make-spy-context :current-buffer (current-buffer)
+                                 :args '(123)
+                                 :return-value nil))))
 
-    (it "has a shortcut to the most recent call"
-      (set-foo 123)
-      (set-foo 456 "baz")
+  (it "has a shortcut to the most recent call"
+    (set-foo 123)
+    (set-foo 456 "baz")
 
-      (expect (spy-calls-most-recent 'set-foo)
-              :to-equal
-              (make-spy-context :current-buffer (current-buffer)
-                                :args '(456 "baz")
-                                :return-value nil)))
+    (expect (spy-calls-most-recent 'set-foo)
+            :to-equal
+            (make-spy-context :current-buffer (current-buffer)
+                              :args '(456 "baz")
+                              :return-value nil)))
 
-    (it "has a shortcut to the first call"
-      (set-foo 123)
-      (set-foo 456 "baz")
+  (it "has a shortcut to the first call"
+    (set-foo 123)
+    (set-foo 456 "baz")
 
-      (expect (spy-calls-first 'set-foo)
-              :to-equal
-              (make-spy-context :current-buffer (current-buffer)
-                                :args '(123)
-                                :return-value nil)))
+    (expect (spy-calls-first 'set-foo)
+            :to-equal
+            (make-spy-context :current-buffer (current-buffer)
+                              :args '(123)
+                              :return-value nil)))
 
-    (it "can be reset"
-      (set-foo 123)
-      (set-foo 456 "baz")
+  (it "can be reset"
+    (set-foo 123)
+    (set-foo 456 "baz")
 
-      (expect (spy-calls-any 'set-foo)
-              :to-be
-              t)
+    (expect (spy-calls-any 'set-foo)
+            :to-be
+            t)
 
-      (spy-calls-reset 'set-foo)
+    (spy-calls-reset 'set-foo)
 
-      (expect (spy-calls-any 'set-foo)
-              :to-be
-              nil))))
+    (expect (spy-calls-any 'set-foo)
+            :to-be
+            nil)))
 ```

@@ -347,7 +347,11 @@ form.")
 (defmacro describe (description &rest body)
   "Describe a suite of tests."
   (declare (indent 1) (debug (&define sexp def-body)))
-  `(buttercup-describe ,description (lambda () ,@body)))
+  (let ((new-body (if (eq (elt body 0) :var)
+                      `((let ,(elt body 1)
+                          ,@(cddr body)))
+                    body)))
+    `(buttercup-describe ,description (lambda () ,@new-body))))
 
 (defun buttercup-describe (description body-function)
   "Function to handle a `describe' form."
