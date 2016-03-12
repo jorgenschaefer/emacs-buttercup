@@ -344,11 +344,10 @@
             :to-equal
             '(buttercup-it "description" (lambda () body))))
 
-  (it "without argument should expand to a pending signal raiser."
+  (it "without argument should expand to xit."
     (expect (macroexpand '(it "description"))
             :to-equal
-            '(buttercup-it "description"
-                           (lambda () (signal 'buttercup-pending "PENDING"))))))
+            '(buttercup-xit "description"))))
 
 (describe "The `buttercup-it' function"
   (it "should fail if not called from within a describe form"
@@ -470,7 +469,7 @@
   (it "expands directly to a function call"
     (expect (macroexpand '(xit "bla bla" (+ 1 1)))
             :to-equal
-            '(buttercup-xit "bla bla" (lambda () (+ 1 1))))))
+            '(buttercup-xit "bla bla"))))
 
 (describe "The `buttercup-xit' function"
   (it "should be a no-op"
@@ -487,7 +486,15 @@
                                  (error "should not happen")))
       (expect (buttercup-spec-function
                (car (buttercup-suite-children buttercup--current-suite)))
-              :to-throw 'buttercup-pending))))
+              :to-throw 'buttercup-pending)))
+
+  (it "should mark the suite as pending"
+    (let ((buttercup--current-suite (make-buttercup-suite)))
+      (buttercup-xit "bla bla" (lambda ()))
+      (expect (buttercup-spec-status
+               (car (last (buttercup-suite-children
+                           buttercup--current-suite))))
+              :to-be 'pending))))
 
 ;;;;;;;;;
 ;;; Spies
@@ -722,3 +729,4 @@
                               (list '(t / 1 0)))))
     (error "Expected erroring buttercup--funcall not to return %S"
            res)))
+
