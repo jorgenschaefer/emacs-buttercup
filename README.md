@@ -42,6 +42,9 @@ You can install buttercup from
 
 This should allow you to `M-x package-install RET buttercup RET`.
 
+Alternatively, users of Debian 9 or later or Ubuntu 16.10 or later may
+simply `apt-get install elpa-buttercup`.
+
 Now create a file called `test-feature.el` with these contents:
 
 ```Lisp
