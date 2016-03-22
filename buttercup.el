@@ -163,10 +163,10 @@ MATCHER is either a matcher defined with
 
 (buttercup-define-matcher :to-match (text regexp)
   (if (string-match regexp text)
-      (cons t (format "Expected %S to match the regexp %S"
-                      text regexp))
-    (cons nil (format "Expected %S not to match the regexp %S"
-                      text regexp))))
+      (cons nil (format "Expected %S not to match the regexp %S"
+                        text regexp))
+    (cons t (format "Expected %S to match the regexp %S"
+                    text regexp))))
 
 (buttercup-define-matcher :to-be-truthy (arg)
   (if arg
