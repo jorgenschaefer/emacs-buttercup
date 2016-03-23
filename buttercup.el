@@ -775,13 +775,17 @@ Do not change the global value.")
                description pending-description))))
     (cond
      ((buttercup-suite-p suite-or-spec)
-      (setf (buttercup-suite-status suite-or-spec) status)
-      (setf (buttercup-suite-failure-description suite-or-spec) description)
-      (setf (buttercup-suite-failure-stack suite-or-spec) stack))
+      (when (eq (buttercup-suite-status suite-or-spec)
+                'passed)
+        (setf (buttercup-suite-status suite-or-spec) status)
+        (setf (buttercup-suite-failure-description suite-or-spec) description)
+        (setf (buttercup-suite-failure-stack suite-or-spec) stack)))
      (t
-      (setf (buttercup-spec-status suite-or-spec) status)
-      (setf (buttercup-spec-failure-description suite-or-spec) description)
-      (setf (buttercup-spec-failure-stack suite-or-spec) stack)))))
+      (when (eq (buttercup-spec-status suite-or-spec)
+                'passed)
+        (setf (buttercup-spec-status suite-or-spec) status)
+        (setf (buttercup-spec-failure-description suite-or-spec) description)
+        (setf (buttercup-spec-failure-stack suite-or-spec) stack))))))
 
 ;;;;;;;;;;;;;
 ;;; Reporters
