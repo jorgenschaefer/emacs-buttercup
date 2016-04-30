@@ -13,7 +13,7 @@ BUTTERCUP_ARGS=()
 while [[ "$#" -gt 0 ]]
 do
     case "$1" in
-        "-L")
+        "-L"|"--directory"|"-f"|"--funcall"|"-l"|"--load"|"--eval"|"--execute")
             EMACS_ARGS+=("$1")
             EMACS_ARGS+=("$2")
             shift
