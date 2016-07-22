@@ -102,6 +102,20 @@ different pattern using the `--pattern` command line argument to the
 You can run this command whichever way you like. Common choices
 include a makefile or shell scripts.
 
+## Projectile
+
+If you use [Projectile](https://github.com/bbatsov/projectile) for interacting with your projects you can set the "default" project test command to be available when you invoke `projectile-test-project`.  Create a `.dir-locals.el` file in the the root of your project tree (next to your Cask file).  An example:
+
+**.dir-locals.el**
+
+```
+((nil . ((eval . (progn
+                   (require 'projectile)
+                   (puthash (projectile-project-root)
+                            "cask exec buttercup -L ."
+                            projectile-test-cmd-map))))))
+```
+
 ## Travis
 
 If your project is hosted on github, you can use
