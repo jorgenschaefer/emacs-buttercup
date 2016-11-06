@@ -108,7 +108,7 @@
    ;; empty file
    ((stringp spec)
     (with-temp-filesystem--make-parent spec path)
-    (write-region "" nil (concat path "/" spec)))
+    (write-region "" nil (concat path "/" spec) nil 'no-message))
    (t (error "Invalid syntax: `%s'" spec))))
 
 (defmacro with-temp-filesystem (spec &rest forms)
