@@ -49,10 +49,15 @@
     (with-buttercup-filesystem '(("foo/bar" "amazing content"))
       (expect "foo/bar" :to-contain "amazing content")))
 
+  (it "should know how to match file content"
+    (with-buttercup-filesystem '(("foo" "content with a lot of stuff"))
+      (expect "foo" :content-to-match "with a")))
+
   (it "should nest files recursively"
     (with-buttercup-filesystem '(("foo" ("bar" "baz" "bam/"))
                                  ("a/b" ("c" "d/"))
                                  ("x" (("y" ("z"))
+                                       ("content" "content")
                                        "w")))
       (expect "foo/bar" :to-be-file)
       (expect "foo/baz" :to-be-file)
@@ -60,4 +65,6 @@
       (expect "a/b/c" :to-be-file)
       (expect "a/b/d" :to-be-directory)
       (expect "x/y/z" :to-be-file)
+      (expect "x/content" :to-be-file)
+      (expect "x/content" :to-contain "content")
       (expect "x/w" :to-be-file))))
