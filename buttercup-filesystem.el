@@ -141,8 +141,8 @@ An example showing all the possibilities:
    (\"non_empty_file\" \"content\")
    (\"dir/anotherdir/non_empty_file\" \"tralala\")
    (\"big_dir\" (\"empty_file\"
-               (\"non_empty_file\" \"content\")
-                \"subdir/empty_file\")))
+              (\"non_empty_file\" \"content\")
+              \"subdir/empty_file\")))
 
 If we want to run some code in a directory with an empty file
 \"foo.txt\" present, we call:
