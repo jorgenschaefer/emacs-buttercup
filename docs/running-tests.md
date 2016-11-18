@@ -125,19 +125,19 @@ the following `.travis.yml` file:
 
 ```
 language: emacs-lisp
+sudo: false
+cache: apt
 env:
-  - EVM_EMACS=emacs-24.4-bin
-  - EVM_EMACS=emacs-24.5-bin
+  - EVM_EMACS=emacs-24.5-travis
+  - EVM_EMACS=emacs-25.1-travis
 before_install:
-  - sudo mkdir /usr/local/evm
-  - sudo chown $(id -u):$(id -g) /usr/local/evm
-  - curl -fsSkL https://raw.github.com/rejeep/evm/master/go | bash
-  - export PATH="$HOME/.evm/bin:$PATH"
-  - evm install $EVM_EMACS --use
-  - curl -fsSkL https://raw.github.com/cask/cask/master/go | python
-  - export PATH="$HOME/.cask/bin:$PATH"
+  - curl -fsSkL https://gist.github.com/rejeep/ebcd57c3af83b049833b/raw > travis.sh && source ./travis.sh
+  - evm install $EVM_EMACS --use --skip
   - cask
+install:
+  - cask install
 script:
+  - emacs --version
   - cask exec buttercup -L .
 ```
 
