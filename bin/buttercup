@@ -25,6 +25,10 @@ do
             shift
             shift
             ;;
+        "-c"|"--no-color")
+            BUTTERCUP_ARGS+=("$1")
+            shift
+            ;;
         *)
             BUTTERCUP_ARGS+=("$1")
             shift
