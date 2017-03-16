@@ -676,6 +676,9 @@ current directory."
           (error "Option requires argument: %s" (car args)))
         (push (cadr args) patterns)
         (setq args (cddr args)))
+       ((member (car args) '("-c" "--no-color"))
+        (setq buttercup-color nil)
+        (setq args (cdr args)))
        (t
         (push (car args) dirs)
         (setq args (cdr args)))))
@@ -823,13 +826,18 @@ suite-done -- A suite has finished. The argument is the spec.
 
 buttercup-done -- All suites have run, the test run is over.")
 
+(defvar buttercup-color t
+  "Whether to use colors in output.")
+
 (defun buttercup-reporter-adaptive (event arg)
   "A reporter that handles both interactive and noninteractive sessions.
 
 Calls either `buttercup-reporter-batch' or
 `buttercup-reporter-interactive', depending."
   (if noninteractive
-      (buttercup-reporter-batch event arg)
+      (if buttercup-color
+          (buttercup-reporter-batch-color event arg)
+        (buttercup-reporter-batch event arg))
     (buttercup-reporter-interactive event arg)))
 
 (defvar buttercup-reporter-batch--start-time nil
@@ -929,8 +937,106 @@ Calls either `buttercup-reporter-batch' or
       (_
        (error "Unknown event %s" event)))))
 
+(defun buttercup-reporter-batch-color (event arg)
+  (pcase event
+    (`spec-done
+     (let ((level (length (buttercup-spec-parents arg))))
+       (cond
+        ((eq (buttercup-spec-status arg) 'passed)
+         (buttercup--print (buttercup-colorize "\r%s%s\n" 'green)
+                           (make-string (* 2 level) ?\s)
+                           (buttercup-spec-description arg)))
+      ((eq (buttercup-spec-status arg) 'failed)
+       (buttercup--print (buttercup-colorize "\r%s%s  FAILED\n" 'red)
+                         (make-string (* 2 level) ?\s)
+                         (buttercup-spec-description arg))
+       (setq buttercup-reporter-batch--failures
+             (append buttercup-reporter-batch--failures
+                     (list arg))))
+      ((eq (buttercup-spec-status arg) 'pending)
+       (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
+           (buttercup--print "  %s\n" (buttercup-spec-failure-description arg))
+         (buttercup--print (buttercup-colorize "\r%s%s  %s\n" 'yellow)
+                           (make-string (* 2 level) ?\s)
+                           (buttercup-spec-description arg)
+                           (buttercup-spec-failure-description arg))))
+      (_
+       (error "Unknown spec status %s" (buttercup-spec-status arg))))))
+
+    (`buttercup-done
+     (dolist (failed buttercup-reporter-batch--failures)
+       (let ((description (buttercup-spec-failure-description failed))
+             (stack (buttercup-spec-failure-stack failed)))
+         (buttercup--print "%s\n" (make-string 40 ?=))
+         (buttercup--print (buttercup-colorize "%s\n" 'red) (buttercup-spec-full-name failed))
+         (when stack
+           (buttercup--print "\nTraceback (most recent call last):\n")
+           (dolist (frame stack)
+             (let ((line (format "  %S" (cdr frame))))
+               (when (> (length line) 79)
+                 (setq line (concat (substring line 0 76)
+                                    "...")))
+               (buttercup--print "%s\n" line))))
+         (cond
+          ((stringp description)
+           (buttercup--print (concat (buttercup-colorize "FAILED" 'red ) ": %s\n")
+                             description))
+          ((eq (car description) 'error)
+           (buttercup--print "%S: %S\n\n"
+                             (car description)
+                             (cadr description)))
+          (t
+           (buttercup--print "FAILED: %S\n" description)))
+         (buttercup--print "\n")))
+     (let ((defined (buttercup-suites-total-specs-defined arg))
+           (pending (buttercup-suites-total-specs-pending arg))
+           (failed (buttercup-suites-total-specs-failed arg))
+           (duration (- (float-time)
+                        buttercup-reporter-batch--start-time)))
+       (if (> pending 0)
+           (buttercup--print
+            (concat
+             "Ran %s out of %s specs,"
+             (buttercup-colorize " %s failed" (if (eq 0 failed) 'green 'red))
+             ", in %.1f seconds.\n")
+            (- defined pending)
+            defined
+            failed
+            duration)
+         (buttercup--print
+          (concat
+           "Ran %s specs,"
+           (buttercup-colorize " %s failed" (if (eq 0 failed) 'green 'red))
+           ", in %.1f seconds.\n")
+          defined
+          failed
+          duration))
+       (when (> failed 0)
+         (error ""))))
+
+    (_
+     ;; Fall through to buttercup-reporter-batch implementation.
+     (buttercup-reporter-batch event arg)))
+  )
+
 (defun buttercup--print (fmt &rest args)
   (send-string-to-terminal (apply #'format fmt args)))
+
+(defconst buttercup-colors
+  '((black   . 30)
+    (red     . 31)
+    (green   . 32)
+    (yellow  . 33)
+    (blue    . 34)
+    (magenta . 35)
+    (cyan    . 36)
+    (white   . 37))
+  "List of text colors.")
+
+(defun buttercup-colorize (string color)
+  "Format STRING with COLOR."
+  (let ((color-code (cdr (assoc color buttercup-colors))))
+    (format "\u001b[%sm%s\u001b[0m" color-code string)))
 
 (defun buttercup-reporter-interactive (event arg)
   "Reporter for interactive uses."
