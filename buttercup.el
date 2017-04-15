@@ -1109,5 +1109,29 @@ failed -- The second value is the description of the expectation
             frame (backtrace-frame n)))
     frame-list))
 
+;;;###autoload
+(define-minor-mode buttercup-minor-mode
+  "Activate buttercup minor mode.
+
+With buttercup minor mode active the following is activated:
+
+- `describe' and `it' forms are fontified with
+  `font-lock-keyword-face'.
+- `describe' and `it' forms are available from `imenu' for
+  quicker access."
+  :lighter " ❀"
+  (let ((font-lock-form '(("(\\(describe\\|buttercup-define-matcher\\|it\\) "
+                           1 'font-lock-keyword-face)))
+        (imenu-forms '(("Test Suites" "\\((describe\\_> +\\)\"\\(\\_<.+\\_>\\)\"" 2)
+                       ("Spec" "\\((it\\_> +\\)\"\\(\\_<.+\\_>\\)\"" 2))))
+    (if buttercup-minor-mode
+        (progn
+          (font-lock-add-keywords nil font-lock-form)
+          (cl-dolist (form imenu-forms)
+            (add-to-list 'imenu-generic-expression form)))
+      (font-lock-remove-keywords nil font-lock-form)
+      (cl-dolist (form imenu-forms)
+        (setq imenu-generic-expression (delete form imenu-generic-expression))))))
+
 (provide 'buttercup)
 ;;; buttercup.el ends here
