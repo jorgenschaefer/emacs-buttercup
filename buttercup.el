@@ -162,7 +162,8 @@ MATCHER is either a matcher defined with
     (cons nil (format "Expected %S to `equal' %S" a b))))
 
 (buttercup-define-matcher :to-have-same-items-as (a b)
-  (if (cl-every (lambda (x) (member x b)) a)
+  (if (and (cl-subsetp a b :test #'equal)
+           (cl-subsetp b a :test #'equal))
       (cons t (format "Expected %S not to have same items as %S" a b))
     (cons nil (format "Expected %S to have same items as %S" a b))))
 

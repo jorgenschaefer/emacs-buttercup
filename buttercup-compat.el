@@ -38,6 +38,9 @@
 (when (not (fboundp 'cl-every))
   (defalias 'cl-every 'every))
 
+(when (not (fboundp 'cl-subsetp))
+  (defalias 'cl-subsetp 'subsetp))
+
 ;;;;;;;;;;;;;;;;;;;;;
 ;; Introduced in 24.4
 

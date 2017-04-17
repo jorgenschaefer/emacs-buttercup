@@ -106,11 +106,14 @@ that are not included below.
   (it "The :to-have-same-items-as matcher compares two lists as sets"
     (let ((first (list "a" "b" "c"))
           (second (list "c" "a" "b"))
-          (third (list "a" "c" "d")))
+          (third (list "a" "c" "d"))
+          (fourth (list "a" "b")))
       (expect first :to-have-same-items-as second)
       (expect second :to-have-same-items-as first)
       (expect first :not :to-have-same-items-as third)
-      (expect third :not :to-have-same-items-as second)))
+      (expect third :not :to-have-same-items-as second)
+      (expect first :not :to-have-same-items-as fourth)
+      (expect fourth :not :to-have-same-items-as first)))
 
   (it "The :to-match matcher is for regular expressions"
     (let ((message "foo bar baz"))
