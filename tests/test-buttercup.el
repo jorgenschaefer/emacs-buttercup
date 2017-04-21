@@ -730,3 +730,46 @@
     (error "Expected erroring buttercup--funcall not to return %S"
            res)))
 
+;;;;;;;;;;;;;
+;;; Buttercup-minor-mode
+
+(describe "butter-minor-mode"
+
+  (it "should fontify `describe' special form"
+    (with-temp-buffer
+      (emacs-lisp-mode)
+      (buttercup-minor-mode 1)
+      (font-lock-mode)
+      (insert "(describe \"A test suite\" (it \"should fontify special keywords\"))")
+      (font-lock-fontify-region (point-min) (point-max))
+      (expect
+       (text-property-any (point-min) (point-max) 'face 'font-lock-keyword-face)
+       :to-equal 2)))
+
+  (it "should fontify `it' special form"
+    (with-temp-buffer
+      (emacs-lisp-mode)
+      (buttercup-minor-mode 1)
+      (font-lock-mode)
+      (insert "(describe \"A test suite\" (it \"should fontify special keywords\"))")
+      (font-lock-fontify-region (point-min) (point-max))
+      (expect
+       (text-property-any 15 (point-max) 'face 'font-lock-keyword-face)
+       :to-equal 27)))
+
+  (it "should add special forms to `imenu'"
+    (with-temp-buffer
+      (require 'imenu)
+      (emacs-lisp-mode)
+      (buttercup-minor-mode 1)
+      (insert "(describe \"A test suite\"
+  (it \"should fontify special keywords\"))")
+      (imenu--make-index-alist)
+      (let ((suites (assoc "Test Suites" imenu--index-alist))
+            (specs (assoc "Spec" imenu--index-alist)))
+        (expect suites :to-be-truthy)
+        (expect (length (cdr suites)) :to-equal 1)
+        (expect (caadr suites) :to-equal "A test suite")
+        (expect specs :to-be-truthy)
+        (expect (length (cdr specs)) :to-equal 1)
+        (expect (caadr specs) :to-equal "should fontify special keywords")))))
