@@ -564,7 +564,7 @@ KEYWORD can have one of the following values:
 
 (defvar buttercup--cleanup-functions nil)
 
-(defmacro buttercup--with-cleanup (&rest body)
+(defmacro buttercup-with-cleanup (&rest body)
   `(let ((buttercup--cleanup-functions nil))
      (unwind-protect (progn ,@body)
        (dolist (fun buttercup--cleanup-functions)
@@ -765,7 +765,7 @@ Do not change the global value.")
 
 (defun buttercup--run-spec (spec)
   (funcall buttercup-reporter 'spec-started spec)
-  (buttercup--with-cleanup
+  (buttercup-with-cleanup
    (dolist (f buttercup--before-each)
      (buttercup--update-with-funcall spec f))
    (buttercup--update-with-funcall spec (buttercup-spec-function spec))
