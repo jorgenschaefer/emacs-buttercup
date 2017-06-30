@@ -617,6 +617,18 @@ KEYWORD can have one of the following values:
      (t
       t))))
 
+(buttercup-define-matcher :to-have-been-called-times (spy number)
+  (let* ((call-count (length (spy-calls-all spy))))
+    (cond
+     ((= number call-count)
+      t)
+     (t
+      (cons nil
+            (format "Expected `%s' to have been called %s %s, but it was called %s %s"
+                    spy
+                    number (if (= number 1) "time" "times")
+                    call-count (if (= call-count 1) "time" "times")))))))
+
 (defun spy-calls-any (spy)
   "Return t iff SPY has been called at all, nil otherwise."
   (if (spy-calls-all spy)
