@@ -39,7 +39,7 @@
 
 ;;; Code:
 
-(require 'cl)
+(require 'cl-lib)
 (require 'buttercup-compat)
 
 ;;;;;;;;;;
