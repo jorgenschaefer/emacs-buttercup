@@ -556,6 +556,57 @@
                 :to-be
                 t)))
 
+    (describe ":to-have-been-called-times matcher"
+      (before-each
+        (spy-on 'test-function))
+
+      (it "returns error if the spy was called less than expected"
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-times '(test-function 1))
+                :to-equal
+                (cons nil
+                      "Expected `test-function' to have been called 1 time, but it was called 0 times")))
+
+      (it "returns error if the spy was called more than expected"
+        (test-function)
+        (test-function)
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-times '(test-function 1))
+                :to-equal
+                (cons nil
+                      "Expected `test-function' to have been called 1 time, but it was called 2 times")))
+
+      (it "returns true if the spy was called the expected number of times"
+        (test-function)
+        (test-function)
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-times '(test-function 2))
+                :to-equal t))
+
+      (it "use plural words in error message"
+        (test-function)
+        (test-function)
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-times '(test-function 3))
+                :to-equal
+                (cons nil
+                      "Expected `test-function' to have been called 3 times, but it was called 2 times")))
+
+      (it "use singular expected word in error message"
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-times '(test-function 1))
+                :to-equal
+                (cons nil
+                      "Expected `test-function' to have been called 1 time, but it was called 0 times")))
+
+      (it "use singular actual word in error message"
+        (test-function)
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-times '(test-function 2))
+                :to-equal
+                (cons nil
+                      "Expected `test-function' to have been called 2 times, but it was called 1 time"))))
+
     (describe ":and-call-through keyword functionality"
       (before-each
         (spy-on 'test-function :and-call-through))

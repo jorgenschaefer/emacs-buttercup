@@ -359,6 +359,26 @@ the argument list matches any of the recorded calls to the spy.
     (expect bar :to-be nil)))
 ```
 
+The `:to-have-been-called-times` matcher will return true if the spy
+was called a certain number of times.
+
+```Lisp
+(describe "A spy"
+  :var (foo bar)
+  (before-each
+   (setf (symbol-function 'foo)
+         (lambda (value)
+           (setq bar value)))
+
+   (spy-on 'foo)
+
+   (foo 123)
+   (foo 456 "another param"))
+
+  (it "tracks that the spy was called twice"
+    (expect 'foo :to-have-been-called-times 2)))
+```
+
 ### Spies: `:and-call-through`
 
 The keyword argument `:and-call-through` to `spy-on` will make the spy
