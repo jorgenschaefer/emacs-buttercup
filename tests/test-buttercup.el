@@ -15,6 +15,12 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; Define test-suites to test buttercup itself. This test suite
+;; should pass for all Emacs versions defined in the .travis.yml file
+;; in the project directory root.
+
 ;;; Code:
 
 (require 'buttercup)
@@ -23,7 +29,7 @@
 (require 'cl-lib)
 
 (defun make-list-of-closures (items)
-  "For each element of ITEMS, return a closure that returns it."
+  "For each element of ITEMS, return a closure returning it."
   (mapcar (lambda (item)
             (lambda () item))
           items))
@@ -277,7 +283,7 @@
               "su1 su2"))))
 
 (describe "The `buttercup-spec-full-name' function"
-  (let (su1 su2 sp1)
+  (let (su1 su2 sp1 sp2)
     (before-each
       (setq su1 (make-buttercup-suite :description "su1")
             su2 (make-buttercup-suite :description "su2")
@@ -372,7 +378,7 @@
   (it "should add a spec to the current suite"
     (let ((buttercup--current-suite (make-buttercup-suite)))
       (buttercup-it "the test spec"
-                    (lambda () 23))
+        (lambda () 23))
       (let ((spec (car (buttercup-suite-children buttercup--current-suite))))
         (expect (buttercup-spec-description spec)
                 :to-equal
@@ -461,7 +467,7 @@
   (it "should be a no-op"
     (expect (buttercup-xdescribe
              "bla bla"
-             (lambda () (error "should not happen")))
+             (lambda () (error "Should not happen")))
             :not :to-throw))
 
   (it "should add a pending suite"
@@ -489,13 +495,13 @@
      (let ((buttercup--current-suite (make-buttercup-suite)))
        (buttercup-xit
            "bla bla"
-         (lambda () (error "should not happen")))))
+         (lambda () (error "Should not happen")))))
     :not :to-throw)
 
   (it "should add a function that raises a pending signal"
     (let ((buttercup--current-suite (make-buttercup-suite)))
       (buttercup-xit "bla bla" (lambda ()
-                                 (error "should not happen")))
+                                 (error "Should not happen")))
       (expect (funcall
                (buttercup-spec-function
                 (car (buttercup-suite-children buttercup--current-suite))))
@@ -709,45 +715,45 @@
                 :to-equal
                 23))
 
-	  (it "works with strings"
-		(spy-on 'test-function :and-return-value "return value")
-		(expect (test-function 2 3)
-				:to-equal
-				"return value"))
+      (it "works with strings"
+	(spy-on 'test-function :and-return-value "return value")
+	(expect (test-function 2 3)
+		:to-equal
+		"return value"))
 
-	  (it "works with vectors"
-		(spy-on 'test-function :and-return-value [1 2 3 4])
-		(expect (test-function 2 3)
-				:to-equal
-				[1 2 3 4]))
+      (it "works with vectors"
+	(spy-on 'test-function :and-return-value [1 2 3 4])
+	(expect (test-function 2 3)
+		:to-equal
+		[1 2 3 4]))
 
-	  (it "works with symbols"
-		(spy-on 'test-function :and-return-value 'symbol)
-		(expect (test-function 2 3)
-				:to-equal
-				'symbol))
+      (it "works with symbols"
+	(spy-on 'test-function :and-return-value 'symbol)
+	(expect (test-function 2 3)
+		:to-equal
+		'symbol))
 
-	  (it "works with conses"
-		(spy-on 'test-function :and-return-value '(1 . 2))
-		(expect (test-function 2 3)
-				:to-equal
-				(cons 1 2)))
+      (it "works with conses"
+	(spy-on 'test-function :and-return-value '(1 . 2))
+	(expect (test-function 2 3)
+		:to-equal
+		(cons 1 2)))
 
-	  (it "works with lists"
-		(spy-on 'test-function :and-return-value '(1 2 3))
-		(expect (test-function 2 3)
-				:to-equal
-				'(1 2 3)))
+      (it "works with lists"
+	(spy-on 'test-function :and-return-value '(1 2 3))
+	(expect (test-function 2 3)
+		:to-equal
+		'(1 2 3)))
 
-	  (it "works with alists"
-		(spy-on 'test-function :and-return-value '((first . 1)
-												   (second . 2)
-												   (third . 3)))
-		(expect (test-function 2 3)
-				:to-equal
-				'((first . 1)
-				  (second . 2)
-				  (third . 3)))))
+      (it "works with alists"
+	(spy-on 'test-function :and-return-value '((first . 1)
+						   (second . 2)
+						   (third . 3)))
+	(expect (test-function 2 3)
+		:to-equal
+		'((first . 1)
+		  (second . 2)
+		  (third . 3)))))
 
     (describe ":and-call-fake keyword functionality"
       (before-each
@@ -953,3 +959,7 @@
         (expect specs :to-be-truthy)
         (expect (length (cdr specs)) :to-equal 1)
         (expect (cl-caadr specs) :to-equal "should fontify special keywords")))))
+
+(provide 'test-buttercup)
+
+;;; test-buttercup.el ends here
