@@ -70,32 +70,38 @@ This macro knows three forms:
          (consp arg))
     `(buttercup-expect ,(cadr arg)
                        #',(car arg)
-                       ,@(cddr arg)))
+                       (list ,@(cddr arg))
+                       ',arg))
    ((and (not matcher)
          (not (consp arg)))
-    `(buttercup-expect ,arg))
+    `(buttercup-expect ,arg nil nil ',arg))
    (t
-    `(buttercup-expect ,arg ,matcher ,@args))))
+    `(buttercup-expect ,arg ,matcher (list ,@args) ',arg))))
 
-(defun buttercup-expect (arg &optional matcher &rest args)
+(defun buttercup-expect (arg &optional matcher args orig-expr)
   "The function for the `expect' macro.
 
 See the macro documentation for details."
-  (if (not matcher)
-      (when (not arg)
-        (buttercup-fail "Expected %S to be non-nil" arg))
-    (let ((result (buttercup--apply-matcher matcher (cons arg args))))
-      (if (consp result)
-          (when (not (car result))
-            (buttercup-fail "%s" (cdr result)))
-        (when (not result)
-          (buttercup-fail "Expected %S %S %S"
-                          arg
-                          matcher
-                          (mapconcat (lambda (obj)
-                                       (format "%S" obj))
-                                     args
-                                     " ")))))))
+  (let ((prefix
+         (if orig-expr
+             (format "While evaluating `%S': " orig-expr)
+           "")))
+    (if (not matcher)
+        (when (not arg)
+          (buttercup-fail "%sExpected %S to be non-nil" prefix arg))
+      (let ((result (buttercup--apply-matcher matcher (cons arg args))))
+        (if (consp result)
+            (when (not (car result))
+              (buttercup-fail "%s%s" prefix (cdr result)))
+          (when (not result)
+            (buttercup-fail "%sExpected %S %S %S"
+                            prefix
+                            arg
+                            matcher
+                            (mapconcat (lambda (obj)
+                                         (format "%S" obj))
+                                       args
+                                       " "))))))))
 
 (defun buttercup-fail (format &rest args)
   "Fail the current test with the given description.
