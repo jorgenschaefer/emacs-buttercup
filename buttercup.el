@@ -67,13 +67,14 @@ This macro knows three forms:
   Fail the current test iff ARG is not true."
   (cond
    ((and (not matcher)
-         (consp arg))
+         (consp arg)
+         (consp (cdr arg))
+         (consp (cddr arg)))
     `(buttercup-expect ,(cadr arg)
                        #',(car arg)
                        (list ,@(cddr arg))
                        ',arg))
-   ((and (not matcher)
-         (not (consp arg)))
+   ((and (not matcher))
     `(buttercup-expect ,arg nil nil ',arg))
    (t
     `(buttercup-expect ,arg ,matcher (list ,@args) ',arg))))
