@@ -83,10 +83,16 @@ This macro knows three forms:
   "The function for the `expect' macro.
 
 See the macro documentation for details."
-  (let ((prefix
-         (if orig-expr
-             (format "While evaluating `%S': " orig-expr)
-           "")))
+  (let* ((oneline-prefix
+          (if orig-expr
+              (format "While evaluating `%S': " orig-expr)
+            ""))
+         (prefix
+          (if (< (length oneline-prefix) 60)
+              oneline-prefix
+            (format "While evaluating\n%s"
+                    (replace-regexp-in-string "^\\(.\\)" "    \\1"
+                                              (pp-to-string orig-expr))))))
     (if (not matcher)
         (when (not arg)
           (buttercup-fail "%sExpected %S to be non-nil" prefix arg))
