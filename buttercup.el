@@ -550,28 +550,54 @@ KEYWORD can have one of the following values:
       the original function.
 
   nil -- Track calls, but simply return nil instead of calling
-      the original function."
-  (cond
-   ((eq keyword :and-call-through)
-    (let ((orig (symbol-function symbol)))
-      (buttercup--spy-on-and-call-fake symbol
-                                       (lambda (&rest args)
-                                         (apply orig args)))))
-   ((eq keyword :and-return-value)
-    (buttercup--spy-on-and-call-fake symbol
-                                     (lambda (&rest args)
-                                       arg)))
-   ((eq keyword :and-call-fake)
-    (buttercup--spy-on-and-call-fake symbol
-                                     arg))
-   ((eq keyword :and-throw-error)
-    (buttercup--spy-on-and-call-fake symbol
-                                     (lambda (&rest args)
-                                       (signal arg "Stubbed error"))))
-   (t
-    (buttercup--spy-on-and-call-fake symbol
-                                     (lambda (&rest args)
-                                       nil)))))
+      the original function.
+
+If the original function was a command, the generated spy will
+also be a command with the same interactive form, unless
+`:and-call-fake' is used, in which case it is the caller's
+responsibility to ensure ARG is a command."
+  ;; We need to load an autoloaded function before spying on it
+  (when (autoloadp (symbol-function symbol))
+    (autoload-do-load (symbol-function symbol) symbol))
+  (cl-assert (not (autoloadp (symbol-function symbol))))
+  (let* ((orig (symbol-function symbol))
+         (orig-intform (interactive-form orig))
+         (replacement
+          (pcase
+              keyword
+            (:and-call-through
+             (when arg
+               (error "`spy-on' with `:and-call-through' does not take an ARG"))
+             `(lambda (&rest args)
+                ,orig-intform
+                (apply ',orig args)))
+            (:and-return-value
+             `(lambda (&rest args)
+                ,orig-intform
+                ,arg))
+            (:and-call-fake
+             (let ((replacement-intform (interactive-form arg)))
+               (when (and replacement-intform
+                          (not (equal orig-intform replacement-intform)))
+                 (display-warning 'buttercup
+                                  "While spying on `%S': replacement does not have the same interactive form"))
+               `(lambda (&rest args)
+                  ,(or replacement-intform orig-intform)
+                  (apply (function ,arg) args))))
+            (:and-throw-error
+             `(lambda (&rest args)
+                ,orig-intform
+                (signal ',(or arg 'error) "Stubbed error")))
+            ;; No keyword: just spy
+            (`nil
+             (when arg
+               (error "`spy-on' with no KEYWORD does not take an ARG."))
+             `(lambda (&rest args)
+                ,orig-intform
+                nil))
+            (_
+             (error "Invalid `spy-on' keyword: `%S'" keyword)))))
+    (buttercup--spy-on-and-call-fake symbol replacement)))
 
 (defun buttercup--spy-on-and-call-fake (spy fake-function)
   "Replace the function in symbol SPY with a spy that calls FAKE-FUNCTION."
@@ -592,6 +618,12 @@ KEYWORD can have one of the following values:
                                  :return-value return-value
                                  :current-buffer (current-buffer)))
               return-value)))
+    ;; Add the interactive form from `fake-function', if any
+    (when (interactive-form fake-function)
+      (setq this-spy-function
+            `(lambda (&rest args)
+               ,(interactive-form fake-function)
+               (apply ',this-spy-function args))))
     this-spy-function))
 
 (defvar buttercup--cleanup-functions nil)
@@ -991,22 +1023,22 @@ Calls either `buttercup-reporter-batch' or
          (buttercup--print (buttercup-colorize "\r%s%s\n" 'green)
                            (make-string (* 2 level) ?\s)
                            (buttercup-spec-description arg)))
-      ((eq (buttercup-spec-status arg) 'failed)
-       (buttercup--print (buttercup-colorize "\r%s%s  FAILED\n" 'red)
-                         (make-string (* 2 level) ?\s)
-                         (buttercup-spec-description arg))
-       (setq buttercup-reporter-batch--failures
-             (append buttercup-reporter-batch--failures
-                     (list arg))))
-      ((eq (buttercup-spec-status arg) 'pending)
-       (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
-           (buttercup--print "  %s\n" (buttercup-spec-failure-description arg))
-         (buttercup--print (buttercup-colorize "\r%s%s  %s\n" 'yellow)
+        ((eq (buttercup-spec-status arg) 'failed)
+         (buttercup--print (buttercup-colorize "\r%s%s  FAILED\n" 'red)
                            (make-string (* 2 level) ?\s)
-                           (buttercup-spec-description arg)
-                           (buttercup-spec-failure-description arg))))
-      (_
-       (error "Unknown spec status %s" (buttercup-spec-status arg))))))
+                           (buttercup-spec-description arg))
+         (setq buttercup-reporter-batch--failures
+               (append buttercup-reporter-batch--failures
+                       (list arg))))
+        ((eq (buttercup-spec-status arg) 'pending)
+         (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
+             (buttercup--print "  %s\n" (buttercup-spec-failure-description arg))
+           (buttercup--print (buttercup-colorize "\r%s%s  %s\n" 'yellow)
+                             (make-string (* 2 level) ?\s)
+                             (buttercup-spec-description arg)
+                             (buttercup-spec-failure-description arg))))
+        (_
+         (error "Unknown spec status %s" (buttercup-spec-status arg))))))
 
     (`buttercup-done
      (dolist (failed buttercup-reporter-batch--failures)
