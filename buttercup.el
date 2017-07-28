@@ -246,7 +246,8 @@ MATCHER is either a matcher defined with
                                  "of %S, but it threw %S")
                          function signal (car err)))))
       (t
-       (cons t (format "Expected %S not to throw an error" function)))))))
+       (cons t (format "Expected %S not to throw an error, but it threw %S"
+                       function err)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Suite and spec data structures
