@@ -18,6 +18,7 @@
 ;;; Code:
 
 (require 'buttercup)
+(require 'autoload)
 (require 'ert)
 
 ;;;;;;;;;;
@@ -510,7 +511,10 @@
     ;; the function before each test would invalidate those tests.
     (before-all
       (fset 'test-function (lambda (a b)
-                             (+ a b))))
+                             (+ a b)))
+      (fset 'test-command (lambda ()
+                            (interactive)
+                            t)))
 
     (describe "`spy-on' function"
       (it "replaces a symbol's function slot"
@@ -518,7 +522,51 @@
         (expect (test-function 1 2) :to-be nil))
 
       (it "restores the old value after a spec run"
-        (expect (test-function 1 2) :to-equal 3)))
+        (expect (test-function 1 2) :to-equal 3))
+
+      (it "allows a spied-on command to be executed as a command"
+        (spy-on 'test-command)
+        (expect (commandp 'test-command))
+        (expect (lambda () (command-execute 'test-command))
+                :not :to-throw)
+        (expect 'test-command :to-have-been-called))
+
+      (it "can spy on autoloaded functions"
+        (let* ((function-file (make-temp-file "test-file-" nil ".el"))
+               (function-name 'test-autoloaded-function)
+               (defun-form `(defun ,function-name ()
+                              "An autoloaded function"
+                              :loaded-successfully))
+               (autoload-form (make-autoload defun-form function-file)))
+          (unwind-protect
+              (progn
+                ;; Create the real function in a file
+                (with-temp-file function-file
+                  (insert ";; -*-lexical-binding:t-*-\n"
+                          (pp-to-string defun-form)))
+                ;; Define the autoload for the function
+                (fmakunbound function-name)
+                (eval autoload-form)
+                (expect (autoloadp (symbol-function function-name)))
+                (spy-on function-name :and-call-through)
+                (expect (not (autoloadp (symbol-function function-name))))
+                (expect (funcall function-name)
+                        :to-be :loaded-successfully))
+            (delete-file function-file nil))))
+
+      (it "only accepts ARG for keywords that use it"
+        (expect
+         (lambda () (spy-on 'test-function :and-call-through :arg-not-allowed))
+         :to-throw)
+        (expect
+         (lambda () (spy-on 'test-function nil :arg-not-allowed))
+         :to-throw)
+        (expect
+         (lambda () (spy-on 'test-function :and-throw-error))
+         :not :to-throw)
+        (expect
+         (lambda () (test-function 1 2))
+         :to-throw 'error)))
 
     (describe ":to-have-been-called matcher"
       (before-each
