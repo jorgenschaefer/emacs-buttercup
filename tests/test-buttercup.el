@@ -505,7 +505,10 @@
 
 (describe "The Spy "
   (let (test-function)
-    (before-each
+    ;; We use `before-all' here because some tests need to access the
+    ;; same function as previous tests in order to work, so overriding
+    ;; the function before each test would invalidate those tests.
+    (before-all
       (fset 'test-function (lambda (a b)
                              (+ a b))))
 
