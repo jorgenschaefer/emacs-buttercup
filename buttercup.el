@@ -203,6 +203,10 @@ MATCHER is either a matcher defined with
                       a b precision))))
 
 (buttercup-define-matcher :to-throw (function &optional signal signal-args)
+  ;; This will trigger errors relating to FUNCTION not being a
+  ;; function outside the following `condition-case'.
+  (when (not (functionp function))
+    (funcall function))
   (condition-case err
       (progn
         (funcall function)
