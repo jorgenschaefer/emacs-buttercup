@@ -165,7 +165,12 @@ that are not included below.
       (let ((foo (lambda () (+ a 1)))
             (bar (lambda () (+ a 1))))
         (expect foo :not :to-throw 'void-variable '(b))
-        (expect bar :to-throw 'void-variable '(a))))))
+        (expect bar :to-throw 'void-variable '(a))))
+    (it "only works on functions"
+      (expect (lambda () (expect nil :to-throw 'error))
+              :to-throw 'void-function)
+      (expect (lambda () (expect "hello" :not :to-throw 'error))
+              :to-throw 'invalid-function))))
 ```
 
 ## Grouping Related Specs with `describe`
