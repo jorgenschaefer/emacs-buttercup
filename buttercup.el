@@ -351,6 +351,23 @@ MATCHER is either a matcher defined with
                 (buttercup-spec-description spec))
       (buttercup-spec-description spec))))
 
+(defun buttercup--full-spec-names (spec-or-suite-list)
+  "Return full names of all specs in SPEC-OR-SUITE-LIST."
+  (cl-loop
+   for x in (buttercup--specs-and-suites spec-or-suite-list)
+   if (buttercup-spec-p x)
+   collect (buttercup-spec-full-name x)))
+
+(defun buttercup--find-duplicate-spec-names (spec-or-suite-list)
+  "Return duplicate full spec names among SPEC-OR-SUITE-LIST."
+  (let ((seen '())
+        (duplicates '()))
+    (dolist (name (buttercup--full-spec-names spec-or-suite-list)
+                  (nreverse duplicates))
+      (if (member name seen)
+          (push name duplicates)
+        (push name seen)))))
+
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
 
@@ -385,6 +402,12 @@ form.")
     (if enclosing-suite
         (buttercup-suite-add-child enclosing-suite
                                    buttercup--current-suite)
+      ;; At top level, warn about duplicate spec names
+      (let ((dups (buttercup--find-duplicate-spec-names
+                   (list buttercup--current-suite))))
+        (when dups
+          (message "Found duplicate spec names in suite: %S"
+                   (delete-dups dups))))
       (setq buttercup-suites (append buttercup-suites
                                      (list buttercup--current-suite))))))
 
