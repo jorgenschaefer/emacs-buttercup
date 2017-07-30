@@ -716,6 +716,14 @@ current directory."
         (args command-line-args-left))
     (while args
       (cond
+       ((member (car args) '("--traceback"))
+        (when (not (cdr args))
+          (error "Option requires argument: %s" (car args)))
+        ;; Make sure it's a valid style by trying to format a dummy
+        ;; frame with it
+        (buttercup--format-stack-frame '(t myfun 1 2) (intern (cadr args)))
+        (setq buttercup-stack-frame-style (intern (cadr args)))
+        (setq args (cddr args)))
        ((member (car args) '("-p" "--pattern"))
         (when (not (cdr args))
           (error "Option requires argument: %s" (car args)))
@@ -945,11 +953,8 @@ Calls either `buttercup-reporter-batch' or
            (when stack
              (buttercup--print "\nTraceback (most recent call last):\n")
              (dolist (frame stack)
-               (let ((line (format "  %S" (cdr frame))))
-                 (when (> (length line) 79)
-                   (setq line (concat (substring line 0 76)
-                                      "...")))
-                 (buttercup--print "%s\n" line))))
+               (let ((frame-text (buttercup--format-stack-frame frame)))
+                 (buttercup--print "%s\n" frame-text))))
            (cond
             ((stringp description)
              (buttercup--print "FAILED: %s\n" description))
@@ -1017,11 +1022,8 @@ Calls either `buttercup-reporter-batch' or
          (when stack
            (buttercup--print "\nTraceback (most recent call last):\n")
            (dolist (frame stack)
-             (let ((line (format "  %S" (cdr frame))))
-               (when (> (length line) 79)
-                 (setq line (concat (substring line 0 76)
-                                    "...")))
-               (buttercup--print "%s\n" line))))
+             (let ((frame-text (buttercup--format-stack-frame frame)))
+               (buttercup--print "%s\n" frame-text))))
          (cond
           ((stringp description)
            (buttercup--print (concat (buttercup-colorize "FAILED" 'red ) ": %s\n")
@@ -1153,6 +1155,42 @@ failed -- The second value is the description of the expectation
       (setq n (1+ n)
             frame (backtrace-frame n)))
     frame-list))
+
+(defvar buttercup-stack-frame-style (car '(crop full pretty))
+  "Style to use when printing stack traces of tests.
+
+`full' is roughly the same style as normal Emacs stack traces:
+print each stack frame in full with no line breaks. `crop' is
+like full, but truncates each line to 80 characters. `pretty'
+uses `pp' to generate a multi-line indented representation of
+each frame, and prefixes each stack frame with lambda or M to
+indicate whether it represents a normal evaluated function call
+or a macro/special form.")
+
+(defun buttercup--format-stack-frame (frame &optional style)
+  (pcase (or style buttercup-stack-frame-style 'crop)
+    (`full (format "  %S" (cdr frame)))
+    (`crop
+     (let ((line (buttercup--format-stack-frame frame 'full)))
+       ;; Note: this could be done sith `s-truncate' from the s
+       ;; package
+       (when (> (length line) 79)
+         (setq line (concat (substring line 0 76)
+                            "...")))
+       line))
+    (`pretty
+     (thread-last (pp-to-string (cdr frame))
+       ;; Delete empty trailing line
+       (replace-regexp-in-string "\n[[:space:]]*\\'"
+                                 "")
+       ;; Indent 2 spaces
+       (replace-regexp-in-string "^"
+                                 "  ")
+       ;; Prefix first line with lambda for function call and M for
+       ;; macro/special form
+       (replace-regexp-in-string "\\` "
+                                 (if (car frame) "λ" "M"))))
+    (_ (error "Unknown stack trace style: %S" style))))
 
 (defmacro buttercup-with-converted-ert-signals (&rest body)
   "Convert ERT signals to buttercup signals in BODY.
