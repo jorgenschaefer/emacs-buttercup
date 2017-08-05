@@ -18,6 +18,7 @@
 ;;; Code:
 
 (require 'buttercup)
+(require 'ert)
 
 ;;;;;;;;;;
 ;;; expect
@@ -342,7 +343,10 @@
   (it "should expand to a call to the `buttercup-it' function"
     (expect (macroexpand '(it "description" body))
             :to-equal
-            '(buttercup-it "description" (lambda () body))))
+            '(buttercup-it "description"
+               (lambda ()
+                 (buttercup-with-converted-ert-signals
+                   body)))))
 
   (it "without argument should expand to xit."
     (expect (macroexpand '(it "description"))
@@ -762,6 +766,24 @@
     (expect 'send-string-to-terminal
             :to-have-been-called-with
             "Hello, world")))
+
+;;;;;;;;;;;;;;;;;;;;;
+;;; ERT Compatibility
+
+(describe "Buttercup's ERT compatibility wrapper"
+  (it "should convert `ert-test-failed' into `buttercup-failed"
+    (expect
+     (lambda ()
+       (buttercup-with-converted-ert-signals
+         (should (equal 1 2))))
+     :to-throw 'buttercup-failed))
+  (it "should convert `ert-test-skipped' into `buttercup-pending"
+    (assume (functionp 'ert-skip) "Loaded ERT version does not provide `ert-skip'")
+    (expect
+     (lambda ()
+       (buttercup-with-converted-ert-signals
+         (ert-skip "Skipped this test")))
+     :to-throw 'buttercup-pending)))
 
 ;;;;;;;;;;;;;
 ;;; Utilities
