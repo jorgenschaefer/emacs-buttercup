@@ -395,11 +395,15 @@ form.")
   "Define a spec."
   (declare (indent 1) (debug (&define sexp def-body)))
   (if body
-      `(buttercup-it ,description (lambda () ,@body))
+      `(buttercup-it ,description
+         (lambda ()
+           (buttercup-with-converted-ert-signals
+             ,@body)))
     `(buttercup-xit ,description)))
 
 (defun buttercup-it (description body-function)
   "Function to handle an `it' form."
+  (declare (indent 1))
   (when (not buttercup--current-suite)
     (error "`it' has to be called from within a `describe' form."))
   (buttercup-suite-add-child buttercup--current-suite
@@ -485,6 +489,7 @@ A disabled spec is not run."
   "Like `buttercup-it', but mark the spec as disabled.
 
 A disabled spec is not run."
+  (declare (indent 1))
   (buttercup-it description (lambda ()
                               (signal 'buttercup-pending "PENDING")))
   (let ((spec (car (last (buttercup-suite-children
@@ -1125,6 +1130,20 @@ failed -- The second value is the description of the expectation
       (setq n (1+ n)
             frame (backtrace-frame n)))
     frame-list))
+
+(defmacro buttercup-with-converted-ert-signals (&rest body)
+  "Convert ERT signals to buttercup signals in BODY.
+
+Specifically, `ert-test-failed' is converted to
+`buttercup-failed' and `ert-test-skipped' is converted to
+`buttercup-pending'."
+  (declare (indent 0))
+  `(condition-case err
+       (progn ,@body)
+     (ert-test-failed
+      (buttercup-fail "%S" err))
+     (ert-test-skipped
+      (buttercup-skip "Skipping: %S" err))))
 
 ;;;###autoload
 (define-minor-mode buttercup-minor-mode
