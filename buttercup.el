@@ -800,8 +800,10 @@ current directory."
     (dolist (file command-line-args-left)
       (with-current-buffer (find-file-noselect file)
         (goto-char (point-min))
-        (while (re-search-forward "```lisp\n\\(\\(?:.\\|\n\\)*?\\)```"
-                                  nil t)
+        (while (let ((case-fold-search t))
+                 (re-search-forward
+                  "```\\(?:emacs-\\|e\\)?lisp\n\\(\\(?:.\\|\n\\)*?\\)```"
+                  nil t))
           (let ((code (match-string 1)))
             (with-current-buffer lisp-buffer
               (insert code))))))
