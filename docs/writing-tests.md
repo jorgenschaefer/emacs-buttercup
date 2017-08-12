@@ -19,7 +19,7 @@ A test suite begins with a call to the Buttercup macro `describe` with
 the first parameter describing the suite and the rest being the body
 of code that implements the suite.
 
-```Lisp
+```Emacs-Lisp
 (describe "A suite"
   (it "contains a spec with an expectation"
     (expect t :to-be t)))
@@ -42,7 +42,7 @@ functions internally, so they can contain any executable code
 necessary to implement the rules. Emacs Lisp scoping rules apply, so
 make sure to define your spec file to be lexically scoped.
 
-```Lisp
+```Emacs-Lisp
 (describe "A suite is just a function"
   :var (a)
   (it "and so is a spec"
@@ -69,7 +69,7 @@ the spec.
 Any matcher can evaluate to a negative assertion by prepending it with
 the `:not` matcher.
 
-```Lisp
+```Emacs-Lisp
 (describe "The :to-be matcher compares with `eq'"
   (it "and has a positive case"
     (expect t :to-be t))
@@ -85,7 +85,7 @@ matchers (see the `buttercup-define-matcher` macro for further
 information) for when a project’s domain calls for specific assertions
 that are not included below.
 
-```Lisp
+```Emacs-Lisp
 (describe "Included matchers:"
   (it "The :to-be matcher compares with `eq'"
     (let* ((a 12)
@@ -182,7 +182,7 @@ finding specs in a large suite. If you name them well, your specs read
 as full sentences in traditional
 [BDD](http://en.wikipedia.org/wiki/Behavior-driven_development) style.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spec"
   (it "is just a function, so it can contain any code"
     (let ((foo 0))
@@ -213,7 +213,7 @@ variable under test is defined at the top-level scope — the `describe`
 block — and initialization code is moved into a `before-each` block.
 The `after-each` block resets the variable before continuing.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spec using `before-each' and `after-each'"
   :var (foo)
   (before-each
@@ -241,7 +241,7 @@ However, be careful using `before-all` and `after-all`! Since they are
 not reset between specs, it is easy to accidentally leak state between
 your specs so that they erroneously pass or fail.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spec using `before-all' and `after-all'"
   :var (foo)
   (before-all
@@ -266,7 +266,7 @@ spec is executed, Buttercup walks down the tree executing each
 `before-each` function in order. After the spec is executed, Buttercup
 walks through the `after-each` functions similarly.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spec"
   :var (foo)
   (before-each
@@ -299,7 +299,7 @@ macros, respectively. These suites and any specs inside them are
 skipped when run and thus their results will not appear in the
 results.
 
-```Lisp
+```Emacs-Lisp
 (xdescribe "A spec"
   :var (foo)
   (before-each
@@ -319,7 +319,7 @@ Any spec declared with `xit` is marked as pending.
 Any spec declared without a function body will also be marked as
 pending in results.
 
-```Lisp
+```Emacs-Lisp
 (describe "Pending specs"
   (xit "can be declared using `xit'"
     (expect t :to-be nil))
@@ -340,7 +340,7 @@ special matchers for interacting with spies. The
 at all. The `:to-have-been-called-with` matcher will return true if
 the argument list matches any of the recorded calls to the spy.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spy"
   :var (foo bar)
   (before-each
@@ -367,7 +367,7 @@ the argument list matches any of the recorded calls to the spy.
 The `:to-have-been-called-times` matcher will return true if the spy
 was called a certain number of times.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spy"
   :var (foo bar)
   (before-each
@@ -389,7 +389,7 @@ was called a certain number of times.
 The keyword argument `:and-call-through` to `spy-on` will make the spy
 call the original function instead of returning `nil`.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spy, when configured to call through"
   :var (bar set-bar get-bar fetched-bar)
   (before-each
@@ -418,7 +418,7 @@ call the original function instead of returning `nil`.
 The keyword argument `:and-return-value` specifies the value the
 spied-on function should return.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spy, when configured to fake a return value"
   :var (bar set-bar get-bar fetched-bar)
   (before-each
@@ -447,7 +447,7 @@ spied-on function should return.
 The keyword argument `:and-call-fake` delegates calls to a supplied
 function.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spy, when configured with an alternate implementation"
   :var (bar set-bar get-bar fetched-bar)
   (before-each
@@ -476,7 +476,7 @@ function.
 With the keyword argument `:and-throw-error`, all calls to the spy
 will `signal` the specified value as an error.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spy, when configured to throw an error"
   :var (bar set-bar get-bar fetched-bar)
   (before-each
@@ -509,7 +509,7 @@ arguments for the first call.
 
 Finally, `spy-calls-reset` clears all tracking for a spy.
 
-```Lisp
+```Emacs-Lisp
 (describe "A spy"
   :var (set-foo foo)
   (before-each
