@@ -1096,6 +1096,53 @@ responsibility to ensure ARG is a command."
 ;;;;;;;;;;;;;;;;
 ;;; Test Runners
 
+;; These variables are generally used in the test runners, but set
+;; elsewhere. They must be defined here before their first use.
+(defvar buttercup-reporter #'buttercup-reporter-adaptive
+  "The reporter function for buttercup test runs.
+
+During a run of buttercup, the value of this variable is called
+as a function with two arguments. The first argument is a symbol
+describing the event, the second depends on the event.
+
+The following events are known:
+
+buttercup-started -- The test run is starting. The argument is a
+  list of suites this run will execute.
+
+suite-started -- A suite is starting. The argument is the suite.
+  See `make-buttercup-suite' for details on this structure.
+
+spec-started -- A spec in is starting. The argument is the spec.
+  See `make-buttercup-spec' for details on this structure.
+
+spec-done -- A spec has finished executing. The argument is the
+  spec.
+
+suite-done -- A suite has finished. The argument is the spec.
+
+buttercup-done -- All suites have run, the test run is over.")
+
+(defvar buttercup-stack-frame-style (car '(crop full pretty))
+  "Style to use when printing stack traces of tests.
+
+`full' is roughly the same style as normal Emacs stack traces:
+print each stack frame in full with no line breaks. `crop' is
+like full, but truncates each line to 80 characters. `pretty'
+uses `pp' to generate a multi-line indented representation of
+each frame, and prefixes each stack frame with lambda or M to
+indicate whether it represents a normal evaluated function call
+or a macro/special form.")
+
+(defvar buttercup-color t
+  "Whether to use colors in output.")
+
+(defconst buttercup-warning-buffer-name " *Buttercup-Warnings*"
+  "Buffer name used to collect warnings issued while running a spec.
+
+A buffer with this name should only exist while running a test
+spec, and should be killed after running the spec.")
+
 ;;;###autoload
 (defun buttercup-run-at-point ()
   "Run the buttercup suite at point."
@@ -1271,34 +1318,6 @@ Do not change the global value.")
 
 ;;;;;;;;;;;;;
 ;;; Reporters
-
-(defvar buttercup-reporter #'buttercup-reporter-adaptive
-  "The reporter function for buttercup test runs.
-
-During a run of buttercup, the value of this variable is called
-as a function with two arguments. The first argument is a symbol
-describing the event, the second depends on the event.
-
-The following events are known:
-
-buttercup-started -- The test run is starting. The argument is a
-  list of suites this run will execute.
-
-suite-started -- A suite is starting. The argument is the suite.
-  See `make-buttercup-suite' for details on this structure.
-
-spec-started -- A spec in is starting. The argument is the spec.
-  See `make-buttercup-spec' for details on this structure.
-
-spec-done -- A spec has finished executing. The argument is the
-  spec.
-
-suite-done -- A suite has finished. The argument is the spec.
-
-buttercup-done -- All suites have run, the test run is over.")
-
-(defvar buttercup-color t
-  "Whether to use colors in output.")
 
 (defun buttercup-reporter-adaptive (event arg)
   "A reporter that handles both interactive and noninteractive sessions.
@@ -1488,12 +1507,6 @@ Calls either `buttercup-reporter-batch' or
   (send-string-to-terminal (apply #'format fmt args)))
 
 
-(defconst buttercup-warning-buffer-name " *Buttercup-Warnings*"
-  "Buffer name used to collect warnings issued while running a spec.
-
-A buffer with this name should only exist while running a test
-spec, and should be killed after running the spec.")
-
 (defadvice display-warning (around buttercup-defer-warnings activate)
   "Log all warnings to a special buffer while running buttercup tests.
 
@@ -1602,17 +1615,6 @@ failed -- The second value is the description of the expectation
       (setq n (1+ n)
             frame (backtrace-frame n)))
     frame-list))
-
-(defvar buttercup-stack-frame-style (car '(crop full pretty))
-  "Style to use when printing stack traces of tests.
-
-`full' is roughly the same style as normal Emacs stack traces:
-print each stack frame in full with no line breaks. `crop' is
-like full, but truncates each line to 80 characters. `pretty'
-uses `pp' to generate a multi-line indented representation of
-each frame, and prefixes each stack frame with lambda or M to
-indicate whether it represents a normal evaluated function call
-or a macro/special form.")
 
 (defun buttercup--format-stack-frame (frame &optional style)
   (pcase (or style buttercup-stack-frame-style 'crop)
