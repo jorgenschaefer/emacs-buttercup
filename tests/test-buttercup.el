@@ -41,17 +41,17 @@
   (it "with a matcher should translate directly to the function call"
     (expect (macroexpand '(expect (+ 1 1) :to-equal 2))
             :to-equal
-            '(buttercup-expect (+ 1 1) :to-equal 2)))
+            '(buttercup-expect (+ 1 1) :to-equal (list 2) '(+ 1 1))))
 
   (it "with a form argument should extract the matcher from the form"
     (expect (macroexpand '(expect (equal (+ 1 1) 2)))
             :to-equal
-            '(buttercup-expect (+ 1 1) #'equal 2)))
+            '(buttercup-expect (+ 1 1) #'equal (list 2) '(equal (+ 1 1) 2))))
 
   (it "with a single argument should pass it to the function"
     (expect (macroexpand '(expect t))
             :to-equal
-            '(buttercup-expect t))))
+            '(buttercup-expect t nil nil 't))))
 
 (describe "The `buttercup-expect' function"
   (describe "with a single argument"
@@ -71,13 +71,13 @@
   (describe "with a function as a matcher argument"
     (it "should not raise an error if the function returns true"
       (expect (lambda ()
-                (buttercup-expect t #'eq t))
+                (buttercup-expect t #'eq '(t)))
               :not :to-throw
               'buttercup-failed))
 
     (it "should raise an error if the function returns false"
       (expect (lambda ()
-                (buttercup-expect t #'eq nil))
+                (buttercup-expect t #'eq '(nil)))
               :to-throw
               'buttercup-failed)))
 

@@ -67,35 +67,48 @@ This macro knows three forms:
   Fail the current test iff ARG is not true."
   (cond
    ((and (not matcher)
-         (consp arg))
+         (consp arg)
+         (consp (cdr arg))
+         (consp (cddr arg)))
     `(buttercup-expect ,(cadr arg)
                        #',(car arg)
-                       ,@(cddr arg)))
-   ((and (not matcher)
-         (not (consp arg)))
-    `(buttercup-expect ,arg))
+                       (list ,@(cddr arg))
+                       ',arg))
+   ((and (not matcher))
+    `(buttercup-expect ,arg nil nil ',arg))
    (t
-    `(buttercup-expect ,arg ,matcher ,@args))))
+    `(buttercup-expect ,arg ,matcher (list ,@args) ',arg))))
 
-(defun buttercup-expect (arg &optional matcher &rest args)
+(defun buttercup-expect (arg &optional matcher args orig-expr)
   "The function for the `expect' macro.
 
 See the macro documentation for details."
-  (if (not matcher)
-      (when (not arg)
-        (buttercup-fail "Expected %S to be non-nil" arg))
-    (let ((result (buttercup--apply-matcher matcher (cons arg args))))
-      (if (consp result)
-          (when (not (car result))
-            (buttercup-fail "%s" (cdr result)))
-        (when (not result)
-          (buttercup-fail "Expected %S %S %S"
-                          arg
-                          matcher
-                          (mapconcat (lambda (obj)
-                                       (format "%S" obj))
-                                     args
-                                     " ")))))))
+  (let* ((oneline-prefix
+          (if orig-expr
+              (format "While evaluating `%S': " orig-expr)
+            ""))
+         (prefix
+          (if (< (length oneline-prefix) 60)
+              oneline-prefix
+            (format "While evaluating\n%s"
+                    (replace-regexp-in-string "^\\(.\\)" "    \\1"
+                                              (pp-to-string orig-expr))))))
+    (if (not matcher)
+        (when (not arg)
+          (buttercup-fail "%sExpected %S to be non-nil" prefix arg))
+      (let ((result (buttercup--apply-matcher matcher (cons arg args))))
+        (if (consp result)
+            (when (not (car result))
+              (buttercup-fail "%s%s" prefix (cdr result)))
+          (when (not result)
+            (buttercup-fail "%sExpected %S %S %S"
+                            prefix
+                            arg
+                            matcher
+                            (mapconcat (lambda (obj)
+                                         (format "%S" obj))
+                                       args
+                                       " "))))))))
 
 (defun buttercup-fail (format &rest args)
   "Fail the current test with the given description.
@@ -233,7 +246,8 @@ MATCHER is either a matcher defined with
                                  "of %S, but it threw %S")
                          function signal (car err)))))
       (t
-       (cons t (format "Expected %S not to throw an error" function)))))))
+       (cons t (format "Expected %S not to throw an error, but it threw %S"
+                       function err)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Suite and spec data structures
