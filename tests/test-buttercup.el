@@ -688,7 +688,47 @@
       (it "returns the specified value"
         (expect (test-function 2 3)
                 :to-equal
-                23)))
+                23))
+
+	  (it "works with strings"
+		(spy-on 'test-function :and-return-value "return value")
+		(expect (test-function 2 3)
+				:to-equal
+				"return value"))
+
+	  (it "works with vectors"
+		(spy-on 'test-function :and-return-value [1 2 3 4])
+		(expect (test-function 2 3)
+				:to-equal
+				[1 2 3 4]))
+
+	  (it "works with symbols"
+		(spy-on 'test-function :and-return-value 'symbol)
+		(expect (test-function 2 3)
+				:to-equal
+				'symbol))
+
+	  (it "works with conses"
+		(spy-on 'test-function :and-return-value '(1 . 2))
+		(expect (test-function 2 3)
+				:to-equal
+				(cons 1 2)))
+
+	  (it "works with lists"
+		(spy-on 'test-function :and-return-value '(1 2 3))
+		(expect (test-function 2 3)
+				:to-equal
+				'(1 2 3)))
+
+	  (it "works with alists"
+		(spy-on 'test-function :and-return-value '((first . 1)
+												   (second . 2)
+												   (third . 3)))
+		(expect (test-function 2 3)
+				:to-equal
+				'((first . 1)
+				  (second . 2)
+				  (third . 3)))))
 
     (describe ":and-call-fake keyword functionality"
       (before-each

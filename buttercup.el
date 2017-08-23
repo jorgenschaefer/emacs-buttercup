@@ -574,7 +574,7 @@ responsibility to ensure ARG is a command."
             (:and-return-value
              `(lambda (&rest args)
                 ,orig-intform
-                ,arg))
+                ',arg))
             (:and-call-fake
              (let ((replacement-intform (interactive-form arg)))
                (when (and replacement-intform
