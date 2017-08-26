@@ -728,7 +728,8 @@
 
     (describe "on the buttercup-started event"
       (it "should emit the number of specs"
-        (let ((buttercup-reporter-batch--start-time nil))
+        (let ((buttercup-reporter-batch--start-time nil)
+              (buttercup-reporter-batch--failures nil))
           (buttercup-reporter-batch 'buttercup-started (list parent-suite)))
 
         (expect 'buttercup--print
