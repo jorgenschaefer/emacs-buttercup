@@ -162,6 +162,21 @@ that are not included below.
         (expect (+ a 1) :to-throw 'void-variable '(a)))))
 ```
 
+If you are migrating from ERT, you can also use `should` and similar
+macros inside a buttercup test just like you would inside an
+`ert-deftest` form.
+
+```Emacs-Lisp
+(require 'ert)
+(describe "ERT support"
+  (it "allows you to use ERT macros in tests"
+    (let* ((a 12)
+           (b a))
+      (should (= a b))
+      (should-not (eq a nil))
+      (should-error (error "Throws an error")))))
+```
+
 ## Grouping Related Specs with `describe`
 
 The `describe` macro is for grouping related specs. The string
