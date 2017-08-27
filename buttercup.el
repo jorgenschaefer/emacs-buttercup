@@ -772,10 +772,7 @@ current directory."
       (dolist (file (directory-files-recursively
                      dir "\\`test-.*\\.el\\'\\|-tests?\\.el\\'"))
         (when (not (string-match "\\(^\\|/\\)\\." (file-relative-name file)))
-          (condition-case err
-              (load file nil t)
-            (error
-             (message (format "Error while loading %s:\n%s" file (error-message-string err))))))))
+          (load file nil t))))
     (when patterns
       (let ((suites-or-specs buttercup-suites))
         (while suites-or-specs
