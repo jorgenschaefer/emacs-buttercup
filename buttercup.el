@@ -1218,13 +1218,13 @@ current directory."
     (dolist (file command-line-args-left)
       (with-current-buffer (find-file-noselect file)
         (goto-char (point-min))
-        (while (let ((case-fold-search t))
-                 (re-search-forward
+        (let ((case-fold-search t))
+          (while (re-search-forward
                   "```\\(?:emacs-\\|e\\)?lisp\n\\(\\(?:.\\|\n\\)*?\\)```"
-                  nil t))
-          (let ((code (match-string 1)))
-            (with-current-buffer lisp-buffer
-              (insert code))))))
+                  nil t)
+            (let ((code (match-string 1)))
+              (with-current-buffer lisp-buffer
+                (insert code)))))))
     (with-current-buffer lisp-buffer
       (setq lexical-binding t)
       (eval-region (point-min)
