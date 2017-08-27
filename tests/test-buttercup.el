@@ -20,65 +20,60 @@
 (require 'buttercup)
 (require 'autoload)
 (require 'ert)
+(require 'cl-lib)
+
+(defun make-list-of-closures (items)
+  "For each element of ITEMS, return a closure that returns it."
+  (mapcar (lambda (item)
+            (lambda () item))
+          items))
 
 ;;;;;;;;;;
 ;;; expect
 
 (describe "The buttercup-failed signal"
   (it "can be raised"
-    (expect (lambda ()
-              (signal 'buttercup-failed t))
+    (expect (signal 'buttercup-failed t)
             :to-throw
             'buttercup-failed)))
 
 (describe "The buttercup-pending signal"
   (it "can be raised"
-    (expect (lambda ()
-              (signal 'buttercup-pending t))
+    (expect (signal 'buttercup-pending t)
             :to-throw
             'buttercup-pending)))
 
 (describe "The `expect' form"
-  (it "with a matcher should translate directly to the function call"
-    (expect (macroexpand '(expect (+ 1 1) :to-equal 2))
-            :to-equal
-            '(buttercup-expect (+ 1 1) :to-equal 2)))
+  (it "with a matcher should translate to the function call with closures"
+    (let ((expansion (macroexpand '(expect (+ 1 1) :to-equal 2))))
+      (expect (length expansion) :to-equal 4)
+      (expect (nth 0 expansion) :to-be 'buttercup-expect)
+      (expect (functionp (nth 1 expansion)))
+      (expect (nth 2 expansion) :to-be :to-equal)
+      (expect (functionp (nth 3 expansion)))))
 
-  (it "with a form argument should extract the matcher from the form"
-    (expect (macroexpand '(expect (equal (+ 1 1) 2)))
-            :to-equal
-            '(buttercup-expect (+ 1 1) #'equal 2)))
-
-  (it "with a single argument should pass it to the function"
-    (expect (macroexpand '(expect t))
-            :to-equal
-            '(buttercup-expect t))))
+  (it "with no matcher should use `:to-be-truthy' as the matcher"
+    (let ((expansion (macroexpand '(expect (equal (+ 1 1) 2)))))
+      (expect (length expansion) :to-equal 3)
+      (expect (nth 0 expansion) :to-be 'buttercup-expect)
+      (expect (functionp (nth 1 expansion)))
+      (expect (nth 2 expansion) :to-be :to-be-truthy))))
 
 (describe "The `buttercup-expect' function"
-  (describe "with a single argument"
-    (it "should not raise an error if the argument is true"
-      (expect (lambda ()
-                (buttercup-expect t))
-              :not :to-throw
-              'buttercup-failed))
-
-    (it "should raise an error if the argument is false"
-      (expect (lambda ()
-                (buttercup-expect nil))
-              :to-throw
-              'buttercup-failed
-              "Expected nil to be non-nil")))
-
   (describe "with a function as a matcher argument"
     (it "should not raise an error if the function returns true"
-      (expect (lambda ()
-                (buttercup-expect t #'eq t))
+      (expect (buttercup-expect
+               (lambda () t)
+               #'eq
+               (lambda () t))
               :not :to-throw
               'buttercup-failed))
 
     (it "should raise an error if the function returns false"
-      (expect (lambda ()
-                (buttercup-expect t #'eq nil))
+      (expect (buttercup-expect
+               (lambda () t)
+               #'eq
+               (lambda () nil))
               :to-throw
               'buttercup-failed)))
 
@@ -87,72 +82,69 @@
     (buttercup-define-matcher :always-false (a) nil)
 
     (it "should not raise an error if the matcher returns true"
-      (expect (lambda ()
-                (buttercup-expect 1 :always-true))
+      (expect (buttercup-expect (lambda () 1) :always-true)
               :not :to-throw
               'buttercup-failed))
 
     (it "should raise an error if the matcher returns false"
-      (expect (lambda ()
-                (buttercup-expect 1 :always-false))
+      (expect (buttercup-expect (lambda () 1) :always-false)
               :to-throw
               'buttercup-failed))))
 
 (describe "The `buttercup-fail' function"
   (it "should raise a signal with its arguments"
-    (expect (lambda ()
-              (buttercup-fail "Explanation" ))
+    (expect (buttercup-fail "Explanation" )
             :to-throw
             'buttercup-failed "Explanation")))
 
 (describe "The `assume' form"
   (it "should raise a signal if the condition is nil"
-    (expect (lambda ()
-              (assume nil "Explanation"))
+    (expect (assume nil "Explanation")
             :to-throw
             'buttercup-pending "!! CANCELLED !! Explanation"))
 
   (it "should show the format if no message is given"
-    (expect (lambda ()
-              (assume (< 1 0)))
+    (expect (assume (< 1 0))
             :to-throw
             'buttercup-pending "!! CANCELLED !! (< 1 0) => nil"))
 
   (it "should not raise a signal if the condition is non-nil"
-    (expect (lambda ()
-              (assume 'non-nil "Explanation"))
+    (expect (assume 'non-nil "Explanation")
             :not :to-throw)))
 
 (describe "The `buttercup-skip function"
   (it "should raise a signal with its arguments"
-    (expect (lambda ()
-              (buttercup-skip "Explanation" ))
+    (expect (buttercup-skip "Explanation" )
             :to-throw
             'buttercup-pending "Explanation")))
 
 (buttercup-define-matcher :test-matcher (a b)
-  (+ a b))
+  (+ (funcall a) (funcall b)))
 
 (describe "The `buttercup-define-matcher' macro"
   (it "should create a matcher usable by apply-matcher"
-    (expect (buttercup--apply-matcher :test-matcher '(1 2))
+    (expect (buttercup--apply-matcher
+             :test-matcher (make-list-of-closures '(1 2)))
             :to-equal
             3)))
 
-(describe "The `buttercup--apply-matcher'"
+(describe "The `buttercup--apply-matcher' function"
   (it "should work with functions"
-    (expect (buttercup--apply-matcher #'+ '(1 2))
+    (expect (buttercup--apply-matcher
+             #'+
+             (make-list-of-closures '(1 2)))
             :to-equal
             3))
 
   (it "should work with matchers"
-    (expect (buttercup--apply-matcher :test-matcher '(1 2))
+    (expect (buttercup--apply-matcher
+             :test-matcher (make-list-of-closures '(1 2)))
             :to-equal
             3))
 
   (it "should fail if the matcher is not defined"
-    (expect (lambda ()
-              (buttercup--apply-matcher :not-defined '(1 2)))
+    (expect (buttercup--apply-matcher
+             :not-defined (make-list-of-closures '(1 2)))
             :to-throw)))
 
 ;;;;;;;;;;;;;;;;;;;;;
@@ -356,9 +348,8 @@
 
 (describe "The `buttercup-it' function"
   (it "should fail if not called from within a describe form"
-    (expect (lambda ()
-              (let ((buttercup--current-suite nil))
-                (buttercup-it "" (lambda ()))))
+    (expect (let ((buttercup--current-suite nil))
+              (buttercup-it "" (lambda ())))
             :to-throw))
 
   (it "should add a spec to the current suite"
@@ -451,10 +442,9 @@
 
 (describe "The `buttercup-xdescribe' function"
   (it "should be a no-op"
-    (expect (lambda ()
-              (buttercup-xdescribe
-               "bla bla"
-               (lambda () (error "should not happen"))))
+    (expect (buttercup-xdescribe
+             "bla bla"
+             (lambda () (error "should not happen")))
             :not :to-throw))
 
   (it "should add a pending suite"
@@ -478,19 +468,20 @@
 
 (describe "The `buttercup-xit' function"
   (it "should be a no-op"
-    (expect (lambda ()
-              (let ((buttercup--current-suite (make-buttercup-suite)))
-                (buttercup-xit
-                 "bla bla"
-                 (lambda () (error "should not happen")))))
-            :not :to-throw))
+    (expect
+     (let ((buttercup--current-suite (make-buttercup-suite)))
+       (buttercup-xit
+           "bla bla"
+         (lambda () (error "should not happen")))))
+    :not :to-throw)
 
   (it "should add a function that raises a pending signal"
     (let ((buttercup--current-suite (make-buttercup-suite)))
       (buttercup-xit "bla bla" (lambda ()
                                  (error "should not happen")))
-      (expect (buttercup-spec-function
-               (car (buttercup-suite-children buttercup--current-suite)))
+      (expect (funcall
+               (buttercup-spec-function
+                (car (buttercup-suite-children buttercup--current-suite))))
               :to-throw 'buttercup-pending)))
 
   (it "should mark the suite as pending"
@@ -527,7 +518,7 @@
       (it "allows a spied-on command to be executed as a command"
         (spy-on 'test-command)
         (expect (commandp 'test-command))
-        (expect (lambda () (command-execute 'test-command))
+        (expect (command-execute 'test-command)
                 :not :to-throw)
         (expect 'test-command :to-have-been-called))
 
@@ -556,16 +547,16 @@
 
       (it "only accepts ARG for keywords that use it"
         (expect
-         (lambda () (spy-on 'test-function :and-call-through :arg-not-allowed))
+         (spy-on 'test-function :and-call-through :arg-not-allowed)
          :to-throw)
         (expect
-         (lambda () (spy-on 'test-function nil :arg-not-allowed))
+         (spy-on 'test-function nil :arg-not-allowed)
          :to-throw)
         (expect
-         (lambda () (spy-on 'test-function :and-throw-error))
+         (spy-on 'test-function :and-throw-error)
          :not :to-throw)
         (expect
-         (lambda () (test-function 1 2))
+         (test-function 1 2)
          :to-throw 'error)))
 
     (describe ":to-have-been-called matcher"
@@ -573,15 +564,17 @@
         (spy-on 'test-function))
 
       (it "returns false if the spy was not called"
-        (expect (buttercup--apply-matcher :to-have-been-called
-                                          '(test-function))
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called
+                 (list (lambda () 'test-function)))
                 :to-be
                 nil))
 
       (it "returns true if the spy was called at all"
         (test-function 1 2 3)
-        (expect (buttercup--apply-matcher :to-have-been-called
-                                          '(test-function))
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called
+                 (list (lambda () 'test-function)))
                 :to-be
                 t)))
 
@@ -591,7 +584,8 @@
 
       (it "returns false if the spy was not called at all"
         (expect (buttercup--apply-matcher
-                 :to-have-been-called-with '(test-function 1 2 3))
+                 :to-have-been-called-with
+                 (make-list-of-closures '(test-function 1 2 3)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called with (1 2 3), but it was not called at all")))
@@ -599,7 +593,8 @@
       (it "returns false if the spy was called with different arguments"
         (test-function 3 2 1)
         (expect (buttercup--apply-matcher
-                 :to-have-been-called-with '(test-function 1 2 3))
+                 :to-have-been-called-with
+                 (make-list-of-closures '(test-function 1 2 3)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called with (1 2 3), but it was called with (3 2 1)")))
@@ -607,7 +602,8 @@
       (it "returns true if the spy was called with those arguments"
         (test-function 1 2 3)
         (expect (buttercup--apply-matcher
-                 :to-have-been-called-with '(test-function 1 2 3))
+                 :to-have-been-called-with
+                 (make-list-of-closures '(test-function 1 2 3)))
                 :to-be
                 t)))
 
@@ -617,7 +613,8 @@
 
       (it "returns error if the spy was called less than expected"
         (expect (buttercup--apply-matcher
-                 :to-have-been-called-times '(test-function 1))
+                 :to-have-been-called-times
+                 (make-list-of-closures '(test-function 1)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called 1 time, but it was called 0 times")))
@@ -626,7 +623,8 @@
         (test-function)
         (test-function)
         (expect (buttercup--apply-matcher
-                 :to-have-been-called-times '(test-function 1))
+                 :to-have-been-called-times
+                 (make-list-of-closures '(test-function 1)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called 1 time, but it was called 2 times")))
@@ -635,21 +633,24 @@
         (test-function)
         (test-function)
         (expect (buttercup--apply-matcher
-                 :to-have-been-called-times '(test-function 2))
+                 :to-have-been-called-times
+                 (make-list-of-closures '(test-function 2)))
                 :to-equal t))
 
       (it "use plural words in error message"
         (test-function)
         (test-function)
         (expect (buttercup--apply-matcher
-                 :to-have-been-called-times '(test-function 3))
+                 :to-have-been-called-times
+                 (make-list-of-closures '(test-function 3)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called 3 times, but it was called 2 times")))
 
       (it "use singular expected word in error message"
         (expect (buttercup--apply-matcher
-                 :to-have-been-called-times '(test-function 1))
+                 :to-have-been-called-times
+                 (make-list-of-closures '(test-function 1)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called 1 time, but it was called 0 times")))
@@ -657,7 +658,8 @@
       (it "use singular actual word in error message"
         (test-function)
         (expect (buttercup--apply-matcher
-                 :to-have-been-called-times '(test-function 2))
+                 :to-have-been-called-times
+                 (make-list-of-closures '(test-function 2)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called 2 times, but it was called 1 time"))))
@@ -749,7 +751,7 @@
         (spy-on 'test-function :and-throw-error 'error))
 
       (it "throws an error when called"
-        (expect (lambda () (test-function 1 2))
+        (expect (test-function 1 2)
                 :to-throw
                 'error "Stubbed error")))))
 
@@ -814,8 +816,7 @@
       (it "should throw an error for an unknown spec status"
         (setf (buttercup-spec-status spec) 'unknown)
 
-        (expect (lambda ()
-                  (buttercup-reporter-batch 'spec-done spec))
+        (expect (buttercup-reporter-batch 'spec-done spec)
                 :to-throw)))
 
     (describe "on the suite-done event"
@@ -838,14 +839,12 @@
       (it "should raise an error if at least one spec failed"
         (setf (buttercup-spec-status spec) 'failed)
 
-        (expect (lambda ()
-                  (buttercup-reporter-batch 'buttercup-done (list spec)))
+        (expect (buttercup-reporter-batch 'buttercup-done (list spec))
                 :to-throw)))
 
     (describe "on an unknown event"
       (it "should raise an error"
-        (expect (lambda ()
-                  (buttercup-reporter-batch 'unknown-event nil))
+        (expect (buttercup-reporter-batch 'unknown-event nil)
                 :to-throw)))))
 
 (describe "The `buttercup--print' function"
@@ -865,16 +864,14 @@
 (describe "Buttercup's ERT compatibility wrapper"
   (it "should convert `ert-test-failed' into `buttercup-failed"
     (expect
-     (lambda ()
-       (buttercup-with-converted-ert-signals
-         (should (equal 1 2))))
+     (buttercup-with-converted-ert-signals
+       (should (equal 1 2)))
      :to-throw 'buttercup-failed))
   (it "should convert `ert-test-skipped' into `buttercup-pending"
     (assume (functionp 'ert-skip) "Loaded ERT version does not provide `ert-skip'")
     (expect
-     (lambda ()
-       (buttercup-with-converted-ert-signals
-         (ert-skip "Skipped this test")))
+     (buttercup-with-converted-ert-signals
+       (ert-skip "Skipped this test"))
      :to-throw 'buttercup-pending)))
 
 ;;;;;;;;;;;;;
@@ -883,16 +880,17 @@
 ;; We can't test `buttercup--funcall' with buttercup, because the way
 ;; we get the backtrace from Emacs does not nest.
 
-(let ((res (buttercup--funcall (lambda () (+ 2 3)))))
-  (when (not (equal res (list 'passed 5 nil)))
-    (error "Expected passing buttercup--funcall not to return %S"
-           res)))
+(let ((res (buttercup--funcall (lambda () (+ 2 3))))
+      (expected '(passed 5 nil)))
+  (when (not (equal res expected))
+    (error "Expected passing buttercup--funcall to return `%S', not `%S'"
+           expected res)))
 
 (let ((res (buttercup--funcall (lambda () (/ 1 0)))))
-  (when (not (equal res (list 'failed
-                              '(error (arith-error))
-                              (list '(t / 1 0)))))
-    (error "Expected erroring buttercup--funcall not to return %S"
+  (when (not (and
+              (equal (car res) 'failed)
+              (equal (cadr res) '(error (arith-error)))))
+    (error "Expected erroring buttercup--funcall not to return `%S'"
            res)))
 
 ;;;;;;;;;;;;;
@@ -934,7 +932,7 @@
             (specs (assoc "Spec" imenu--index-alist)))
         (expect suites :to-be-truthy)
         (expect (length (cdr suites)) :to-equal 1)
-        (expect (caadr suites) :to-equal "A test suite")
+        (expect (cl-caadr suites) :to-equal "A test suite")
         (expect specs :to-be-truthy)
         (expect (length (cdr specs)) :to-equal 1)
-        (expect (caadr specs) :to-equal "should fontify special keywords")))))
+        (expect (cl-caadr specs) :to-equal "should fontify special keywords")))))

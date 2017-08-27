@@ -151,26 +151,15 @@ that are not included below.
       (expect pi :to-be-close-to e 0)))
 
   (describe "The :to-throw matcher"
-    (it "is for testing if a function throws an exception"
-      (let ((foo (lambda () (+ 1 2)))
-            (bar (lambda () (+ a 1))))
-        (expect foo :not :to-throw)
-        (expect bar :to-throw)))
+    (it "is for testing if an expression throws an exception"
+      (expect (+ 1 2) :not :to-throw)
+      (expect (+ a 1) :to-throw))
     (it "accepts a symbol to check for the signal thrown"
-      (let ((foo (lambda () (/ 1 0)))
-            (bar (lambda () (+ a 1))))
-        (expect foo :not :to-throw 'void-variable)
-        (expect bar :to-throw 'void-variable)))
+      (expect (/ 1 0) :not :to-throw 'void-variable)
+      (expect (+ a 1) :to-throw 'void-variable))
     (it "optionally matches arguments to signals"
-      (let ((foo (lambda () (+ a 1)))
-            (bar (lambda () (+ a 1))))
-        (expect foo :not :to-throw 'void-variable '(b))
-        (expect bar :to-throw 'void-variable '(a))))
-    (it "only works on functions"
-      (expect (lambda () (expect nil :to-throw 'error))
-              :to-throw 'void-function)
-      (expect (lambda () (expect "hello" :not :to-throw 'error))
-              :to-throw 'invalid-function))))
+        (expect (+ a 1) :not :to-throw 'void-variable '(b))
+        (expect (+ a 1) :to-throw 'void-variable '(a)))))
 ```
 
 ## Grouping Related Specs with `describe`
@@ -488,7 +477,7 @@ will `signal` the specified value as an error.
     (spy-on 'get-bar :and-throw-error 'error))
 
   (it "throws the error"
-    (expect (lambda () (get-bar))
+    (expect (get-bar)
             :to-throw 'error)))
 ```
 
@@ -603,4 +592,13 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
     (expect (spy-calls-any 'set-foo)
             :to-be
             nil)))
+```
+
+## Warnings in tests
+
+```Emacs-Lisp
+(describe "A test"
+  (it "can issue warnings while running"
+    (display-warning 'buttercup "This warning should be visible after the test report.")
+    (expect (+ 2 2) :to-equal 4)))
 ```
