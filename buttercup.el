@@ -45,51 +45,54 @@
 (require 'ert nil t)
 (require 'warnings)
 
-;;;;;;;;;;;;;;;;;;;;;;;;
-;;; closure manipulation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; wrapper function manipulation
 
-(defun buttercup--enclosed-expr (x)
-  "Given a zero-arg closure, return its unevaluated expression.
+(defun buttercup--enclosed-expr (fun)
+  "Given a zero-arg function, return its unevaluated expression.
 
-The closure MUST have one of the following forms:
+The function MUST have one of the following forms:
 
+\(lambda () EXPR)
 \(closure (ENVLIST) () EXPR)
+\(lambda () (quote EXPR) EXPR)
 \(closure (ENVLIST) () (quote EXPR) EXPR)
 
-and the return value will be EXPR, unevaluated. The latter form
-is useful if EXPR is a macro call, in which case the `quote'
-ensures access to the un-expanded form."
-  (pcase x
+and the return value will be EXPR, unevaluated. The latter 2
+forms are useful if EXPR is a macro call, in which case the
+`quote' ensures access to the un-expanded form."
+  (pcase fun
     (`(closure ,(pred listp) nil ,expr) expr)
     (`(closure ,(pred listp) nil (quote ,expr) . ,rest) expr)
     (`(closure ,(pred listp) nil ,expr . ,(pred identity))
-     (error "Closure contains multiple expressions: %S" x))
+     (error "Closure contains multiple expressions: %S" fun))
     (`(closure ,(pred listp) ,(pred identity) . ,(pred identity))
-     (error "Closure has nonempty arglist: %S" x))
+     (error "Closure has nonempty arglist: %S" fun))
     (`(lambda nil ,expr) expr)
     (`(lambda nil (quote ,expr) . ,rest) expr)
     (`(lambda nil ,expr . ,(pred identity))
-     (error "Function contains multiple expressions: %S" x))
+     (error "Function contains multiple expressions: %S" fun))
         (`(lambda ,(pred identity) . ,(pred identity))
-     (error "Function has nonempty arglist: %S" x))
-    (_ (error "Not a zero-arg one-expression closure: %S" x))))
+     (error "Function has nonempty arglist: %S" fun))
+    (_ (error "Not a zero-arg one-expression closure: %S" fun))))
 
-(defun buttercup--closure-expr-and-value (x)
-  "Given a closure X, return its quoted expression and value.
+(defun buttercup--expr-and-value (fun)
+  "Given a function, return its quoted expression and value.
 
-The closure must be a zero-argument one-expression closure, i.e.
-anything matched by `buttercup--closure-p'. The return value
-is `(cons EXPR VALUE)', where EXPR is the unevaluated expression
-in the closure, and VALUE is the result of calling the closure as
-a function."
-  (cons (buttercup--enclosed-expr x)
-        (funcall x)))
+FUN must be a zero-argument one-expression function, i.e.
+something that satisfies `buttercup--wrapper-fun-p'. The return
+value is `(cons EXPR VALUE)', where EXPR is the unevaluated
+expression in the function, and VALUE is the result of calling
+the function (thus evaluating EXPR in the proper lexical
+environment)."
+  (cons (buttercup--enclosed-expr fun)
+        (funcall fun)))
 
-(defun buttercup--closure-p (x)
-  "Returns non-nil if X is a zero-arg one-expression closure."
+(defun buttercup--wrapper-fun-p (fun)
+  "Returns non-nil if FUN is a zero-arg one-expression function."
   (condition-case nil
       (prog1 t
-        (buttercup--enclosed-expr x))
+        (buttercup--enclosed-expr fun))
     (error nil)))
 
 ;;;;;;;;;;
@@ -115,15 +118,15 @@ This macro knows three forms:
 
 \(expect ARG)
   Fail the current test iff ARG is not true."
-  (let ((args-closures
+  (let ((wrapped-args
          (mapcar (lambda (expr) `(lambda () (quote ,expr) ,expr)) args)))
     `(buttercup-expect
       (lambda () (quote ,arg) ,arg)
       ,(or matcher :to-be-truthy)
-      ,@args-closures)))
+      ,@wrapped-args)))
 
 (defun buttercup-expect (arg &optional matcher &rest args)
-  (cl-assert (cl-every #'buttercup--closure-p (cons arg args)) t)
+  (cl-assert (cl-every #'buttercup--wrapper-fun-p (cons arg args)) t)
   (if (not matcher)
       (progn
         (cl-assert (not args) t)
@@ -167,11 +170,12 @@ MESSAGE is omitted or nil show the condition form instead."
 (defmacro buttercup-define-matcher (matcher args &rest body)
   "Define a matcher to be used in `expect'.
 
-The BODY will receive ARGS as closures that can be `funcall'ed to
-get their values. BODY should return either a simple boolean, or
-a cons cell of the form (RESULT . MESSAGE). If RESULT is nil,
-MESSAGE should describe why the matcher failed. If RESULT is
-non-nil, MESSAGE should describe why a negated matcher failed."
+The BODY will receive ARGS as functions that can be called (using
+`funcall') to get their values. BODY should return either a
+simple boolean, or a cons cell of the form (RESULT . MESSAGE). If
+RESULT is nil, MESSAGE should describe why the matcher failed. If
+RESULT is non-nil, MESSAGE should describe why a negated matcher
+failed."
   (declare (indent defun))
   `(put ,matcher 'buttercup-matcher
         (lambda ,args
@@ -194,7 +198,7 @@ non-nil, MESSAGE should describe why a negated matcher failed."
       (error "%S %S has a `buttercup-matcher' property that is not a function. Buttercup has been misconfigured."
              (if (keywordp matcher) "Keyword" "Symbol") matcher))
      ;; Otherwise just use `matcher' as a function, wrapping it in
-     ;; closure-unpacking code.
+     ;; code to unpack function-wrapped arguments.
      ((functionp matcher)
       (buttercup--function-as-matcher matcher))
      (matcher (error "Not a test: `%S'" matcher))
@@ -206,12 +210,12 @@ non-nil, MESSAGE should describe why a negated matcher failed."
 (defun buttercup--apply-matcher (matcher args)
   "Apply MATCHER to ARGS.
 
-ARGS is a list of closures that must be `funcall'ed to get their
+ARGS is a list of functions that must be `funcall'ed to get their
 values.
 
-MATCHER is either a matcher defined with
+MATCHER is either a matcher keyword defined with
 `buttercup-define-matcher', or a function."
-  (cl-assert (cl-every #'buttercup--closure-p args) t)
+  (cl-assert (cl-every #'buttercup--wrapper-fun-p args) t)
   (let ((function
          (buttercup--find-matcher-function matcher)))
     (apply function args)))
@@ -374,7 +378,7 @@ See also `buttercup-define-matcher'."
     `(buttercup-define-matcher ,matcher (a b)
        (cl-destructuring-bind
            ((a-expr . a) (b-expr . b))
-           (mapcar #'buttercup--closure-expr-and-value (list a b))
+           (mapcar #'buttercup--expr-and-value (list a b))
          (let* ((explanation (and ',explainer (funcall ',explainer a b)))
                 (spec (format-spec-make
                        ?f ',function-name
@@ -408,7 +412,7 @@ See also `buttercup-define-matcher'."
 (buttercup-define-matcher :to-have-same-items-as (a b)
   (cl-destructuring-bind
       ((a-expr . a) (b-expr . b))
-      (mapcar #'buttercup--closure-expr-and-value (list a b))
+      (mapcar #'buttercup--expr-and-value (list a b))
     (let* ((a-uniques (cl-set-difference a b :test #'equal))
            (b-uniques (cl-set-difference b a :test #'equal))
            (spec (format-spec-make
@@ -439,7 +443,7 @@ See also `buttercup-define-matcher'."
 (buttercup-define-matcher :to-match (text regexp)
   (cl-destructuring-bind
       ((text-expr . text) (regexp-expr . regexp))
-      (mapcar #'buttercup--closure-expr-and-value (list text regexp))
+      (mapcar #'buttercup--expr-and-value (list text regexp))
     (let* (;; For string literals, juse use them normally, but for
            ;; expressions, show both the expr and its string value
            (text-is-literal (equal text-expr text))
@@ -513,7 +517,7 @@ See also `buttercup-define-matcher'."
   (cl-destructuring-bind
       (precision (a-expr . a) (b-expr . b))
       (cons (funcall precision)
-            (mapcar #'buttercup--closure-expr-and-value (list a b)))
+            (mapcar #'buttercup--expr-and-value (list a b)))
     (let ((tolerance (expt 10.0 (- precision))))
       (buttercup--test-expectation
           (< (abs (- a b)) tolerance)
