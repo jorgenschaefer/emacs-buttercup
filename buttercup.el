@@ -95,6 +95,17 @@ environment)."
         (buttercup--enclosed-expr fun))
     (error nil)))
 
+;;;;;;;;;;;;;;;;;;;;
+;;; Helper functions
+
+(defun buttercup-format-spec (format specification)
+  "Return a string based on FORMAT and SPECIFICATION.
+
+This is a wrapper around `format-spec', which see. This also adds
+a call to `save-match-data', as `format-spec' modifies that."
+  (save-match-data
+    (format-spec format specification)))
+
 ;;;;;;;;;;
 ;;; expect
 
@@ -309,8 +320,8 @@ See also `buttercup-define-matcher'."
                      ?a (format "%S" value)
                      ?x (format "%S" explanation))))
          (buttercup--test-expectation (funcall ',function value)
-           :expect-match-phrase (format-spec ,expect-match-phrase spec)
-           :expect-mismatch-phrase (format-spec ,expect-mismatch-phrase spec))))))
+           :expect-match-phrase (buttercup-format-spec ,expect-match-phrase spec)
+           :expect-mismatch-phrase (buttercup-format-spec ,expect-mismatch-phrase spec))))))
 
 (cl-defmacro buttercup-define-matcher-for-binary-function
     (matcher function &key
@@ -388,8 +399,8 @@ See also `buttercup-define-matcher'."
                        ?b (format "%S" b)
                        ?x (format "%S" explanation))))
            (buttercup--test-expectation (funcall #',function a b)
-             :expect-match-phrase (format-spec ,expect-match-phrase spec)
-             :expect-mismatch-phrase (format-spec ,expect-mismatch-phrase spec)))))))
+             :expect-match-phrase (buttercup-format-spec ,expect-match-phrase spec)
+             :expect-mismatch-phrase (buttercup-format-spec ,expect-mismatch-phrase spec)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; Built-in matchers
@@ -424,19 +435,19 @@ See also `buttercup-define-matcher'."
                   ?p (format "%S" a-uniques))))
       (cond
        ((and a-uniques b-uniques)
-        (cons nil (format-spec
+        (cons nil (buttercup-format-spec
                  "Expected `%A' to contain the same items as `%b', but `%m' are missing and `%p' are present unexpectedly."
                  spec)))
        (a-uniques
-        (cons nil (format-spec
+        (cons nil (buttercup-format-spec
                  "Expected `%A' to contain the e items as `%b', but `%p' are present unexprctedly."
                  spec)))
        (b-uniques
-        (cons nil (format-spec
+        (cons nil (buttercup-format-spec
                  "Expected `%A' to contain the same items as `%b', but `%m' are missing."
                  spec)))
        (t
-        (cons t (format-spec
+        (cons t (buttercup-format-spec
                  "Expected `%A' not to have same items as `%b'"
                  spec)))))))
 
@@ -444,46 +455,47 @@ See also `buttercup-define-matcher'."
   (cl-destructuring-bind
       ((text-expr . text) (regexp-expr . regexp))
       (mapcar #'buttercup--expr-and-value (list text regexp))
-    (let* (;; For string literals, juse use them normally, but for
-           ;; expressions, show both the expr and its string value
-           (text-is-literal (equal text-expr text))
-           (regexp-is-literal (equal regexp-expr regexp))
-           (text-desc
-            (if text-is-literal
-                text-expr
-              (format "`%S' with value %S"
-                      text-expr text)))
-           (regexp-desc
-            (if regexp-is-literal
-                regexp-expr
-              (format "`%S' with value %S"
-                      regexp-expr regexp)))
-           (match-p (string-match regexp text))
-           ;; Get some more details about the match
-           (start
-            (when match-p
-              (match-beginning 0)))
-           (end
-            (when match-p
-              (match-end 0)))
-           (matched-substring
-            (when match-p
-              (substring text start end)))
-           (spec (format-spec-make
-                  ?T text-desc
-                  ?t (format "%S" text)
-                  ?R regexp-desc
-                  ?r (format "%S" regexp)
-                  ?m (format "%S" matched-substring)
-                  ?a start
-                  ?z end)))
-      (buttercup--test-expectation match-p
-        :expect-match-phrase
-        (format-spec "Expected %T to match the regexp %r, but instead it was %t."
-                     spec)
-        :expect-mismatch-phrase
-        (format-spec "Expected %T not to match the regexp %r, but it matched the substring %m from position %a to %z."
-                     spec)))))
+    (save-match-data
+      (let* (;; For string literals, juse use them normally, but for
+             ;; expressions, show both the expr and its string value
+             (text-is-literal (equal text-expr text))
+             (regexp-is-literal (equal regexp-expr regexp))
+             (text-desc
+              (if text-is-literal
+                  text-expr
+                (format "`%S' with value %S"
+                        text-expr text)))
+             (regexp-desc
+              (if regexp-is-literal
+                  regexp-expr
+                (format "`%S' with value %S"
+                        regexp-expr regexp)))
+             (match-p (string-match regexp text))
+             ;; Get some more details about the match
+             (start
+              (when match-p
+                (match-beginning 0)))
+             (end
+              (when match-p
+                (match-end 0)))
+             (matched-substring
+              (when match-p
+                (substring text start end)))
+             (spec (format-spec-make
+                    ?T text-desc
+                    ?t (format "%S" text)
+                    ?R regexp-desc
+                    ?r (format "%S" regexp)
+                    ?m (format "%S" matched-substring)
+                    ?a start
+                    ?z end)))
+        (buttercup--test-expectation match-p
+                                     :expect-match-phrase
+                                     (buttercup-format-spec "Expected %T to match the regexp %r, but instead it was %t."
+                                                            spec)
+                                     :expect-mismatch-phrase
+                                     (buttercup-format-spec "Expected %T not to match the regexp %r, but it matched the substring %m from position %a to %z."
+                                                            spec))))))
 
 (buttercup-define-matcher-for-binary-function
     :to-be-in member
@@ -576,15 +588,15 @@ See also `buttercup-define-matcher'."
                      "")))
          (result-text
           (if thrown-signal
-              (format-spec "it threw %t" spec)
-            (format-spec "it evaluated successfully, returning value `%e'" spec)))
+              (buttercup-format-spec "it threw %t" spec)
+            (buttercup-format-spec "it evaluated successfully, returning value `%e'" spec)))
 
          (expect-match-text
-          (concat (format-spec "Expected `%E' to throw %s%a" spec)
+          (concat (buttercup-format-spec "Expected `%E' to throw %s%a" spec)
                   ", but instead "
                   result-text))
          (expect-mismatch-text
-          (concat (format-spec "Expected `%E' not to throw %s%a" spec)
+          (concat (buttercup-format-spec "Expected `%E' not to throw %s%a" spec)
                   ", but "
                   result-text)))
       (buttercup--test-expectation matched

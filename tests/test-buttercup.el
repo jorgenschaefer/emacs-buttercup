@@ -112,7 +112,7 @@
     (expect (assume 'non-nil "Explanation")
             :not :to-throw)))
 
-(describe "The `buttercup-skip function"
+(describe "The `buttercup-skip' function"
   (it "should raise a signal with its arguments"
     (expect (buttercup-skip "Explanation" )
             :to-throw
@@ -151,6 +151,23 @@
 ;;; Built-in matchers
 
 ;; Are tested in README.md
+
+
+(buttercup-define-matcher-for-unary-function :test-to-be-truthy identity)
+
+(describe "The :buttercup-define-matcher-for-unary-function helper"
+  (it "should not modify match data"
+    (string-match ".." "foo")
+    (expect t :test-to-be-truthy)
+    (expect (match-end 0) :to-equal 2)))
+
+(buttercup-define-matcher-for-binary-function :test-to-be-eq eq)
+
+(describe "The :buttercup-define-matcher-for-binary-function helper"
+  (it "should not modify match data"
+    (string-match ".." "foo")
+    (expect t :test-to-be-eq t)
+    (expect (match-end 0) :to-equal 2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Suite and spec data structures
