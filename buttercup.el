@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2015-2017  Jorgen Schaefer <contact@jorgenschaefer.de>
 
-;; Version: 1.8
+;; Version: 1.9
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>
 
 ;; This program is free software; you can redistribute it and/or
