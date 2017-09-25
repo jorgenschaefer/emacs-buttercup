@@ -714,26 +714,24 @@ See also `buttercup-define-matcher'."
         (setq nspecs (1+ nspecs))))
     nspecs))
 
+(defun buttercup-suites-total-specs-status (suite-list status)
+  "Return the number of specs in SUITE-LIST marked with STATUS."
+  (let ((nspecs 0))
+    (dolist (spec-or-suite (buttercup--specs-and-suites suite-list) nspecs)
+      (when (and (buttercup-spec-p spec-or-suite)
+                 (eq (buttercup-spec-status spec-or-suite) status))
+        (setq nspecs (1+ nspecs))))))
+
 (defun buttercup-suites-total-specs-pending (suite-list)
   "Return the number of specs marked as pending in all suites in SUITE-LIST."
-  (let ((nspecs 0))
-    (dolist (spec-or-suite (buttercup--specs-and-suites suite-list))
-      (when (and (buttercup-spec-p spec-or-suite)
-                 (eq (buttercup-spec-status spec-or-suite) 'pending))
-        (setq nspecs (1+ nspecs))))
-    nspecs))
+  (buttercup-suites-total-specs-status suite-list 'pending))
 
 (defun buttercup-suites-total-specs-failed (suite-list)
   "Return the number of failed specs in all suites in SUITE-LIST."
-  (let ((nspecs 0))
-    (dolist (spec-or-suite (buttercup--specs-and-suites suite-list))
-      (when (and (buttercup-spec-p spec-or-suite)
-                 (eq (buttercup-spec-status spec-or-suite) 'failed))
-        (setq nspecs (1+ nspecs))))
-    nspecs))
+  (buttercup-suites-total-specs-status suite-list 'failed))
 
 (defun buttercup--specs-and-suites (spec-or-suite-list)
-  "Return the number of specs defined in SUITE-OR-SPEC and its children."
+  "Return the number of specs defined in SPEC-OR-SUITE-LIST and its children."
   (let ((specs-and-suites nil))
     (dolist (spec-or-suite spec-or-suite-list)
       (setq specs-and-suites (append specs-and-suites
