@@ -1780,5 +1780,9 @@ With buttercup minor mode active the following is activated:
       (cl-dolist (form imenu-forms)
         (setq imenu-generic-expression (delete form imenu-generic-expression))))))
 
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; sentence-end-double-space: nil
+;; End:
 (provide 'buttercup)
 ;;; buttercup.el ends here
