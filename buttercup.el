@@ -1254,18 +1254,26 @@ current directory."
     (buttercup-run)))
 
 ;;;###autoload
-(defun buttercup-run-markdown ()
-  "Run all test suites defined in Markdown files passed as arguments.
-A suite must be defined within a Markdown \"lisp\" code block."
-  (let ((lisp-buffer (generate-new-buffer "elisp")))
-    (dolist (file command-line-args-left)
-      (with-current-buffer (find-file-noselect file)
-        (goto-char (point-min))
-        (let ((case-fold-search t))
-          (while (re-search-forward
-                  "```\\(?:emacs-\\|e\\)?lisp\n\\(\\(?:.\\|\n\\)*?\\)```"
-                  nil t)
-            (let ((code (match-string 1)))
+(defun buttercup-run-markdown-buffer (&rest markdown-buffers)
+  "Run all test suites defined in MARKDOWN-BUFFERS.
+A suite must be defined within a Markdown \"lisp\" code block.
+If MARKDOWN-BUFFERS is empty (nil), use the current buffer."
+  (interactive)
+  (unless markdown-buffers
+    (setq markdown-buffers (list (current-buffer))))
+  (let ((lisp-buffer (generate-new-buffer "elisp"))
+        (case-fold-search t)
+        code
+        buttercup-suites)
+    (dolist (markdown-buffer markdown-buffers)
+      (with-current-buffer markdown-buffer
+        (save-excursion
+          (save-match-data
+            (goto-char (point-min))
+            (while (re-search-forward
+                    "```\\(?:emacs-\\|e\\)?lisp\n\\(\\(?:.\\|\n\\)*?\\)```"
+                    nil t)
+              (setq code (match-string 1))
               (with-current-buffer lisp-buffer
                 (insert code)))))))
     (with-current-buffer lisp-buffer
@@ -1273,6 +1281,20 @@ A suite must be defined within a Markdown \"lisp\" code block."
       (eval-region (point-min)
                    (point-max)))
     (buttercup-run)))
+
+;;;###autoload
+(defun buttercup-run-markdown ()
+  "Run all test suites defined in Markdown files passed as arguments.
+A suite must be defined within a Markdown \"lisp\" code block."
+  (apply #'buttercup-run-markdown-buffer (mapcar #'find-file-noselect
+                                                 command-line-args-left)))
+
+;;;###autoload
+(defun buttercup-run-markdown-file (file)
+  "Run all test suites defined in Markdown FILE.
+A suite must be defined within a Markdown \"lisp\" code block."
+  (interactive "fMarkdown file: ")
+  (buttercup-run-markdown-buffer (find-file-noselect file)))
 
 (eval-when-compile
   ;; Defined below in a dedicated section
