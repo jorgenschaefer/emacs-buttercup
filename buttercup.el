@@ -930,7 +930,9 @@ A disabled spec is not run."
   (let ((spec (car (last (buttercup-suite-children
                           buttercup--current-suite)))))
     (setf (buttercup-spec-status spec)
-          'pending)))
+          'pending
+          (buttercup-spec-failure-description spec)
+          "")))
 
 ;;;;;;;;;
 ;;; Spies
