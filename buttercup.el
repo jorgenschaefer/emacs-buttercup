@@ -693,19 +693,11 @@ See also `buttercup-define-matcher'."
 
 (defun buttercup-suites-total-specs-defined (suite-list)
   "Return the number of specs defined in all suites in SUITE-LIST."
-  (let ((nspecs 0))
-    (dolist (spec-or-suite (buttercup--specs-and-suites suite-list))
-      (when (buttercup-spec-p spec-or-suite)
-        (setq nspecs (1+ nspecs))))
-    nspecs))
+  (length (buttercup--specs suite-list)))
 
 (defun buttercup-suites-total-specs-status (suite-list status)
   "Return the number of specs in SUITE-LIST marked with STATUS."
-  (let ((nspecs 0))
-    (dolist (spec-or-suite (buttercup--specs-and-suites suite-list) nspecs)
-      (when (and (buttercup-spec-p spec-or-suite)
-                 (eq (buttercup-spec-status spec-or-suite) status))
-        (setq nspecs (1+ nspecs))))))
+  (cl-count status (buttercup--specs suite-list) :key #'buttercup-spec-status))
 
 (defun buttercup-suites-total-specs-pending (suite-list)
   "Return the number of specs marked as pending in all suites in SUITE-LIST."
@@ -754,8 +746,7 @@ See also `buttercup-define-matcher'."
 (defun buttercup--full-spec-names (spec-or-suite-list)
   "Return full names of all specs in SPEC-OR-SUITE-LIST."
   (cl-loop
-   for x in (buttercup--specs-and-suites spec-or-suite-list)
-   if (buttercup-spec-p x)
+   for x in (buttercup--specs spec-or-suite-list)
    collect (buttercup-spec-full-name x)))
 
 (defun buttercup--find-duplicate-spec-names (spec-or-suite-list)
