@@ -1187,21 +1187,13 @@ current directory."
         (when (not (string-match "\\(^\\|/\\)\\." (file-relative-name file)))
           (load file nil t))))
     (when patterns
-      (let ((suites-or-specs buttercup-suites))
-        (while suites-or-specs
-          (cond
-           ((buttercup-suite-p (car suites-or-specs))
-            (setq suites-or-specs (append suites-or-specs
-                                          (buttercup-suite-children
-                                           (car suites-or-specs)))))
-           ((buttercup-spec-p (car suites-or-specs))
-            (catch 'return
-              (dolist (p patterns)
-                (when (string-match p (buttercup-spec-full-name (car suites-or-specs)))
-                  (throw 'return t)))
-              (setf (buttercup-spec-function (car suites-or-specs))
-                    (lambda () (signal 'buttercup-pending "SKIPPED"))))))
-          (setq suites-or-specs (cdr suites-or-specs)))))
+      (dolist (spec (buttercup--specs buttercup-suites))
+        (let ((spec-full-name (buttercup-spec-full-name spec)))
+          (unless (cl-dolist (p patterns)
+                    (when (string-match p spec-full-name)
+                      (cl-return t)))
+            (setf (buttercup-spec-function spec)
+                  (lambda () (signal 'buttercup-pending "SKIPPED")))))))
     (buttercup-run)))
 
 ;;;###autoload
