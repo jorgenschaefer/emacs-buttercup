@@ -692,25 +692,16 @@ See also `buttercup-define-matcher'."
   (setf (buttercup-suite-children parent)
         (append (buttercup-suite-children parent)
                 (list child)))
-  (if (buttercup-suite-p child)
-      (setf (buttercup-suite-parent child)
-            parent)
-    (setf (buttercup-spec-parent child)
-          parent)))
+  (setf (buttercup-suite-or-spec-parent child) parent))
 
-(defun buttercup-suite-parents (suite)
-  "Return a list of parents of SUITE."
-  (if (buttercup-suite-parent suite)
-      (cons (buttercup-suite-parent suite)
-            (buttercup-suite-parents (buttercup-suite-parent suite)))
-    nil))
+(defun buttercup-suite-or-spec-parents (suite-or-spec)
+  "Return a list of parents of SUITE-OR-SPEC."
+  (when (buttercup-suite-or-spec-parent suite-or-spec)
+    (cons (buttercup-suite-or-spec-parent suite-or-spec)
+          (buttercup-suite-or-spec-parents (buttercup-suite-or-spec-parent suite-or-spec)))))
 
-(defun buttercup-spec-parents (spec)
-  "Return a list of parents of SPEC."
-  (if (buttercup-spec-parent spec)
-      (cons (buttercup-spec-parent spec)
-            (buttercup-suite-parents (buttercup-spec-parent spec)))
-    nil))
+(define-obsolete-function-alias 'buttercup-suite-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.10")
+(define-obsolete-function-alias 'buttercup-spec-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.10")
 
 (defun buttercup-suites-total-specs-defined (suite-list)
   "Return the number of specs defined in all suites in SUITE-LIST."
