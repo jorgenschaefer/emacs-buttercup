@@ -728,17 +728,16 @@ See also `buttercup-define-matcher'."
   (buttercup-suites-total-specs-status suite-list 'failed))
 
 (defun buttercup--specs-and-suites (spec-or-suite-list)
-  "Return the number of specs defined in SPEC-OR-SUITE-LIST and its children."
+  "Return a flat list of all specs and suites in SPEC-OR-SUITE-LIST."
   (let ((specs-and-suites nil))
-    (dolist (spec-or-suite spec-or-suite-list)
+    (dolist (spec-or-suite spec-or-suite-list specs-and-suites)
       (setq specs-and-suites (append specs-and-suites
                                      (list spec-or-suite)))
       (when (buttercup-suite-p spec-or-suite)
         (setq specs-and-suites
               (append specs-and-suites
                       (buttercup--specs-and-suites
-                       (buttercup-suite-children spec-or-suite))))))
-    specs-and-suites))
+                       (buttercup-suite-children spec-or-suite))))))))
 
 (defun buttercup-suite-full-name (suite)
   "Return the full name of SUITE, which includes the names of the parents."
