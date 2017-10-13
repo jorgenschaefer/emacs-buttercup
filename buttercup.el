@@ -730,11 +730,9 @@ See also `buttercup-define-matcher'."
 
 (defun buttercup-suite-full-name (suite)
   "Return the full name of SUITE, which includes the names of the parents."
-  (let ((name-parts (mapcar #'buttercup-suite-description
-                            (cons suite (buttercup-suite-parents suite)))))
-    (mapconcat #'identity
-               (reverse name-parts)
-               " ")))
+  (mapconcat #'buttercup-suite-description
+             (nreverse (cons suite (buttercup-suite-parents suite)))
+             " "))
 
 (defun buttercup-spec-full-name (spec)
   "Return the full name of SPEC, which includes the full name of its suite."
