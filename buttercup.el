@@ -715,6 +715,15 @@ See also `buttercup-define-matcher'."
   "Return the number of failed specs in all suites in SUITE-LIST."
   (buttercup-suites-total-specs-status suite-list 'failed))
 
+(defun buttercup--specs (spec-or-suite-list)
+  "Return a flat list of all specs in SPEC-OR-SUITE-LIST."
+  (let (specs)
+    (dolist (spec-or-suite spec-or-suite-list specs)
+      (if (buttercup-spec-p spec-or-suite)
+          (setq specs (append specs (list spec-or-suite)))
+        (setq specs (append specs (buttercup--specs
+                                   (buttercup-suite-children spec-or-suite))))))))
+
 (defun buttercup--specs-and-suites (spec-or-suite-list)
   "Return a flat list of all specs and suites in SPEC-OR-SUITE-LIST."
   (let ((specs-and-suites nil))
