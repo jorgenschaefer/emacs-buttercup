@@ -649,37 +649,31 @@ See also `buttercup-define-matcher'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Suite and spec data structures
 
-(cl-defstruct buttercup-suite
+(cl-defstruct buttercup-suite-or-spec
   ;; The name of this specific suite
   description
-  ;; Any children of this suite, both suites and specs
-  children
   ;; The parent of this suite, another suite
   parent
+  ;; One of: passed failed pending
+  (status 'passed)
+  failure-description
+  failure-stack
+  )
+
+(cl-defstruct (buttercup-suite (:include buttercup-suite-or-spec))
+  ;; Any children of this suite, both suites and specs
+  children
   ;; Closure to run before and after each spec in this suite and its
   ;; children
   before-each
   after-each
   ;; Likewise, but before and after all specs.
   before-all
-  after-all
-  ;; These are set if there are errors in after-all.
-  ;; One of: passed failed pending
-  (status 'passed)
-  failure-description
-  failure-stack)
+  after-all)
 
-(cl-defstruct buttercup-spec
-  ;; The description of the it form this was generated from
-  description
-  ;; The suite this spec is a member of
-  parent
+(cl-defstruct (buttercup-spec (:include buttercup-suite-or-spec))
   ;; The closure to run for this spec
-  function
-  ;; One of: passed failed pending
-  (status 'passed)
-  failure-description
-  failure-stack)
+  function)
 
 (defun buttercup-suite-add-child (parent child)
   "Add a CHILD suite to a PARENT suite."
