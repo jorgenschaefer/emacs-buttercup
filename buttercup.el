@@ -1364,19 +1364,11 @@ Do not change the global value.")
         (`(error (buttercup-pending . ,pending-description))
          (setq status 'pending
                description pending-description))))
-    (cond
-     ((buttercup-suite-p suite-or-spec)
-      (when (eq (buttercup-suite-status suite-or-spec)
-                'passed)
-        (setf (buttercup-suite-status suite-or-spec) status)
-        (setf (buttercup-suite-failure-description suite-or-spec) description)
-        (setf (buttercup-suite-failure-stack suite-or-spec) stack)))
-     (t
-      (when (eq (buttercup-spec-status suite-or-spec)
-                'passed)
-        (setf (buttercup-spec-status suite-or-spec) status)
-        (setf (buttercup-spec-failure-description suite-or-spec) description)
-        (setf (buttercup-spec-failure-stack suite-or-spec) stack))))))
+    (when (eq (buttercup-suite-or-spec-status suite-or-spec)
+              'passed)
+      (setf (buttercup-suite-or-spec-status suite-or-spec) status
+            (buttercup-suite-or-spec-failure-description suite-or-spec) description
+            (buttercup-suite-or-spec-failure-stack suite-or-spec) stack))))
 
 ;;;;;;;;;;;;;
 ;;; Reporters
