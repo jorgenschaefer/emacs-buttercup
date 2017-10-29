@@ -65,14 +65,14 @@ forms are useful if EXPR is a macro call, in which case the
 `quote' ensures access to the un-expanded form."
   (pcase fun
     (`(closure ,(pred listp) nil ,expr) expr)
-    (`(closure ,(pred listp) nil (quote ,expr) . ,rest) expr)
-    (`(closure ,(pred listp) nil ,expr . ,(pred identity))
+    (`(closure ,(pred listp) nil (quote ,expr) . ,_rest) expr)
+    (`(closure ,(pred listp) nil ,_expr . ,(pred identity))
      (error "Closure contains multiple expressions: %S" fun))
     (`(closure ,(pred listp) ,(pred identity) . ,(pred identity))
      (error "Closure has nonempty arglist: %S" fun))
     (`(lambda nil ,expr) expr)
-    (`(lambda nil (quote ,expr) . ,rest) expr)
-    (`(lambda nil ,expr . ,(pred identity))
+    (`(lambda nil (quote ,expr) . ,_rest) expr)
+    (`(lambda nil ,_expr . ,(pred identity))
      (error "Function contains multiple expressions: %S" fun))
     (`(lambda ,(pred identity) . ,(pred identity))
      (error "Function has nonempty arglist: %S" fun))
@@ -539,7 +539,7 @@ See also `buttercup-define-matcher'."
 
 (buttercup-define-matcher :to-be-close-to (a b precision)
   (cl-destructuring-bind
-      (precision (a-expr . a) (b-expr . b))
+      (precision (a-expr . a) (_b-expr . b))
       (cons (funcall precision)
             (mapcar #'buttercup--expr-and-value (list a b)))
     (let ((tolerance (expt 10.0 (- precision))))
