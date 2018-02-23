@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2015-2017  Jorgen Schaefer <contact@jorgenschaefer.de>
 
-;; Version: 1.10
+;; Version: 1.11
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>
 ;; Package-Requires: ((emacs "24.3"))
 ;; URL: https://github.com/jorgenschaefer/emacs-buttercup
@@ -700,8 +700,8 @@ See also `buttercup-define-matcher'."
     (cons (buttercup-suite-or-spec-parent suite-or-spec)
           (buttercup-suite-or-spec-parents (buttercup-suite-or-spec-parent suite-or-spec)))))
 
-(define-obsolete-function-alias 'buttercup-suite-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.10")
-(define-obsolete-function-alias 'buttercup-spec-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.10")
+(define-obsolete-function-alias 'buttercup-suite-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.11")
+(define-obsolete-function-alias 'buttercup-spec-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.11")
 
 (defun buttercup-suites-total-specs-defined (suite-list)
   "Return the number of specs defined in all suites in SUITE-LIST."
