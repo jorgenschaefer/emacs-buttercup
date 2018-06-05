@@ -1,6 +1,6 @@
 # Buttercup — Behavior-Driven Emacs Lisp Testing
 
-[![Build Status](https://api.travis-ci.org/jorgenschaefer/emacs-buttercup.png?branch=master)](https://travis-ci.org/jorgenschaefer/emacs-buttercup)
+[![Build Status](https://api.travis-ci.org/jorgenschaefer/emacs-buttercup.svg?branch=master)](https://travis-ci.org/jorgenschaefer/emacs-buttercup)
 [![MELPA Stable](http://stable.melpa.org/packages/buttercup-badge.svg)](http://stable.melpa.org/#/buttercup)
 
 ![Ranculus repens, photo by sannse](docs/images/buttercup.jpg)
