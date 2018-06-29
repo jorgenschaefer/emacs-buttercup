@@ -452,7 +452,7 @@ See also `buttercup-define-matcher'."
                    spec)))
        (a-uniques
         (cons nil (buttercup-format-spec
-                   "Expected `%A' to contain the e items as `%b', but `%p' are present unexprctedly."
+                   "Expected `%A' to contain the same items as `%b', but `%p' are present unexpectedly."
                    spec)))
        (b-uniques
         (cons nil (buttercup-format-spec
