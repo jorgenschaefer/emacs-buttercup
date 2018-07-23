@@ -803,7 +803,9 @@ mainly calls to `describe', `it' and `before-each'."
                        `((let ,var
                            ,@body))
                      body)))
-    `(buttercup-describe ,description (lambda () ,@new-body) ',env)))
+    (if env
+        `(buttercup-describe ,description (lambda () ,@new-body) ',env)
+      `(buttercup-describe ,description (lambda () ,@new-body)))))
 
 (defun buttercup-describe (description body-function &optional env)
   "Function to handle a `describe' form.
