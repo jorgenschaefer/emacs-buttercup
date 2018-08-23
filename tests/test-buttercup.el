@@ -960,6 +960,9 @@
         (expect (length (cdr specs)) :to-equal 1)
         (expect (cl-caadr specs) :to-equal "should fontify special keywords")))))
 
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; sentence-end-double-space: nil
+;; End:
 (provide 'test-buttercup)
-
 ;;; test-buttercup.el ends here
