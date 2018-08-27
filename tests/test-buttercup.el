@@ -306,7 +306,7 @@
 ;;; Suites: describe
 
 (describe "The `describe' macro"
-  (it "should expand to a simple call to the describe function"
+  (it "should expand to a simple call to the buttercup-describe function"
     (expect (macroexpand '(describe "description" (+ 1 1)))
             :to-equal
             '(buttercup-describe "description" (lambda () (+ 1 1)))))
@@ -461,7 +461,42 @@
   (it "expands directly to a function call"
     (expect (macroexpand '(xdescribe "bla bla" (+ 1 1)))
             :to-equal
-            '(buttercup-xdescribe "bla bla" (lambda () (+ 1 1))))))
+            '(buttercup-describe "bla bla"
+                                 (lambda ()
+                                   (signal 'buttercup-pending "PENDING")))))
+
+  (it "changes contained it-specs to pending specs"
+    (expect (macroexpand-all
+             '(xdescribe "bla bla"
+                (let ((a 1) b (c 2) (d (it "nested" (+ 1 1))))
+                  (it "spec1" (+ 1 1))
+                  (describe "inner suite"
+                    (it "inner spec"))
+                  (xit "spec2" (+ 1 1)))))
+            :to-equal
+            '(buttercup-describe
+              "bla bla"
+              #'(lambda ()
+                  (buttercup-xit "nested")
+                  (buttercup-xit "spec1")
+                  (buttercup-describe
+                   "inner suite"
+                   #'(lambda ()
+                       (buttercup-xit "inner spec")
+                       (signal 'buttercup-pending "PENDING")))
+                  (buttercup-xit "spec2")
+                  (signal 'buttercup-pending "PENDING")))))
+
+  (it "should add a pending suite"
+    (let ((buttercup--current-suite nil)
+          (buttercup-suites nil))
+      (xdescribe
+       "bla bla"
+       (lambda () nil))
+      (expect (buttercup-suite-status (car buttercup-suites))
+              :to-be
+              'pending))))
+
 
 (describe "The `buttercup-xdescribe' function"
   (it "should be a no-op"
