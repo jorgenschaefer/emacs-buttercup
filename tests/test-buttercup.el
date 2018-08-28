@@ -497,24 +497,6 @@
               :to-be
               'pending))))
 
-
-(describe "The `buttercup-xdescribe' function"
-  (it "should be a no-op"
-    (expect (buttercup-xdescribe
-             "bla bla"
-             (lambda () (error "Should not happen")))
-            :not :to-throw))
-
-  (it "should add a pending suite"
-    (let ((buttercup--current-suite nil)
-          (buttercup-suites nil))
-      (buttercup-xdescribe
-       "bla bla"
-       (lambda () nil))
-      (expect (buttercup-suite-status (car buttercup-suites))
-              :to-be
-              'pending))))
-
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;; Pending Specs: xit
 

@@ -965,18 +965,6 @@ mainly calls to `describe', `it' and `before-each'."
      ;; make sure the suite is marked as pending
      (signal 'buttercup-pending "PENDING")))
 
-(defun buttercup-xdescribe (description function)
-  "Like `buttercup-describe', but mark the suite as disabled.
-
-A disabled suite is not run.
-
-DESCRIPTION has the same meaning as in `xdescribe'. FUNCTION
-is ignored.
-`describe'."
-  (ignore function)
-  (buttercup-describe description (lambda ()
-                                    (signal 'buttercup-pending "PENDING"))))
-
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;; Pending Specs: xit
 
