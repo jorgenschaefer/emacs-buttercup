@@ -700,8 +700,8 @@ See also `buttercup-define-matcher'."
     (cons (buttercup-suite-or-spec-parent suite-or-spec)
           (buttercup-suite-or-spec-parents (buttercup-suite-or-spec-parent suite-or-spec)))))
 
-(define-obsolete-function-alias 'buttercup-suite-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.12")
-(define-obsolete-function-alias 'buttercup-spec-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.12")
+(define-obsolete-function-alias 'buttercup-suite-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.10")
+(define-obsolete-function-alias 'buttercup-spec-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.10")
 
 (defun buttercup-suites-total-specs-defined (suite-list)
   "Return the number of specs defined in all suites in SUITE-LIST."
@@ -743,7 +743,7 @@ See also `buttercup-define-matcher'."
 (defun buttercup-suite-full-name (suite)
   "Return the full name of SUITE, which includes the names of the parents."
   (mapconcat #'buttercup-suite-description
-             (nreverse (cons suite (buttercup-suite-parents suite)))
+             (nreverse (cons suite (buttercup-suite-or-spec-parents suite)))
              " "))
 
 (defun buttercup-spec-full-name (spec)
@@ -1402,13 +1402,13 @@ EVENT and ARG are described in `buttercup-reporter'."
            (buttercup--print "Running %s specs.\n\n" defined))))
 
       (`suite-started
-       (let ((level (length (buttercup-suite-parents arg))))
+       (let ((level (length (buttercup-suite-or-spec-parents arg))))
          (buttercup--print "%s%s\n"
                            (make-string (* 2 level) ?\s)
                            (buttercup-suite-description arg))))
 
       (`spec-started
-       (let ((level (length (buttercup-spec-parents arg))))
+       (let ((level (length (buttercup-suite-or-spec-parents arg))))
          (buttercup--print "%s%s"
                            (make-string (* 2 level) ?\s)
                            (buttercup-spec-description arg))))
@@ -1428,7 +1428,7 @@ EVENT and ARG are described in `buttercup-reporter'."
          (error "Unknown spec status %s" (buttercup-spec-status arg)))))
 
       (`suite-done
-       (when (= 0 (length (buttercup-suite-parents arg)))
+       (when (= 0 (length (buttercup-suite-or-spec-parents arg)))
          (buttercup--print "\n")))
 
       (`buttercup-done
@@ -1483,7 +1483,7 @@ colors.
 EVENT and ARG are described in `buttercup-reporter'."
   (pcase event
     (`spec-done
-     (let ((level (length (buttercup-spec-parents arg))))
+     (let ((level (length (buttercup-suite-or-spec-parents arg))))
        (cond
         ((eq (buttercup-spec-status arg) 'passed)
          (buttercup--print (buttercup-colorize "\r%s%s\n" 'green)
