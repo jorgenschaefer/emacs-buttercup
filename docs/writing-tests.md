@@ -298,10 +298,11 @@ walks through the `after-each` functions similarly.
 
 ## Disabling Suites
 
-Suites and specs can be disabled with the `xdescribe` and `xit`
-macros, respectively. These suites and any specs inside them are
-skipped when run and thus their results will not appear in the
-results.
+Suites and specs can be disabled by marking them as pending with the
+`xdescribe` and `xit` macros, respectively. Any suites or specs inside
+a `xdescribe' suite is also pending. Pending suites and specs will be
+listed as pending in the results, but the containing code will not be
+run.
 
 ```Emacs-Lisp
 (xdescribe "A spec"
@@ -316,7 +317,7 @@ results.
 
 ## Pending Specs
 
-Pending specs do not run.
+Pending specs do not run, but will be listed in the results.
 
 Any spec declared with `xit` is marked as pending.
 

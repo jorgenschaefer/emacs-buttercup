@@ -915,27 +915,55 @@ FUNCTION is a function containing the body instructions passed to
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Disabled Suites: xdescribe
 
-(defmacro xdescribe (description &rest body)
-  "Like `describe', but mark the suite as disabled.
+(defun buttercup--disable-specs (forms)
+  "Process FORMS to make any suites or specs pending."
+  (when (eq (car forms) :var)
+    (setq forms (cddr forms)))
+  (let (retained inner)
+    (dolist (form forms (nreverse retained))
+      (pcase form
+        ;; Make it pending by just keeping the description
+        (`(it ,description . ,_)
+         (push (list 'it description) retained))
+        (`(xit ,description . ,_)
+         (push (list 'it description) retained))
+        ;; Just make nested describes into xdescribes and handle them
+        ;; in another macro invocation
+        (`(describe . ,tail)
+         (push (cons 'xdescribe tail) retained))
+        (`(xdescribe . ,tail)
+         (push (cons 'xdescribe tail) retained))
+        ;; Special case to ignore before-* and after-* forms
+        (`(before-each . ,_)) ; nop
+        (`(after-each . ,_)) ; nop
+        (`(before-all . ,_)) ; nop
+        (`(after-all . ,_)) ; nop
+        ;; Any list starting with a list, like a let varlist.
+        ((and (pred consp)
+              ls
+              (guard (consp (car ls))))
+         (dolist (elt (buttercup--disable-specs ls))
+           (push elt retained)))
+        ;; Any function call list
+        (`(,_ . ,tail)
+         (dolist (elt (buttercup--disable-specs tail))
+           (push elt retained)))
+        ;; non-cons items
+        ((and elt (guard (not (consp elt))))) ; nop
+        (_
+         (error "Unrecognized form in `xdescribe': `%s'" (pp-to-string form)))
+        ))))
 
-A disabled suite is not run.
+(defmacro xdescribe (description &rest body)
+  "Like `describe', but mark any specs as disabled.
 
 DESCRIPTION is a string. BODY is a sequence of instructions,
 mainly calls to `describe', `it' and `before-each'."
   (declare (indent 1))
-  `(buttercup-xdescribe ,description (lambda () ,@body)))
-
-(defun buttercup-xdescribe (description function)
-  "Like `buttercup-describe', but mark the suite as disabled.
-
-A disabled suite is not run.
-
-DESCRIPTION has the same meaning as in `xdescribe'. FUNCTION
-is ignored.
-`describe'."
-  (ignore function)
-  (buttercup-describe description (lambda ()
-                                    (signal 'buttercup-pending "PENDING"))))
+  `(describe ,description
+     ,@(buttercup--disable-specs body)
+     ;; make sure the suite is marked as pending
+     (signal 'buttercup-pending "PENDING")))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;; Pending Specs: xit
