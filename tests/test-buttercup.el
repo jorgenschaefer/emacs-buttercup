@@ -530,7 +530,15 @@
       (expect (buttercup-spec-status
                (car (last (buttercup-suite-children
                            buttercup--current-suite))))
-              :to-be 'pending))))
+              :to-be 'pending)))
+
+  (it "should set the failure description to PENDING"
+    (let ((buttercup--current-suite (make-buttercup-suite))
+          spec)
+      (buttercup-xit "bla bla")
+      (setq spec (car (buttercup-suite-children buttercup--current-suite)))
+      (buttercup--update-with-funcall spec (buttercup-spec-function spec))
+      (expect (buttercup-suite-or-spec-failure-description spec) :to-equal "PENDING"))))
 
 ;;;;;;;;;
 ;;; Spies
@@ -852,6 +860,15 @@
           (buttercup-reporter-batch 'spec-done spec))
 
         (expect 'buttercup--print :to-have-been-called-with "  FAILED\n"))
+
+      (it "should output the failure-description for a pending spec"
+        (setf (buttercup-spec-status spec) 'pending
+              (buttercup-spec-failure-description spec) "DESCRIPTION")
+        (let ((buttercup-reporter-batch--failures nil))
+          (buttercup-reporter-batch 'spec-done spec))
+        (expect (mapconcat (apply-partially #'apply #'format)
+                           (spy-calls-all-args 'buttercup--print) "")
+                :to-match "DESCRIPTION"))
 
       (it "should throw an error for an unknown spec status"
         (setf (buttercup-spec-status spec) 'unknown)
