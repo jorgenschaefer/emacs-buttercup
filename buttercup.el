@@ -1394,6 +1394,9 @@ Do not change the global value.")
       (kill-buffer buttercup-warning-buffer-name))))
 
 (defun buttercup--update-with-funcall (suite-or-spec function &rest args)
+  "Update SUITE-OR-SPEC with the result of calling FUNCTION with ARGS.
+Sets the `status', `failure-description', and `failure-stack' for
+failed and pending specs."
   (let* ((result (apply 'buttercup--funcall function args))
          (status (elt result 0))
          (description (elt result 1))
@@ -1405,8 +1408,8 @@ Do not change the global value.")
         (`(error (buttercup-pending . ,pending-description))
          (setq status 'pending
                description pending-description))))
-    (when (eq (buttercup-suite-or-spec-status suite-or-spec)
-              'passed)
+    (when (memq (buttercup-suite-or-spec-status suite-or-spec)
+                '(passed pending))
       (setf (buttercup-suite-or-spec-status suite-or-spec) status
             (buttercup-suite-or-spec-failure-description suite-or-spec) description
             (buttercup-suite-or-spec-failure-stack suite-or-spec) stack))))
