@@ -919,7 +919,7 @@ FUNCTION is a function containing the body instructions passed to
   "Process FORMS to make any suites or specs pending."
   (when (eq (car forms) :var)
     (setq forms (cddr forms)))
-  (let (retained inner)
+  (let (retained)
     (dolist (form forms (nreverse retained))
       (pcase form
         ;; Make it pending by just keeping the description
