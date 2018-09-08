@@ -670,7 +670,8 @@ See also `buttercup-define-matcher'."
   (status 'passed)
   failure-description
   failure-stack
-  )
+  time-started
+  time-ended)
 
 (cl-defstruct (buttercup-suite (:include buttercup-suite-or-spec))
   ;; Any children of this suite, both suites and specs
@@ -770,6 +771,21 @@ See also `buttercup-define-matcher'."
       (if (member name seen)
           (push name duplicates)
         (push name seen)))))
+
+(defun buttercup--set-start-time (suite-or-spec)
+  "Set time-started of SUITE-OR-SPEC to `current-time'."
+  (setf (buttercup-suite-or-spec-time-started suite-or-spec) (current-time)))
+
+(defun buttercup--set-end-time (suite-or-spec)
+  "Set time-ended of SUITE-OR-SPEC to `current-time'."
+  (setf (buttercup-suite-or-spec-time-ended suite-or-spec) (current-time)))
+
+(defun buttercup-elapsed-time (suite-or-spec)
+  "Get elapsed time of SUITE-OR-SPEC."
+  ;; time-subtract does not handle nil arguments until Emacs 25.1
+  (time-subtract
+   (or (buttercup-suite-or-spec-time-ended suite-or-spec) (current-time))
+   (or (buttercup-suite-or-spec-time-started suite-or-spec) (current-time))))
 
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
@@ -1349,6 +1365,7 @@ Do not change the global value.")
 
 (defun buttercup--run-suite (suite)
   "Run SUITE. A suite is a sequence of suites and specs."
+  (buttercup--set-start-time suite)
   (let* ((buttercup--before-each (append buttercup--before-each
                                          (buttercup-suite-before-each suite)))
          (buttercup--after-each (append (buttercup-suite-after-each suite)
@@ -1364,9 +1381,11 @@ Do not change the global value.")
         (buttercup--run-spec sub))))
     (dolist (f (buttercup-suite-after-all suite))
       (buttercup--update-with-funcall suite f))
+    (buttercup--set-end-time suite)
     (funcall buttercup-reporter 'suite-done suite)))
 
 (defun buttercup--run-spec (spec)
+  (buttercup--set-start-time spec)
   (unwind-protect
       (progn
         ;; Kill any previous warning buffer, just in case
@@ -1391,7 +1410,8 @@ Do not change the global value.")
               (buffer-string)
               'yellow)))))
     (when (get-buffer buttercup-warning-buffer-name)
-      (kill-buffer buttercup-warning-buffer-name))))
+      (kill-buffer buttercup-warning-buffer-name))
+    (buttercup--set-end-time spec)))
 
 (defun buttercup--update-with-funcall (suite-or-spec function &rest args)
   "Update SUITE-OR-SPEC with the result of calling FUNCTION with ARGS.

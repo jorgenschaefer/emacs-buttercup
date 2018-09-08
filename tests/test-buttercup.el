@@ -302,6 +302,70 @@
               :to-equal
               "su1 su2 sp2"))))
 
+(describe "The `buttercup-elapsed-time' function"
+  (let ((spytime (current-time)))
+    (before-each
+      (spy-on 'current-time
+              :and-call-fake
+              (lambda ()
+                (setq spytime (time-add spytime (seconds-to-time 1.5))))))
+    (it "should report elapsed time for suites"
+      (let ((suite (make-buttercup-suite)))
+        (buttercup--set-start-time suite)
+        (buttercup--set-end-time suite)
+        (expect (buttercup-elapsed-time suite)
+                :to-equal (seconds-to-time 1.5))))
+    (it "should report elapsed time for specs"
+      (let ((spec (make-buttercup-spec)))
+        (buttercup--set-start-time spec)
+        (buttercup--set-end-time spec)
+        (expect (buttercup-elapsed-time spec)
+                :to-equal (seconds-to-time 1.5))))))
+
+(defmacro with-local-buttercup (&rest body)
+  "Execute BODY with local buttercup state variables."
+  (declare (debug t) (indent defun))
+  `(let (buttercup--after-all
+         buttercup--after-each
+         buttercup--before-all
+         buttercup--before-each
+         buttercup--cleanup-functions
+         buttercup--current-suite
+         (buttercup-reporter #'ignore)
+         buttercup-suites
+         (buttercup-warning-buffer-name " *ignored buttercup warnings*"))
+     ,@body))
+
+(describe "The `buttercup--run-suite' function"
+  (before-each
+    (spy-on 'buttercup--set-start-time :and-call-through)
+    (spy-on 'buttercup--set-end-time :and-call-through))
+  (it "should set start and end time of the suite"
+    (with-local-buttercup
+      (let ((suite (make-buttercup-suite)))
+        (buttercup--run-suite suite)
+        (expect 'buttercup--set-start-time :to-have-been-called-times 1)
+        (expect (buttercup-suite-or-spec-time-started suite)
+                :not :to-be nil)
+        (expect 'buttercup--set-end-time :to-have-been-called-times 1)
+        (expect (buttercup-suite-or-spec-time-ended suite)
+                :not :to-be nil)))))
+
+(describe "The `buttercup--run-spec' function"
+    (before-each
+      (spy-on 'buttercup--set-start-time :and-call-through)
+      (spy-on 'buttercup--set-end-time :and-call-through))
+    (it "should set start and end time of the spec"
+       (with-local-buttercup
+        (let ((spec (make-buttercup-spec)))
+          (buttercup--run-spec spec)
+          (expect 'buttercup--set-start-time :to-have-been-called-times 1)
+          (expect (buttercup-suite-or-spec-time-started spec)
+                  :not :to-be nil)
+          (expect 'buttercup--set-end-time :to-have-been-called-times 1)
+          (expect (buttercup-suite-or-spec-time-ended spec)
+                  :not :to-be nil)))))
+
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
 
