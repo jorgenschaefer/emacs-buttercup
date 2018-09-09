@@ -1488,17 +1488,19 @@ EVENT and ARG are described in `buttercup-reporter'."
 
       (`spec-done
        (cond
-        ((eq (buttercup-spec-status arg) 'passed)
-         (buttercup--print "\n"))
+        ((eq (buttercup-spec-status arg) 'passed)) ; do nothing
         ((eq (buttercup-spec-status arg) 'failed)
-         (buttercup--print "  FAILED\n")
+         (buttercup--print "  FAILED")
          (setq buttercup-reporter-batch--failures
                (append buttercup-reporter-batch--failures
                        (list arg))))
         ((eq (buttercup-spec-status arg) 'pending)
-         (buttercup--print "  %s\n" (buttercup-spec-failure-description arg)))
+         (buttercup--print "  %s" (buttercup-spec-failure-description arg)))
         (t
-         (error "Unknown spec status %s" (buttercup-spec-status arg)))))
+         (error "Unknown spec status %s" (buttercup-spec-status arg))))
+       (buttercup--print " (%s)\n"
+                         (seconds-to-string
+                          (float-time (buttercup-elapsed-time arg)))))
 
       (`suite-done
        (when (= 0 (length (buttercup-suite-or-spec-parents arg)))
@@ -1559,11 +1561,11 @@ EVENT and ARG are described in `buttercup-reporter'."
      (let ((level (length (buttercup-suite-or-spec-parents arg))))
        (cond
         ((eq (buttercup-spec-status arg) 'passed)
-         (buttercup--print (buttercup-colorize "\r%s%s\n" 'green)
+         (buttercup--print (buttercup-colorize "\r%s%s" 'green)
                            (make-string (* 2 level) ?\s)
                            (buttercup-spec-description arg)))
         ((eq (buttercup-spec-status arg) 'failed)
-         (buttercup--print (buttercup-colorize "\r%s%s  FAILED\n" 'red)
+         (buttercup--print (buttercup-colorize "\r%s%s  FAILED" 'red)
                            (make-string (* 2 level) ?\s)
                            (buttercup-spec-description arg))
          (setq buttercup-reporter-batch--failures
@@ -1571,13 +1573,16 @@ EVENT and ARG are described in `buttercup-reporter'."
                        (list arg))))
         ((eq (buttercup-spec-status arg) 'pending)
          (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
-             (buttercup--print "  %s\n" (buttercup-spec-failure-description arg))
-           (buttercup--print (buttercup-colorize "\r%s%s  %s\n" 'yellow)
+             (buttercup--print "  %s" (buttercup-spec-failure-description arg))
+           (buttercup--print (buttercup-colorize "\r%s%s  %s" 'yellow)
                              (make-string (* 2 level) ?\s)
                              (buttercup-spec-description arg)
                              (buttercup-spec-failure-description arg))))
         (t
-         (error "Unknown spec status %s" (buttercup-spec-status arg))))))
+         (error "Unknown spec status %s" (buttercup-spec-status arg))))
+       (buttercup--print " (%s)\n"
+                         (seconds-to-string
+                          (float-time (buttercup-elapsed-time arg))))))
 
     (`buttercup-done
      (dolist (failed buttercup-reporter-batch--failures)
