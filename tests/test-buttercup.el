@@ -990,6 +990,34 @@
         (expect (buttercup-reporter-batch 'unknown-event nil)
                 :to-throw)))))
 
+(describe "The `buttercup-run' function"
+  (let* ((reporter (lambda (event arg) (ignore event arg)))
+         (runner (lambda (suite) (ignore suite)))
+         (buttercup-reporter 'reporter)
+         buttercup-suites
+         parent-suite child-suite spec)
+    (ignore reporter runner)
+    (before-each
+      (setq parent-suite (make-buttercup-suite :description "parent-suite")
+            child-suite (make-buttercup-suite :description "child-suite")
+            spec (make-buttercup-spec :description "spec")
+            buttercup-suites (list parent-suite))
+      (buttercup-suite-add-child parent-suite child-suite)
+      (buttercup-suite-add-child child-suite spec)
+      (spy-on 'reporter)
+      (spy-on 'runner))
+    (it "should call the reporter twice with events buttercup-started and -done"
+      (cl-letf (((symbol-function 'buttercup--run-suite) #'ignore))
+        (expect (buttercup-run) :not :to-throw)
+        (expect 'reporter :to-have-been-called-times 2)
+        (expect 'reporter :to-have-been-called-with 'buttercup-started buttercup-suites)
+        (expect 'reporter :to-have-been-called-with 'buttercup-done buttercup-suites)))
+    (it "should call `buttercup--run-suite once per suite"
+      (cl-letf (((symbol-function 'buttercup--run-suite) #'runner)
+                (buttercup-suites (make-list 5 parent-suite)))
+        (expect (buttercup-run) :not :to-throw)
+        (expect 'runner :to-have-been-called-times 5)))))
+
 (describe "The `buttercup--print' function"
   (before-each
     (spy-on 'send-string-to-terminal))
