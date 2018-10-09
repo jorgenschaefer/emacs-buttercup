@@ -979,11 +979,11 @@
       (it "should handle the end event"
         (buttercup-reporter-batch 'buttercup-done nil))
 
-      (it "should raise an error if at least one spec failed"
+      (it "should not raise any error even if a spec failed"
         (setf (buttercup-spec-status spec) 'failed)
 
         (expect (buttercup-reporter-batch 'buttercup-done (list spec))
-                :to-throw)))
+                :not :to-throw)))
 
     (describe "on an unknown event"
       (it "should raise an error"
@@ -1006,6 +1006,10 @@
       (buttercup-suite-add-child child-suite spec)
       (spy-on 'reporter)
       (spy-on 'runner))
+    (it "should raise an error if at least one spec failed"
+      (setf (buttercup-spec-status spec) 'failed)
+      (cl-letf (((symbol-function 'buttercup--run-suite) #'ignore))
+        (expect (buttercup-run) :to-throw)))
     (it "should call the reporter twice with events buttercup-started and -done"
       (cl-letf (((symbol-function 'buttercup--run-suite) #'ignore))
         (expect (buttercup-run) :not :to-throw)

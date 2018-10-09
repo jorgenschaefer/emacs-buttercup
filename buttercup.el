@@ -1350,7 +1350,9 @@ A suite must be defined within a Markdown \"lisp\" code block."
       (progn
         (funcall buttercup-reporter 'buttercup-started buttercup-suites)
         (mapc #'buttercup--run-suite buttercup-suites)
-        (funcall buttercup-reporter 'buttercup-done buttercup-suites))
+        (funcall buttercup-reporter 'buttercup-done buttercup-suites)
+        (when (> (buttercup-suites-total-specs-failed buttercup-suites) 0)
+          (error "")))
     (error "No suites defined")))
 
 (defvar buttercup--before-each nil
@@ -1542,9 +1544,7 @@ EVENT and ARG are described in `buttercup-reporter'."
            (buttercup--print "Ran %s specs, %s failed, in %.1f seconds.\n"
                              defined
                              failed
-                             duration))
-         (when (> failed 0)
-           (error ""))))
+                             duration))))
 
       (_
        (error "Unknown event %s" event)))))
@@ -1628,9 +1628,7 @@ EVENT and ARG are described in `buttercup-reporter'."
            ", in %.1f seconds.\n")
           defined
           failed
-          duration))
-       (when (> failed 0)
-         (error ""))))
+          duration))))
 
     (_
      ;; Fall through to buttercup-reporter-batch implementation.
