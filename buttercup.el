@@ -1248,9 +1248,6 @@ spec, and should be killed after running the spec.")
       (buttercup-run))
     (message "Suite executed successfully")))
 
-(defvar buttercup-color t
-  "Whether to use colors in output.")
-
 ;;;###autoload
 (defun buttercup-run-discover ()
   "Discover and load test files, then run all defined suites.
