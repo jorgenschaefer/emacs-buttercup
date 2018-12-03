@@ -676,6 +676,7 @@ See also `buttercup-define-matcher'."
 (cl-defstruct (buttercup-suite (:include buttercup-suite-or-spec))
   ;; Any children of this suite, both suites and specs
   children
+  environment
   ;; Closure to run before and after each spec in this suite and its
   ;; children
   before-each
@@ -799,27 +800,40 @@ See also `buttercup-define-matcher'."
 Do not set this globally. It is let-bound by the `describe'
 form.")
 
+(defvar buttercup--current-env nil
+  "Dynamic environment")
+
 (defmacro describe (description &rest body)
   "Describe a test suite.
 
 DESCRIPTION is a string. BODY is a sequence of instructions,
 mainly calls to `describe', `it' and `before-each'."
   (declare (indent 1) (debug (&define sexp def-body)))
-  (let ((new-body (if (eq (elt body 0) :var)
-                      `((let ,(elt body 1)
-                          ,@(cddr body)))
-                    body)))
-    `(buttercup-describe ,description (lambda () ,@new-body))))
+  (let* ((var (plist-get body :var))
+         (env (plist-get body :env))
+         (body (progn
+                 (while (memq (car body) (list :var :env))
+                   (setq body (cddr body)))
+                 body))
+         (new-body (if var
+                       `((let ,var
+                           ,@body))
+                     body)))
+    (if env
+        `(buttercup-describe ,description (lambda () ,@new-body) ',env)
+      `(buttercup-describe ,description (lambda () ,@new-body)))))
 
-(defun buttercup-describe (description body-function)
+(defun buttercup-describe (description body-function &optional env)
   "Function to handle a `describe' form.
 
 DESCRIPTION has the same meaning as in `describe'. BODY-FUNCTION
 is a function containing the body instructions passed to
 `describe'."
   (let* ((enclosing-suite buttercup--current-suite)
+         (buttercup--current-env (append buttercup--current-env env))
          (buttercup--current-suite (make-buttercup-suite
-                                    :description description)))
+                                    :description description
+                                    :environment buttercup--current-env)))
     (condition-case nil
         (funcall body-function)
       (buttercup-pending
@@ -867,7 +881,31 @@ function containing the body instructions passed to `it'."
   (buttercup-suite-add-child buttercup--current-suite
                              (make-buttercup-spec
                               :description description
-                              :function body-function)))
+                              :function
+                               (if (buttercup-suite-environment buttercup--current-suite)
+                                   (let ((suite buttercup--current-suite))
+                                     (lambda ()
+                                       (let ((old
+                                              (mapcar
+                                               (lambda (binding)
+                                                 (if (consp binding)
+                                                     (cons (car binding) (symbol-value (car binding)))
+                                                   (cons binding (symbol-value binding))))
+                                               (buttercup-suite-environment suite))))
+                                         (unwind-protect
+                                             (progn
+                                               (mapc
+                                                (lambda (binding)
+                                                  (if (consp binding)
+                                                      (setf (symbol-value (car binding)) (eval (cadr binding)))
+                                                    (setf (symbol-value binding) nil)))
+                                                (buttercup-suite-environment suite))
+                                               (funcall body-function))
+                                           (mapc
+                                            (lambda (binding)
+                                              (setf (symbol-value (car binding)) (cdr binding)))
+                                            old)))))
+                                 body-function))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;; Setup and Teardown

@@ -373,13 +373,78 @@
   (it "should expand to a simple call to the buttercup-describe function"
     (expect (macroexpand '(describe "description" (+ 1 1)))
             :to-equal
-            '(buttercup-describe "description" (lambda () (+ 1 1)))))
+      '(buttercup-describe "description" (lambda () (+ 1 1)))))
 
   (it "should support the :var argument"
     (expect (macroexpand '(describe "description" :var (foo bar) (+ foo bar)))
             :to-equal
-            '(buttercup-describe "description"
-                                 (lambda () (let (foo bar) (+ foo bar)))))))
+      '(buttercup-describe "description"
+                           (lambda () (let (foo bar) (+ foo bar))))))
+
+  (it "should support the :var argument after :env"
+    (expect (macroexpand '(describe "description" :env nil :var (foo bar) (+ foo bar)))
+            :to-equal
+      '(buttercup-describe "description"
+                           (lambda () (let (foo bar) (+ foo bar))))))
+
+  (it "should support the :env"
+    (expect (macroexpand '(describe "description" :env ((kill-ring kill-ring)) (+ foo bar)))
+            :to-equal
+      '(buttercup-describe "description"
+                           (lambda () (+ foo bar))
+                           '((kill-ring kill-ring)))))
+
+  (defvar buttercup-test--special-var "global")
+
+  (describe "Dynamic environment"
+
+    (describe "preserving global value"
+      :env ((kill-ring kill-ring))
+
+      (it "should update environment locally in a test"
+        (with-temp-buffer
+          (insert "killed line")
+          (goto-char (point-min))
+          (kill-line))
+        (expect kill-ring :to-equal (list "killed line")))
+
+      (it "should restore environment between tests"
+        (expect kill-ring :to-be nil)))
+
+    (describe "binding new value"
+      :env ((buttercup-test--special-var "local"))
+
+      (it "should setup new dynamic environment for special vars"
+        (expect (bound-and-true-p buttercup-test--special-var) :to-be-truthy)
+        (expect buttercup-test--special-var :to-equal "local")))
+
+    (describe "binding nil if no value is provided"
+      :env (buttercup-test--special-var)
+
+      (it "should setup new dynamic environment for special vars"
+        (expect (boundp 'buttercup-test--special-var) :to-be-truthy)
+        (expect buttercup-test--special-var :to-equal nil)))
+
+    (describe "keeping global value"
+
+      (it "should use the global value for variable which is not locally updated"
+        (expect (bound-and-true-p buttercup-test--special-var) :to-be-truthy)
+        (expect buttercup-test--special-var :to-equal "global")))
+
+    (describe "nesting multiple describes"
+      :env ((buttercup-test--special-var "outer")
+            (kill-ring "kill-ring"))
+
+      (it "should use the first level binding on first level"
+        (expect buttercup-test--special-var :to-equal "outer")
+        (expect kill-ring :to-equal "kill-ring"))
+
+      (describe "should use the most nested with most precedence"
+        :env ((buttercup-test--special-var "inner"))
+
+        (it "in the inner describe"
+          (expect buttercup-test--special-var :to-equal "inner")
+          (expect kill-ring :to-equal "kill-ring"))))))
 
 (describe "The `buttercup-describe' function"
   (it "should run the enclosing body"
@@ -805,44 +870,44 @@
                 23))
 
       (it "works with strings"
-	(spy-on 'test-function :and-return-value "return value")
-	(expect (test-function 2 3)
-		:to-equal
-		"return value"))
+    (spy-on 'test-function :and-return-value "return value")
+    (expect (test-function 2 3)
+        :to-equal
+        "return value"))
 
       (it "works with vectors"
-	(spy-on 'test-function :and-return-value [1 2 3 4])
-	(expect (test-function 2 3)
-		:to-equal
-		[1 2 3 4]))
+    (spy-on 'test-function :and-return-value [1 2 3 4])
+    (expect (test-function 2 3)
+        :to-equal
+        [1 2 3 4]))
 
       (it "works with symbols"
-	(spy-on 'test-function :and-return-value 'symbol)
-	(expect (test-function 2 3)
-		:to-equal
-		'symbol))
+    (spy-on 'test-function :and-return-value 'symbol)
+    (expect (test-function 2 3)
+        :to-equal
+        'symbol))
 
       (it "works with conses"
-	(spy-on 'test-function :and-return-value '(1 . 2))
-	(expect (test-function 2 3)
-		:to-equal
-		(cons 1 2)))
+    (spy-on 'test-function :and-return-value '(1 . 2))
+    (expect (test-function 2 3)
+        :to-equal
+        (cons 1 2)))
 
       (it "works with lists"
-	(spy-on 'test-function :and-return-value '(1 2 3))
-	(expect (test-function 2 3)
-		:to-equal
-		'(1 2 3)))
+    (spy-on 'test-function :and-return-value '(1 2 3))
+    (expect (test-function 2 3)
+        :to-equal
+        '(1 2 3)))
 
       (it "works with alists"
-	(spy-on 'test-function :and-return-value '((first . 1)
-						   (second . 2)
-						   (third . 3)))
-	(expect (test-function 2 3)
-		:to-equal
-		'((first . 1)
-		  (second . 2)
-		  (third . 3)))))
+    (spy-on 'test-function :and-return-value '((first . 1)
+                           (second . 2)
+                           (third . 3)))
+    (expect (test-function 2 3)
+        :to-equal
+        '((first . 1)
+          (second . 2)
+          (third . 3)))))
 
     (describe ":and-call-fake keyword functionality"
       (before-each
