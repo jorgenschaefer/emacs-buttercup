@@ -202,6 +202,30 @@ as full sentences in traditional
       (expect t :to-equal t))))
 ```
 
+### Declaring Variables
+
+The `describe` macro supports the optional `:var` and `:var*` args.
+These bind variables for the suite by passing them as a varlist to the
+`let` and `let*` form respectively.
+
+```Emacs-Lisp
+(describe "A spec using :VAR"
+  :var ((foo 1))
+  (it "has access to the variables bound in :VAR"
+    (expect foo :to-be 1)))
+
+(describe "A spec using :VAR*"
+  :var* ((foo 1)
+        (bar (1+ foo)))
+  (it "has access to the variables bound in :VAR* which can refer \
+to symbols already bound"
+    (expect bar :to-be 2)))
+```
+
+It's important to note that `lexical-binding` must be `non-nil` for
+`:var` and `:var*` to work properly. Within a test file this is
+usually set using a local file variable.
+
 ### Setup and Teardown
 
 To help a test suite DRY up any duplicated setup and teardown code,
