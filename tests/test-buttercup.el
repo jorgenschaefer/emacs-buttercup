@@ -951,7 +951,11 @@
 
       (it "should print the elapsed time for all specs"
         (dolist (state '(pending failed passed))
-          (setq spec (make-buttercup-spec :description "spec" :status state :parent child-suite))
+          (spy-calls-reset 'buttercup--print)
+          (setq spec (make-buttercup-spec :description "spec"
+                                          :parent child-suite
+                                          :status state
+                                          :failure-description ""))
           (buttercup--set-start-time spec)
           (buttercup--set-end-time spec)
           (let ((buttercup-reporter-batch--failures nil))
@@ -960,7 +964,7 @@
           (expect (mapconcat (apply-partially #'apply #'format)
                              (spy-calls-all-args 'buttercup--print)
                              "")
-                  :to-match "([0-9]+\\.[0-9]+\\(h\\|m\\|m?s\\))"))))
+                  :to-match " ([0-9]+\\(\\.[0-9]+\\)?\\(h\\|m\\|m?s\\))\n$"))))
 
     (describe "on the suite-done event"
       (it "should emit a newline at the end of the top-level suite"
