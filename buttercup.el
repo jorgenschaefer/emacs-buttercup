@@ -1094,32 +1094,32 @@ responsibility to ensure ARG is a command."
                 nil))
             (_
              (error "Invalid `spy-on' keyword: `%S'" keyword)))))
-    (buttercup--spy-on-and-call-fake symbol replacement)))
+    (buttercup--spy-on-and-call-replacement symbol replacement)))
 
-(defun buttercup--spy-on-and-call-fake (spy fake-function)
-  "Replace the function in symbol SPY with a spy calling FAKE-FUNCTION."
+(defun buttercup--spy-on-and-call-replacement (spy fun)
+  "Replace the function in symbol SPY with a spy calling FUN."
   (let ((orig-function (symbol-function spy)))
-    (fset spy (buttercup--make-spy fake-function))
+    (fset spy (buttercup--make-spy fun))
     (buttercup--add-cleanup (lambda ()
                               (fset spy orig-function)))))
 
-(defun buttercup--make-spy (fake-function)
-  "Create a new spy function wrapping FAKE-FUNCTION and tracking calls to itself."
+(defun buttercup--make-spy (fun)
+  "Create a new spy function wrapping FUN and tracking calls to itself."
   (let (this-spy-function)
     (setq this-spy-function
           (lambda (&rest args)
-            (let ((return-value (apply fake-function args)))
+            (let ((return-value (apply fun args)))
               (buttercup--spy-calls-add
                this-spy-function
                (make-spy-context :args args
                                  :return-value return-value
                                  :current-buffer (current-buffer)))
               return-value)))
-    ;; Add the interactive form from `fake-function', if any
-    (when (interactive-form fake-function)
+    ;; Add the interactive form from `fun', if any
+    (when (interactive-form fun)
       (setq this-spy-function
             `(lambda (&rest args)
-               ,(interactive-form fake-function)
+               ,(interactive-form fun)
                (apply ',this-spy-function args))))
     this-spy-function))
 
