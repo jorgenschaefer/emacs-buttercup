@@ -379,7 +379,12 @@
     (expect (macroexpand '(describe "description" :var (foo bar) (+ foo bar)))
             :to-equal
             '(buttercup-describe "description"
-                                 (lambda () (let (foo bar) (+ foo bar)))))))
+                                 (lambda () (let (foo bar) (+ foo bar))))))
+  (it "should support the :var* argument"
+    (expect (macroexpand '(describe "description" :var* (foo bar) (+ foo bar)))
+            :to-equal
+            '(buttercup-describe "description"
+                                 (lambda () (let* (foo bar) (+ foo bar)))))))
 
 (describe "The `buttercup-describe' function"
   (it "should run the enclosing body"

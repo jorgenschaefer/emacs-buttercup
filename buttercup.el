@@ -805,10 +805,15 @@ form.")
 DESCRIPTION is a string. BODY is a sequence of instructions,
 mainly calls to `describe', `it' and `before-each'."
   (declare (indent 1) (debug (&define sexp def-body)))
-  (let ((new-body (if (eq (elt body 0) :var)
-                      `((let ,(elt body 1)
-                          ,@(cddr body)))
-                    body)))
+  (let ((new-body
+         (cond
+          ((eq (elt body 0) :var)
+           `((let ,(elt body 1)
+               ,@(cddr body))))
+          ((eq (elt body 0) :var*)
+           `((let* ,(elt body 1)
+               ,@(cddr body))))
+          (t body))))
     `(buttercup-describe ,description (lambda () ,@new-body))))
 
 (defun buttercup-describe (description body-function)
