@@ -647,7 +647,7 @@ See also `buttercup-define-matcher'."
   (setq spy (funcall spy)
         number (funcall number))
   (cl-assert (symbolp spy))
-  (let* ((call-count (length (spy-calls-all spy))))
+  (let* ((call-count (spy-calls-count spy)))
     (cond
      ((= number call-count)
       t)
