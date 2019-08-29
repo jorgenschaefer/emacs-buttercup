@@ -613,27 +613,40 @@
 ;;; Spies
 
 (describe "The Spy "
-  (let (saved-test-function saved-test-command)
+  (let (saved-test-function
+        saved-test-command
+        saved-test-function-throws-on-negative)
     ;; We use `before-all' here because some tests need to access the
     ;; same function as previous tests in order to work, so overriding
     ;; the function before each test would invalidate those tests.
+    ;; Unfortunately there's no way to do this lexically, so these
+    ;; function definitions are leaked after the tests run.
     (before-all
       (setq saved-test-function (and (fboundp 'test-function)
                                      (symbol-function 'test-function))
             saved-test-command (and (fboundp 'test-command)
-                                    (symbol-function 'test-command)))
+                                    (symbol-function 'test-command))
+            saved-test-function-throws-on-negative
+            (and (fboundp 'test-function-throws-on-negative)
+                 (symbol-function 'test-function-throws-on-negative)))
       (fset 'test-function (lambda (a b)
                              (+ a b)))
       (fset 'test-command (lambda ()
                             (interactive)
-                            t)))
+                            t))
+      (fset 'test-function-throws-on-negative
+            (lambda (x) (if (>= x 0) x (error "x is less than zero")))))
     (after-all
       (if saved-test-function
           (fset 'test-function saved-test-function)
         (fmakunbound 'test-function))
       (if saved-test-command
           (fset 'test-command saved-test-command)
-        (fmakunbound 'test-command)))
+        (fmakunbound 'test-command))
+      (if saved-test-function-throws-on-negative
+          (fset 'test-test-function-throws-on-negative
+                test-function-throws-on-negative)
+        (fmakunbound 'test-function-throws-on-negative)))
 
     (describe "`spy-on' function"
       (it "replaces a symbol's function slot"
@@ -881,7 +894,52 @@
       (it "throws an error when called"
         (expect (test-function 1 2)
                 :to-throw
-                'error "Stubbed error")))))
+                'error "Stubbed error")))
+
+    (describe "error-recording functionality"
+      (before-each
+        (spy-on 'test-function-throws-on-negative :and-call-through))
+
+      (it "records the function as called even if it throws an error"
+        (expect (test-function-throws-on-negative -5) :to-throw)
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called
+                 (list (lambda () 'test-function-throws-on-negative)))
+                :to-be
+                t))
+
+      (it "counts both successful calls and calls that threw errors"
+        (test-function-throws-on-negative 5)
+        (expect (test-function-throws-on-negative -5) :to-throw)
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-times
+                 (make-list-of-closures '(test-function-throws-on-negative 2)))
+                :to-equal t))
+
+      (it "records args to the function whether it throw an error or not"
+        (test-function-throws-on-negative 5)
+        (expect (test-function-throws-on-negative -5) :to-throw)
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-with
+                 (make-list-of-closures '(test-function-throws-on-negative 5)))
+                :to-be
+                t)
+        (expect (buttercup--apply-matcher
+                 :to-have-been-called-with
+                 (make-list-of-closures '(test-function-throws-on-negative -5)))
+                :to-be
+                t))
+
+      (it "records the signal thrown by a call to the function"
+        (test-function-throws-on-negative 5)
+        (expect (test-function-throws-on-negative -5) :to-throw 'error)
+        (expect (spy-context-thrown-signal
+                 (spy-calls-first 'test-function-throws-on-negative))
+                :to-be nil)
+        (expect (car
+                 (spy-context-thrown-signal
+                  (spy-calls-most-recent 'test-function-throws-on-negative)))
+                :to-be 'error)))))
 
 ;;;;;;;;;;;;;
 ;;; Reporters
