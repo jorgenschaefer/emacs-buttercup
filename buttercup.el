@@ -1025,6 +1025,7 @@ DESCRIPTION has the same meaning as in `xit'. FUNCTION is ignored."
 (cl-defstruct spy-context
   args
   return-value
+  thrown-signal
   current-buffer)
 
 (defun spy-on (symbol &optional keyword arg)
@@ -1106,15 +1107,35 @@ responsibility to ensure ARG is a command."
 (defun buttercup--make-spy (fun)
   "Create a new spy function wrapping FUN and tracking calls to itself."
   (let (this-spy-function)
-    (setq this-spy-function
-          (lambda (&rest args)
-            (let ((return-value (apply fun args)))
+    (setq
+     this-spy-function
+     (lambda (&rest args)
+       (let ((returned nil)
+             (return-value nil))
+         (condition-case err
+             (progn
+               (setq return-value (apply fun args)
+                     returned t)
+               (buttercup--spy-calls-add
+                this-spy-function
+                (make-spy-context :args args
+                                  :return-value return-value
+                                  :thrown-signal nil
+                                  :current-buffer (current-buffer)))
+               return-value)
+           (error
+            ;; If returned is non-nil, then the error we caught
+            ;; didn't come from FUN, so we shouldn't record it.
+            (unless returned
               (buttercup--spy-calls-add
                this-spy-function
                (make-spy-context :args args
-                                 :return-value return-value
-                                 :current-buffer (current-buffer)))
-              return-value)))
+                                 :return-value nil
+                                 :thrown-signal err
+                                 :current-buffer (current-buffer))))
+            ;; Regardless, we only caught this error order to record
+            ;; it, so we need to re-throw it.
+            (signal (car err) (cdr err)))))))
     ;; Add the interactive form from `fun', if any
     (when (interactive-form fun)
       (setq this-spy-function
