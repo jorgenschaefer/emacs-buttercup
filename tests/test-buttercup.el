@@ -613,16 +613,27 @@
 ;;; Spies
 
 (describe "The Spy "
-  (let (test-function)
+  (let (saved-test-function saved-test-command)
     ;; We use `before-all' here because some tests need to access the
     ;; same function as previous tests in order to work, so overriding
     ;; the function before each test would invalidate those tests.
     (before-all
+      (setq saved-test-function (and (fboundp 'test-function)
+                                     (symbol-function 'test-function))
+            saved-test-command (and (fboundp 'test-command)
+                                    (symbol-function 'test-command)))
       (fset 'test-function (lambda (a b)
                              (+ a b)))
       (fset 'test-command (lambda ()
                             (interactive)
                             t)))
+    (after-all
+      (if saved-test-function
+          (fset 'test-function saved-test-function)
+        (fmakunbound 'test-function))
+      (if saved-test-command
+          (fset 'test-command saved-test-command)
+        (fmakunbound 'test-command)))
 
     (describe "`spy-on' function"
       (it "replaces a symbol's function slot"
