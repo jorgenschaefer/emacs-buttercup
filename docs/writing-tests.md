@@ -226,6 +226,10 @@ It's important to note that `lexical-binding` must be `non-nil` for
 `:var` and `:var*` to work properly. Within a test file this is
 usually set using a local file variable.
 
+Using `:var` and `:var*` works just like the `let` equivalents, but
+it's recommended to use the `:var` format to be future proof. Future
+internal changes in `buttercup` could break suites using `let`.
+
 ### Setup and Teardown
 
 To help a test suite DRY up any duplicated setup and teardown code,
