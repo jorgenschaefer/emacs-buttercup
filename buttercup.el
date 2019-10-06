@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2015-2017  Jorgen Schaefer <contact@jorgenschaefer.de>
 
-;; Version: 1.17
+;; Version: 1.18
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>
 ;; Package-Requires: ((emacs "24.3"))
 ;; URL: https://github.com/jorgenschaefer/emacs-buttercup
