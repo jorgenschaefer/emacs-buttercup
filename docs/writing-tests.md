@@ -636,9 +636,22 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
 ## Warnings in tests
 
+By default, Buttercup captures any warning emitted during a test and
+displays them all after the test completes in order to keep the output
+readable. If you need to suppress this (for example if your test deals
+with the warnings itself), you can use the macro
+`buttercup-suppress-warning-capture`.
+
 ```Emacs-Lisp
 (describe "A test"
   (it "can issue warnings while running"
     (display-warning 'buttercup "This warning should be visible after the test report.")
-    (expect (+ 2 2) :to-equal 4)))
+    (expect (+ 2 2) :to-equal 4))
+
+  (it "can capture its own warnings as part of the test"
+    (buttercup-suppress-warning-capture
+      (display-warning 'buttercup "This warning should be captured in `collected-output'.")
+      (expect (with-current-buffer "*Warnings*"
+                (buffer-string))
+              :to-match "This warning should be captured"))))
 ```
