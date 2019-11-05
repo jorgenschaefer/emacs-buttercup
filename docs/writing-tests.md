@@ -524,7 +524,8 @@ will `signal` the specified value as an error.
 ### Other tracking properties
 
 Every call to a spy is tracked and exposed using the `spy-calls`
-accessor.
+accessor. This tracks both successful calls and calls that throw
+errors.
 
 `spy-calls-any` returns `nil` if the spy has not been called at all,
 and then `t` once at least one call happens. `spy-calls-count` returns
@@ -535,6 +536,10 @@ current buffer and arguments passed to all calls.
 `spy-calls-most-recent` returns the current buffer and arguments for
 the most recent call. `spy-calls-first` returns the current buffer and
 arguments for the first call.
+
+The spy context structs returned by these functions have 4 slots:
+`args`, `return-value`, `thrown-signal`, and `current-buffer`. See
+below for examples accessing these.
 
 Finally, `spy-calls-reset` clears all tracking for a spy.
 
@@ -618,6 +623,24 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
             (make-spy-context :current-buffer (current-buffer)
                               :args '(123)
                               :return-value nil)))
+
+  (it "tracks the return values and error signals of each call"
+    ;; Set up `set-foo' so that it can either return a value or throw
+    ;; an error
+    (spy-on 'set-foo :and-call-fake
+            (lambda (val &rest ignored)
+              (if (>= val 0)
+                  val
+                (error "Value must not be negative"))))
+    (expect (set-foo 1) :to-be 1)
+    (expect (set-foo -1) :to-throw 'error)
+    (expect
+     (spy-context-return-value (spy-calls-first 'set-foo))
+     :to-be 1)
+    (expect
+     (spy-context-thrown-signal
+      (spy-calls-most-recent 'set-foo))
+     :to-equal (list 'error "Value must not be negative")))
 
   (it "can be reset"
     (set-foo 123)
