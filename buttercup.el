@@ -1133,8 +1133,8 @@ responsibility to ensure ARG is a command."
                                  :return-value nil
                                  :thrown-signal err
                                  :current-buffer (current-buffer))))
-            ;; Regardless, we only caught this error order to record
-            ;; it, so we need to re-throw it.
+            ;; Regardless, we only caught this error in order to
+            ;; record it, so we need to re-throw it.
             (signal (car err) (cdr err)))))))
     ;; Add the interactive form from `fun', if any
     (when (interactive-form fun)

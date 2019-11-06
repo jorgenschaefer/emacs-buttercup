@@ -619,8 +619,6 @@
     ;; We use `before-all' here because some tests need to access the
     ;; same function as previous tests in order to work, so overriding
     ;; the function before each test would invalidate those tests.
-    ;; Unfortunately there's no way to do this lexically, so these
-    ;; function definitions are leaked after the tests run.
     (before-all
       (setq saved-test-function (and (fboundp 'test-function)
                                      (symbol-function 'test-function))
@@ -644,8 +642,8 @@
           (fset 'test-command saved-test-command)
         (fmakunbound 'test-command))
       (if saved-test-function-throws-on-negative
-          (fset 'test-test-function-throws-on-negative
-                test-function-throws-on-negative)
+          (fset 'test-function-throws-on-negative
+                saved-test-function-throws-on-negative)
         (fmakunbound 'test-function-throws-on-negative)))
 
     (describe "`spy-on' function"
@@ -936,10 +934,9 @@
         (expect (spy-context-thrown-signal
                  (spy-calls-first 'test-function-throws-on-negative))
                 :to-be nil)
-        (expect (car
-                 (spy-context-thrown-signal
-                  (spy-calls-most-recent 'test-function-throws-on-negative)))
-                :to-be 'error)))))
+        (expect (spy-context-thrown-signal
+                 (spy-calls-most-recent 'test-function-throws-on-negative))
+                :to-equal '(error "x is less than zero"))))))
 
 ;;;;;;;;;;;;;
 ;;; Reporters
