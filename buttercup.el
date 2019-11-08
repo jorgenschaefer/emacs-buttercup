@@ -1657,6 +1657,7 @@ function is disabled to suppress display of all warning messages.
 The contents of this buffer are then displayed after the test
 finishes."
   (when (and (null buffer-name)
+             buttercup-warning-buffer-name
              (get-buffer buttercup-warning-buffer-name))
     (setq buffer-name buttercup-warning-buffer-name))
   (if (equal buffer-name buttercup-warning-buffer-name)
@@ -1676,6 +1677,18 @@ finishes."
     (cyan    . 36)
     (white   . 37))
   "List of text colors.")
+
+(defmacro buttercup-suppress-warning-capture (&rest body)
+  "Suppress Buttercup's warning capturing within BODY.
+
+Buttercup normally captures all warnings while a test is running
+so it can defer displaying them until after the test is complete.
+However, if you want to catch any warnings yourself as part of
+the test, you need to wrap your code in this macro to suppress
+the capturing behavior."
+  (declare (indent 0))
+  `(let ((buttercup-warning-buffer-name nil))
+     ,@body))
 
 (defun buttercup-colorize (string color)
   "Format STRING with COLOR."
