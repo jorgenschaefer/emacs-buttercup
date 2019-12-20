@@ -1195,6 +1195,16 @@ responsibility to ensure ARG is a command."
   "Return the number of times SPY has been called so far."
   (length (spy-calls-all spy)))
 
+(defun spy-calls-count-returned (spy)
+  "Return the number of times SPY has been called successfully so far."
+  (length (cl-remove-if-not 'spy-context-return-p
+                            (spy-calls-all spy))))
+
+(defun spy-calls-count-errors (spy)
+  "Return the number of times SPY has been called and thrown errors so far."
+  (length (cl-remove-if-not 'spy-context-thrown-p
+                            (spy-calls-all spy))))
+
 (defun spy-calls-args-for (spy index)
   "Return the context of the INDEXth call to SPY."
   (let ((context (elt (spy-calls-all spy)

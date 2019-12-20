@@ -657,6 +657,29 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
       (spy-calls-most-recent 'set-foo))
      :to-throw))
 
+  (it "counts the number of successful and failed calls"
+    ;; Set up `set-foo' so that it can either return a value or throw
+    ;; an error
+    (spy-on 'set-foo :and-call-fake
+            (lambda (val &rest ignored)
+              (if (>= val 0)
+                  val
+                (error "Value must not be negative"))))
+    (expect (set-foo 1) :to-be 1)
+    (expect (set-foo 2) :to-be 2)
+    (expect (set-foo 3) :to-be 3)
+    (expect (set-foo -1) :to-throw 'error)
+    (expect (set-foo -2) :to-throw 'error)
+    (expect (set-foo -3) :to-throw 'error)
+    (expect (set-foo -4) :to-throw 'error)
+
+    (expect (spy-calls-count 'set-foo)
+            :to-be 7)
+    (expect (spy-calls-count-returned 'set-foo)
+            :to-be 3)
+    (expect (spy-calls-count-errors 'set-foo)
+            :to-be 4))
+
   (it "can be reset"
     (set-foo 123)
     (set-foo 456 "baz")
