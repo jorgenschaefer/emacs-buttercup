@@ -600,9 +600,9 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
     (expect (spy-calls-all 'set-foo)
             :to-equal
-            `(,(make-spy-context :current-buffer (current-buffer)
-                                 :args '(123)
-                                 :return-value nil))))
+            `(,(make-spy-context-return :current-buffer (current-buffer)
+                                        :args '(123)
+                                        :value nil))))
 
   (it "has a shortcut to the most recent call"
     (set-foo 123)
@@ -610,9 +610,9 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
     (expect (spy-calls-most-recent 'set-foo)
             :to-equal
-            (make-spy-context :current-buffer (current-buffer)
-                              :args '(456 "baz")
-                              :return-value nil)))
+            (make-spy-context-return :current-buffer (current-buffer)
+                                     :args '(456 "baz")
+                                     :value nil)))
 
   (it "has a shortcut to the first call"
     (set-foo 123)
@@ -620,9 +620,9 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
     (expect (spy-calls-first 'set-foo)
             :to-equal
-            (make-spy-context :current-buffer (current-buffer)
-                              :args '(123)
-                              :return-value nil)))
+            (make-spy-context-return :current-buffer (current-buffer)
+                                     :args '(123)
+                                     :value nil)))
 
   (it "tracks the return values and error signals of each call"
     ;; Set up `set-foo' so that it can either return a value or throw
@@ -634,13 +634,28 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
                 (error "Value must not be negative"))))
     (expect (set-foo 1) :to-be 1)
     (expect (set-foo -1) :to-throw 'error)
+    (expect (spy-context-return-p (spy-calls-first 'set-foo)))
     (expect
      (spy-context-return-value (spy-calls-first 'set-foo))
      :to-be 1)
+    ;; Trying to get the thrown signal from a call that didn't throw a
+    ;; signal is an error
+    (expect
+     (spy-context-thrown-signal
+      (spy-calls-first 'set-foo))
+     :to-throw)
+
+    (expect (spy-context-thrown-p (spy-calls-most-recent 'set-foo)))
     (expect
      (spy-context-thrown-signal
       (spy-calls-most-recent 'set-foo))
-     :to-equal (list 'error "Value must not be negative")))
+     :to-equal '(error "Value must not be negative"))
+    ;; Trying to get the return value from a call that threw a signal
+    ;; raises an error
+    (expect
+     (spy-context-return-value
+      (spy-calls-most-recent 'set-foo))
+     :to-throw))
 
   (it "can be reset"
     (set-foo 123)

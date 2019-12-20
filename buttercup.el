@@ -1023,10 +1023,14 @@ DESCRIPTION has the same meaning as in `xit'. FUNCTION is ignored."
   "A mapping of currently-defined spies to their contexts.")
 
 (cl-defstruct spy-context
-  args
-  return-value
-  thrown-signal
-  current-buffer)
+  args current-buffer)
+;; The struct and slot names are kind of a cheat so that the accessor
+;; function names remain unchanged: `spy-context-return-value' and
+;; `spy-context-thrown-signal'.
+(cl-defstruct (spy-context-return (:include spy-context))
+  value)
+(cl-defstruct (spy-context-thrown (:include spy-context))
+  signal)
 
 (defun spy-on (symbol &optional keyword arg)
   "Create a spy (mock) for the function SYMBOL.
@@ -1118,10 +1122,9 @@ responsibility to ensure ARG is a command."
                      returned t)
                (buttercup--spy-calls-add
                 this-spy-function
-                (make-spy-context :args args
-                                  :return-value return-value
-                                  :thrown-signal nil
-                                  :current-buffer (current-buffer)))
+                (make-spy-context-return :args args
+                                         :value return-value
+                                         :current-buffer (current-buffer)))
                return-value)
            (error
             ;; If returned is non-nil, then the error we caught
@@ -1129,10 +1132,9 @@ responsibility to ensure ARG is a command."
             (unless returned
               (buttercup--spy-calls-add
                this-spy-function
-               (make-spy-context :args args
-                                 :return-value nil
-                                 :thrown-signal err
-                                 :current-buffer (current-buffer))))
+               (make-spy-context-thrown :args args
+                                        :signal err
+                                        :current-buffer (current-buffer))))
             ;; Regardless, we only caught this error in order to
             ;; record it, so we need to re-throw it.
             (signal (car err) (cdr err)))))))

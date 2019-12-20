@@ -933,7 +933,7 @@
         (expect (test-function-throws-on-negative -5) :to-throw 'error)
         (expect (spy-context-thrown-signal
                  (spy-calls-first 'test-function-throws-on-negative))
-                :to-be nil)
+                :to-throw)
         (expect (spy-context-thrown-signal
                  (spy-calls-most-recent 'test-function-throws-on-negative))
                 :to-equal '(error "x is less than zero"))))))
