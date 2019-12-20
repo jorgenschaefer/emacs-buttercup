@@ -1423,20 +1423,47 @@ Sets the `status', `failure-description', and `failure-stack' for
 failed and pending specs."
   (let* ((result (apply 'buttercup--funcall function args))
          (status (elt result 0))
+         (prev-status (buttercup-suite-or-spec-status suite-or-spec))
          (description (elt result 1))
          (stack (elt result 2)))
-    (when (eq status 'failed)
-      (pcase description
-        (`(error (buttercup-failed . ,failure-description))
-         (setq description failure-description))
-        (`(error (buttercup-pending . ,pending-description))
-         (setq status 'pending
-               description pending-description))))
-    (when (memq (buttercup-suite-or-spec-status suite-or-spec)
-                '(passed pending))
-      (setf (buttercup-suite-or-spec-status suite-or-spec) status
-            (buttercup-suite-or-spec-failure-description suite-or-spec) description
-            (buttercup-suite-or-spec-failure-stack suite-or-spec) stack))))
+    (when (not (eq prev-status 'failed))
+      (when (eq status 'failed)
+        (pcase description
+          (`(error (buttercup-failed . ,failure-description))
+           (setq description failure-description))
+          (`(error (buttercup-pending . ,pending-description))
+           (setq status 'pending
+                 description pending-description))))
+      ;; Failed overrides pending, which overrides passed. Note that
+      ;; `prev-status' being failed is already covered above
+      (when (or
+             (eq prev-status 'passed)
+             (and (eq prev-status 'pending)
+                  (memq status '(pending failed))))
+        (setf (buttercup-suite-or-spec-status suite-or-spec) status
+              (buttercup-suite-or-spec-failure-description suite-or-spec) description
+              (buttercup-suite-or-spec-failure-stack suite-or-spec) stack)))))
+
+;; (defun buttercup--update-with-funcall (suite-or-spec function &rest args)
+;;   "Update SUITE-OR-SPEC with the result of calling FUNCTION with ARGS.
+;; Sets the `status', `failure-description', and `failure-stack' for
+;; failed and pending specs."
+;;   (let* ((result (apply 'buttercup--funcall function args))
+;;          (status (elt result 0))
+;;          (description (elt result 1))
+;;          (stack (elt result 2)))
+;;     (when (eq status 'failed)
+;;       (pcase description
+;;         (`(error (buttercup-failed . ,failure-description))
+;;          (setq description failure-description))
+;;         (`(error (buttercup-pending . ,pending-description))
+;;          (setq status 'pending
+;;                description pending-description))))
+;;     (when (memq (buttercup-suite-or-spec-status suite-or-spec)
+;;                 '(passed pending))
+;;       (setf (buttercup-suite-or-spec-status suite-or-spec) status
+;;             (buttercup-suite-or-spec-failure-description suite-or-spec) description
+;;             (buttercup-suite-or-spec-failure-stack suite-or-spec) stack))))
 
 ;;;;;;;;;;;;;
 ;;; Reporters
