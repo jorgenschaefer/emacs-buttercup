@@ -366,7 +366,17 @@
                   :not :to-be nil)
           (expect 'buttercup--set-end-time :to-have-been-called-times 1)
           (expect (buttercup-suite-or-spec-time-ended spec)
-                  :not :to-be nil)))))
+                  :not :to-be nil))))
+
+  (it "should not overwrite pending status with `after-each' results"
+    (with-local-buttercup
+      (let ((suite (make-buttercup-suite))
+            spec)
+        (let ((buttercup--current-suite suite))
+          (after-each (ignore))
+          (setq spec (xit "pending")))
+        (buttercup--run-suite suite)
+        (expect (buttercup-spec-status spec) :to-be 'pending)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
@@ -605,12 +615,11 @@
               :to-be 'pending)))
 
   (it "should set the failure description to PENDING"
-    (let ((buttercup--current-suite (make-buttercup-suite))
-          spec)
-      (buttercup-xit "bla bla")
-      (setq spec (car (buttercup-suite-children buttercup--current-suite)))
+    (let* ((buttercup--current-suite (make-buttercup-suite))
+           (spec (buttercup-xit "bla bla")))
       (buttercup--update-with-funcall spec (buttercup-spec-function spec))
-      (expect (buttercup-suite-or-spec-failure-description spec) :to-equal "PENDING"))))
+      (expect (buttercup-suite-or-spec-failure-description spec) :to-equal "PENDING")
+      (expect (buttercup-suite-or-spec-status spec) :to-equal 'pending))))
 
 ;;;;;;;;;
 ;;; Spies
