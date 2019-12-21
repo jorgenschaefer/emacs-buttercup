@@ -640,7 +640,8 @@ By default, Buttercup captures any warning emitted during a test and
 displays them all after the test completes in order to keep the output
 readable. If you need to suppress this (for example if your test deals
 with the warnings itself), you can use the macro
-`buttercup-suppress-warning-capture`.
+`buttercup-suppress-warning-capture`, which works like `progn` but
+suppresses Buttercup's warning capturing within the body.
 
 ```Emacs-Lisp
 (describe "A test"
@@ -650,8 +651,11 @@ with the warnings itself), you can use the macro
 
   (it "can capture its own warnings as part of the test"
     (buttercup-suppress-warning-capture
-      (display-warning 'buttercup "This warning should be captured in `collected-output'.")
-      (expect (with-current-buffer "*Warnings*"
-                (buffer-string))
-              :to-match "This warning should be captured"))))
+      (let ((warning-text
+             (format "This warning, issued at %s should be sent to the *Warnings* buffer as normal."
+                     (current-time-string))))
+        (display-warning 'buttercup warning-text)
+        (expect (with-current-buffer "*Warnings*"
+                  (buffer-string))
+                :to-match (regexp-quote warning-text))))))
 ```
