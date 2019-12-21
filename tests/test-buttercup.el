@@ -179,24 +179,26 @@
 ;;; Suite and spec data structures
 
 (describe "The `buttercup-suite-add-child' function"
-  (it "should add an element at the end of the list"
+  (it "should add an element at the end of the list and return it"
     (let* ((specs (list (make-buttercup-spec)
                         (make-buttercup-spec)
                         (make-buttercup-spec)))
            (suite (make-buttercup-suite :children specs))
            (spec (make-buttercup-spec)))
 
-      (buttercup-suite-add-child suite spec)
+      (expect (buttercup-suite-add-child suite spec)
+              :to-be spec)
 
       (expect (buttercup-suite-children suite)
               :to-equal
               (append specs (list spec)))))
 
-  (it "should add an element even if the list is empty"
+  (it "should add an element even if the list is empty and return it"
     (let ((suite (make-buttercup-suite :children nil))
           (spec (make-buttercup-spec)))
 
-      (buttercup-suite-add-child suite spec)
+      (expect (buttercup-suite-add-child suite spec)
+              :to-be spec)
 
       (expect (buttercup-suite-children suite)
               :to-equal
@@ -444,11 +446,12 @@
               (buttercup-it "" (lambda ())))
             :to-throw))
 
-  (it "should add a spec to the current suite"
+  (it "should add a spec to the current suite and return the spec"
     (let ((buttercup--current-suite (make-buttercup-suite)))
-      (buttercup-it "the test spec"
-        (lambda () 23))
-      (let ((spec (car (buttercup-suite-children buttercup--current-suite))))
+      (let* ((created (buttercup-it "the test spec"
+                        (lambda () 23)))
+             (spec (car (buttercup-suite-children buttercup--current-suite))))
+        (expect created :to-be spec)
         (expect (buttercup-spec-description spec)
                 :to-equal
                 "the test spec")

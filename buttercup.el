@@ -691,11 +691,13 @@ See also `buttercup-define-matcher'."
   function)
 
 (defun buttercup-suite-add-child (parent child)
-  "Add a CHILD suite to a PARENT suite."
+  "Add a CHILD suite to a PARENT suite.
+Return CHILD."
   (setf (buttercup-suite-children parent)
         (append (buttercup-suite-children parent)
                 (list child)))
-  (setf (buttercup-suite-or-spec-parent child) parent))
+  (setf (buttercup-suite-or-spec-parent child) parent)
+  child)
 
 (defun buttercup-suite-or-spec-parents (suite-or-spec)
   "Return a list of parents of SUITE-OR-SPEC."
@@ -867,7 +869,8 @@ most probably including one or more calls to `expect'."
   "Function to handle an `it' form.
 
 DESCRIPTION has the same meaning as in `it'. BODY-FUNCTION is a
-function containing the body instructions passed to `it'."
+function containing the body instructions passed to `it'. Return
+the created spec object."
   (declare (indent 1))
   (when (not buttercup--current-suite)
     (error "`it' has to be called from within a `describe' form"))
@@ -1005,17 +1008,18 @@ DESCRIPTION is a string. BODY is ignored."
   "Like `buttercup-it', but mark the spec as disabled.
 A disabled spec is not run.
 
-DESCRIPTION has the same meaning as in `xit'. FUNCTION is ignored."
+DESCRIPTION has the same meaning as in `xit'. FUNCTION is
+ignored. Return the created spec object."
   (declare (indent 1))
   (ignore function)
-  (buttercup-it description (lambda ()
-                              (signal 'buttercup-pending "PENDING")))
-  (let ((spec (car (last (buttercup-suite-children
-                          buttercup--current-suite)))))
+  (let ((spec (buttercup-it description
+                (lambda ()
+                  (signal 'buttercup-pending "PENDING")))))
     (setf (buttercup-spec-status spec)
           'pending
           (buttercup-spec-failure-description spec)
-          "")))
+          "")
+    spec))
 
 ;;;;;;;;;
 ;;; Spies
