@@ -1551,7 +1551,7 @@ EVENT and ARG are described in `buttercup-reporter'."
         (print-escape-nonascii t))
     (pcase event
       (`buttercup-started
-       (setq buttercup-reporter-batch--start-time (float-time)
+       (setq buttercup-reporter-batch--start-time (current-time)
              buttercup-reporter-batch--failures nil)
        (let ((defined (buttercup-suites-total-specs-defined arg))
              (pending (buttercup-suites-total-specs-pending arg)))
@@ -1617,8 +1617,9 @@ EVENT and ARG are described in `buttercup-reporter'."
        (let ((defined (buttercup-suites-total-specs-defined arg))
              (pending (buttercup-suites-total-specs-pending arg))
              (failed (buttercup-suites-total-specs-failed arg))
-             (duration (- (float-time)
-                          buttercup-reporter-batch--start-time)))
+             (duration (float-time (time-subtract
+                                    (current-time)
+                                    buttercup-reporter-batch--start-time))))
          (if (> pending 0)
              (buttercup--print
               "Ran %s out of %s specs, %s failed, in %.1f seconds.\n"
@@ -1694,8 +1695,8 @@ EVENT and ARG are described in `buttercup-reporter'."
      (let ((defined (buttercup-suites-total-specs-defined arg))
            (pending (buttercup-suites-total-specs-pending arg))
            (failed (buttercup-suites-total-specs-failed arg))
-           (duration (- (float-time)
-                        buttercup-reporter-batch--start-time)))
+           (duration (float-time (time-subtract (current-time)
+                                                buttercup-reporter-batch--start-time))))
        (if (> pending 0)
            (buttercup--print
             (concat
