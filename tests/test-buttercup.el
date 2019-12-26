@@ -252,6 +252,23 @@
               :to-equal
               2))))
 
+(describe "The `buttercup-suites-total-specs-pending' function"
+  :var (suites)
+  (before-each
+    (with-local-buttercup
+      (describe "first suite"
+        (it "active test" (expect 1 :to-equal 1))
+        (xit "pending test"))
+      (xdescribe "second suite"
+        (it "forced pending" (expect 1 :to-equal 2)))
+      (describe "third suite"
+        (it "potentially skipped" (expect 1 :to-equal 1)))
+      (setq suites buttercup-suites)))
+  (it "should return the number of pending specs in a list of suites"
+    (with-local-buttercup
+      (expect (buttercup-suites-total-specs-pending suites)
+              :to-equal 2))))
+
 (describe "The `buttercup-suites-total-specs-failed' function"
   (it "should return the number of failed specs in a list of suites"
     (let ((su1 (make-buttercup-suite :description "su1"))
