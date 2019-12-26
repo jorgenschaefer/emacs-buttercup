@@ -1432,6 +1432,12 @@ A suite must be defined within a Markdown \"lisp\" code block."
           (error "")))
     (error "No suites defined")))
 
+(defun buttercup--reset-spec (spec)
+  "Reset SUITE-OR-SPEC to a ready-to-run state."
+  (setf (buttercup-spec-status spec) 'passed
+        (buttercup-spec-failure-description spec) nil
+        (buttercup-spec-failure-stack spec) nil))
+
 (defvar buttercup--before-each nil
   "A list of functions to call before each spec.
 
@@ -1464,6 +1470,7 @@ Do not change the global value.")
     (funcall buttercup-reporter 'suite-done suite)))
 
 (defun buttercup--run-spec (spec)
+  (buttercup--reset-spec spec)
   (buttercup--set-start-time spec)
   (unwind-protect
       (progn

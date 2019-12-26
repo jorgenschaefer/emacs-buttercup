@@ -617,6 +617,7 @@
   (it "should set the failure description to PENDING"
     (let* ((buttercup--current-suite (make-buttercup-suite))
            (spec (buttercup-xit "bla bla")))
+      (buttercup--reset-spec spec)
       (buttercup--update-with-funcall spec (buttercup-spec-function spec))
       (expect (buttercup-suite-or-spec-failure-description spec) :to-equal "PENDING")
       (expect (buttercup-suite-or-spec-status spec) :to-equal 'pending))))
