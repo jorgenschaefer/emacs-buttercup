@@ -1368,14 +1368,19 @@ current directory."
         (when (not (string-match "\\(^\\|/\\)\\." (file-relative-name file)))
           (load file nil t))))
     (when patterns
-      (dolist (spec (buttercup--specs buttercup-suites))
-        (let ((spec-full-name (buttercup-spec-full-name spec)))
-          (unless (cl-dolist (p patterns)
-                    (when (string-match p spec-full-name)
-                      (cl-return t)))
-            (setf (buttercup-spec-function spec)
-                  (lambda () (signal 'buttercup-pending "SKIPPED")))))))
+      (buttercup--mark-skipped buttercup-suites patterns))
     (buttercup-run)))
+
+(defun buttercup--mark-skipped (suites patterns)
+  "Mark any spec in SUITES not matching PATTERNS as skipped.
+SUITES is a list of suites. PATTERNS is a list of regexps."
+  (dolist (spec (buttercup--specs suites))
+    (let ((spec-full-name (buttercup-spec-full-name spec)))
+      (unless (cl-dolist (p patterns)
+                (when (string-match p spec-full-name)
+                  (cl-return t)))
+        (setf (buttercup-spec-function spec)
+              (lambda () (signal 'buttercup-pending "SKIPPED")))))))
 
 ;;;###autoload
 (defun buttercup-run-markdown-buffer (&rest markdown-buffers)
