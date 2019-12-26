@@ -267,7 +267,12 @@
   (it "should return the number of pending specs in a list of suites"
     (with-local-buttercup
       (expect (buttercup-suites-total-specs-pending suites)
-              :to-equal 2))))
+              :to-equal 2)))
+  (it "should also count skipped specs"
+    (with-local-buttercup
+      (buttercup--mark-skipped suites (list "skipped"))
+      (expect (buttercup-suites-total-specs-pending suites)
+              :to-equal 3))))
 
 (describe "The `buttercup-suites-total-specs-failed' function"
   (it "should return the number of failed specs in a list of suites"

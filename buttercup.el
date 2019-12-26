@@ -1380,7 +1380,8 @@ SUITES is a list of suites. PATTERNS is a list of regexps."
                 (when (string-match p spec-full-name)
                   (cl-return t)))
         (setf (buttercup-spec-function spec)
-              (lambda () (signal 'buttercup-pending "SKIPPED")))))))
+              (lambda () (signal 'buttercup-pending "SKIPPED"))
+              (buttercup-spec-status spec) 'pending)))))
 
 ;;;###autoload
 (defun buttercup-run-markdown-buffer (&rest markdown-buffers)
