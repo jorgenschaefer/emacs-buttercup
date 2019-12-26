@@ -1509,8 +1509,8 @@ failed and pending specs."
         (`(error (buttercup-pending . ,pending-description))
          (setq status 'pending
                description pending-description))))
-    (when (memq (buttercup-suite-or-spec-status suite-or-spec)
-                '(passed pending))
+    (when (eq (buttercup-suite-or-spec-status suite-or-spec)
+              'passed)
       (setf (buttercup-suite-or-spec-status suite-or-spec) status
             (buttercup-suite-or-spec-failure-description suite-or-spec) description
             (buttercup-suite-or-spec-failure-stack suite-or-spec) stack))))
