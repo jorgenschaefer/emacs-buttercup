@@ -1016,9 +1016,7 @@ ignored. Return the created spec object."
                 (lambda ()
                   (signal 'buttercup-pending "PENDING")))))
     (setf (buttercup-spec-status spec)
-          'pending
-          (buttercup-spec-failure-description spec)
-          "")
+          'pending)
     spec))
 
 ;;;;;;;;;
