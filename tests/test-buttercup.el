@@ -170,8 +170,7 @@
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; Built-in matchers
 
-;; Are tested in README.md
-
+;; Are tested in docs/writing-tests.md
 
 (buttercup-define-matcher-for-unary-function :test-to-be-truthy identity)
 
@@ -1188,6 +1187,47 @@
     (expect 'send-string-to-terminal
             :to-have-been-called-with
             "Hello, world")))
+
+(describe "The `buttercup--mark-skipped' function"
+  :var (suites)
+  (before-each
+    (with-local-buttercup
+      (describe "first suite"
+        (describe "inner suite"
+          (it "1-1-1 spec" (ignore))
+          (it "1-1-2 spec" (ignore))
+          (it "1-1-3 spec" (ignore))
+          (it "1-1-4 spec" (ignore))
+          (it "1-1-5 spec" (ignore))
+          (xit "1-1-6 spec" (ignore)))
+        (it "1-1 spec" (ignore)))
+      (xdescribe "second suite"
+        (it "2-1 spec" (ignore))
+        (it "2-2 spec" (ignore))
+        (it "2-3 spec" (ignore))
+        (it "2-4 spec" (ignore)))
+      (setq suites buttercup-suites)))
+  (it "should do nothing with a match-all pattern"
+    (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
+    (expect (buttercup-suites-total-specs-pending suites) :to-equal 5)
+    (buttercup--mark-skipped suites '("."))
+    (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
+    (expect (buttercup-suites-total-specs-pending suites) :to-equal 5)
+    (with-local-buttercup
+      (setq buttercup-suites suites)
+      (buttercup-run))
+    (expect (buttercup-suites-total-specs-pending suites) :to-equal 5)
+    (expect (cl-count "SKIPPED" (buttercup--specs suites)
+                      :key #'buttercup-spec-failure-description)
+            :to-equal 0))
+  (it "should mark all specs as pending with no pattern"
+    (buttercup--mark-skipped suites '())
+    (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
+    (expect (buttercup-suites-total-specs-pending suites) :to-equal 11))
+  (it "should handle multiple patterns"
+    (buttercup--mark-skipped suites '("1-1-[1-2]" "[12]-4"))
+    (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
+    (expect (buttercup-suites-total-specs-pending suites) :to-equal 8)))
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; ERT Compatibility
