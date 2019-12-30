@@ -537,9 +537,12 @@ current buffer and arguments passed to all calls.
 the most recent call. `spy-calls-first` returns the current buffer and
 arguments for the first call.
 
-The spy context structs returned by these functions have 4 slots:
-`args`, `return-value`, `thrown-signal`, and `current-buffer`. See
-below for examples accessing these.
+Each spy context is a struct with 3 slots. A successful function call
+is represented by a `spy-context-return` struct with slots `args`,
+`current-buffer`, and `value`. A function call the signalled an error
+is represented by a `spy-context-thrown` struct with slots `args`,
+`current-buffer`, and `signal`. See the examples below for accessing
+these slots.
 
 Finally, `spy-calls-reset` clears all tracking for a spy.
 
