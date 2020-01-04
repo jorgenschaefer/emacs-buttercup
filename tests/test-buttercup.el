@@ -34,6 +34,20 @@
             (lambda () item))
           items))
 
+(defmacro with-local-buttercup (&rest body)
+  "Execute BODY with local buttercup state variables."
+  (declare (debug t) (indent defun))
+  `(let (buttercup--after-all
+         buttercup--after-each
+         buttercup--before-all
+         buttercup--before-each
+         (buttercup--cleanup-functions :invalid)
+         buttercup--current-suite
+         (buttercup-reporter #'ignore)
+         buttercup-suites
+         (buttercup-warning-buffer-name " *ignored buttercup warnings*"))
+     ,@body))
+
 ;;;;;;;;;;
 ;;; expect
 
@@ -345,20 +359,6 @@
         (buttercup--set-end-time spec)
         (expect (buttercup-elapsed-time spec)
                 :to-equal (seconds-to-time 1.5))))))
-
-(defmacro with-local-buttercup (&rest body)
-  "Execute BODY with local buttercup state variables."
-  (declare (debug t) (indent defun))
-  `(let (buttercup--after-all
-         buttercup--after-each
-         buttercup--before-all
-         buttercup--before-each
-         (buttercup--cleanup-functions :invalid)
-         buttercup--current-suite
-         (buttercup-reporter #'ignore)
-         buttercup-suites
-         (buttercup-warning-buffer-name " *ignored buttercup warnings*"))
-     ,@body))
 
 (describe "The `buttercup--run-suite' function"
   (before-each
