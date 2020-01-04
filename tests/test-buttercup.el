@@ -98,8 +98,8 @@
               'buttercup-failed)))
 
   (describe "with a matcher argument"
-    (buttercup-define-matcher :always-true (a) t)
-    (buttercup-define-matcher :always-false (a) nil)
+    (buttercup-define-matcher :always-true (_a) t)
+    (buttercup-define-matcher :always-false (_a) nil)
 
     (it "should not raise an error if the matcher returns true"
       (expect (buttercup-expect (lambda () 1) :always-true)
@@ -949,7 +949,7 @@
 
     (describe ":and-call-fake keyword functionality"
       (before-each
-        (spy-on 'test-function :and-call-fake (lambda (a b) 1001)))
+        (spy-on 'test-function :and-call-fake (lambda (_a _b) 1001)))
 
       (it "tracks calls to the function"
         (test-function 42 23)
