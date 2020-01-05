@@ -532,17 +532,17 @@ and then `t` once at least one call happens. `spy-calls-count` returns
 the number of times the spy was called. `spy-calls-args-for` returns
 the arguments passed to a given call (by index). `spy-calls-all-args`
 returns the arguments to all calls. `spy-calls-all` returns the
-current buffer and arguments passed to all calls.
-`spy-calls-most-recent` returns the current buffer and arguments for
-the most recent call. `spy-calls-first` returns the current buffer and
-arguments for the first call.
+context (current buffer, arguments passed and return status) of all
+calls.  `spy-calls-most-recent` returns the context of the most recent
+call. `spy-calls-first` returns the context for the first call.
 
-Each spy context is a struct with 3 slots. A successful function call
-is represented by a `spy-context-return` struct with slots `args`,
-`current-buffer`, and `value`. A function call the signalled an error
-is represented by a `spy-context-thrown` struct with slots `args`,
-`current-buffer`, and `signal`. See the examples below for accessing
-these slots.
+Contexts are represented by instances of the `spy-context` struct with
+the slots `args`, `current-buffer`, `return-value` and
+`thrown-signal`. The `return-value` and `thrown-signal` slots
+represent the return status. Calling `spy-context-return-value` for a
+context representing a raised signal (or vice versa) will raise an
+error. Test the context type with `spy-context-return-p` and
+`spy-context-thrown-p`.
 
 Finally, `spy-calls-reset` clears all tracking for a spy.
 
@@ -603,9 +603,8 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
     (expect (spy-calls-all 'set-foo)
             :to-equal
-            `(,(make-spy-context-return :current-buffer (current-buffer)
-                                        :args '(123)
-                                        :value nil))))
+            `(,(make-spy-context :current-buffer (current-buffer)
+                                 :args '(123)))))
 
   (it "has a shortcut to the most recent call"
     (set-foo 123)
@@ -613,9 +612,8 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
     (expect (spy-calls-most-recent 'set-foo)
             :to-equal
-            (make-spy-context-return :current-buffer (current-buffer)
-                                     :args '(456 "baz")
-                                     :value nil)))
+            (make-spy-context :current-buffer (current-buffer)
+                              :args '(456 "baz"))))
 
   (it "has a shortcut to the first call"
     (set-foo 123)
@@ -623,9 +621,8 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
     (expect (spy-calls-first 'set-foo)
             :to-equal
-            (make-spy-context-return :current-buffer (current-buffer)
-                                     :args '(123)
-                                     :value nil)))
+            (make-spy-context :current-buffer (current-buffer)
+                              :args '(123))))
 
   (it "tracks the return values and error signals of each call"
     ;; Set up `set-foo' so that it can either return a value or throw
@@ -658,7 +655,18 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
     (expect
      (spy-context-return-value
       (spy-calls-most-recent 'set-foo))
-     :to-throw))
+     :to-throw)
+    ;; Use :return-value and :thrown-signal to create matching spy-contexts
+    (expect
+     (spy-calls-all 'set-foo)
+      :to-equal
+      (list
+       (make-spy-context :args '(1)
+                         :current-buffer (current-buffer)
+                         :return-value 1)
+       (make-spy-context :args '(-1)
+                         :current-buffer (current-buffer)
+                         :thrown-signal '(error "Value must not be negative")))))
 
   (it "counts the number of successful and failed calls"
     ;; Set up `set-foo' so that it can either return a value or throw

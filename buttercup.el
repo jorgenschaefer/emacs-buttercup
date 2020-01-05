@@ -1022,15 +1022,49 @@ DESCRIPTION has the same meaning as in `xit'. FUNCTION is ignored."
                                                  :weakness 'key)
   "A mapping of currently-defined spies to their contexts.")
 
-(cl-defstruct spy-context
+;; The base struct has no constructor so a factory function
+;; `make-spy-context' masquerading as a constructor can be defined
+;; later.
+(cl-defstruct (spy-context (:constructor nil))
   args current-buffer)
-;; The struct and slot names are kind of a cheat so that the accessor
-;; function names remain unchanged: `spy-context-return-value' and
-;; `spy-context-thrown-signal'.
-(cl-defstruct (spy-context-return (:include spy-context))
+(cl-defstruct (spy-context-return (:include spy-context)
+                                  (:conc-name spy-context--return-))
   value)
-(cl-defstruct (spy-context-thrown (:include spy-context))
+(cl-defstruct (spy-context-thrown (:include spy-context)
+                                  (:conc-name spy-context--thrown-))
   signal)
+
+(cl-defun make-spy-context (&key args current-buffer
+                                 (return-value nil has-return-value)
+                                 (thrown-signal nil has-thrown-signal))
+  "Constructor for objects of type spy-context.
+ARGS is the argument list of the called function.
+CURRENT-BUFFER is the buffer that was current when the spy was called.
+RETURN-VALUE is the returned value, if any.
+THROWN-SIGNAL is the signal raised by the function, if any.
+Only one of RETURN-VALUE and THROWN-SIGNAL may be given. Giving
+none of them is equivalent to `:return-value nil'."
+  (cond
+   ((and has-return-value has-thrown-signal)
+    (error "Only one of :return-value and :thrown-signal may be given"))
+   (has-thrown-signal (make-spy-context-thrown :args args
+                                               :current-buffer current-buffer
+                                               :signal thrown-signal))
+   (t (make-spy-context-return :args args
+                               :current-buffer current-buffer
+                               :value return-value))))
+
+(defun spy-context-return-value (context)
+  "Access slot \"return-value\" of `spy-context' struct CONTEXT."
+  (unless (spy-context-return-p context)
+    (error "Not a returning context"))
+  (spy-context--return-value context))
+
+(defun spy-context-thrown-signal (context)
+  "Access slot \"thrown-signal\" of `spy-context' struct CONTEXT."
+  (unless (spy-context-thrown-p context)
+    (error "Not a signal-raising context"))
+  (spy-context--thrown-signal context))
 
 (defun spy-on (symbol &optional keyword arg)
   "Create a spy (mock) for the function SYMBOL.
@@ -1122,9 +1156,9 @@ responsibility to ensure ARG is a command."
                      returned t)
                (buttercup--spy-calls-add
                 this-spy-function
-                (make-spy-context-return :args args
-                                         :value return-value
-                                         :current-buffer (current-buffer)))
+                (make-spy-context :args args
+                                  :return-value return-value
+                                  :current-buffer (current-buffer)))
                return-value)
            (error
             ;; If returned is non-nil, then the error we caught
@@ -1132,9 +1166,9 @@ responsibility to ensure ARG is a command."
             (unless returned
               (buttercup--spy-calls-add
                this-spy-function
-               (make-spy-context-thrown :args args
-                                        :signal err
-                                        :current-buffer (current-buffer))))
+               (make-spy-context :args args
+                                 :thrown-signal err
+                                 :current-buffer (current-buffer))))
             ;; Regardless, we only caught this error in order to
             ;; record it, so we need to re-throw it.
             (signal (car err) (cdr err)))))))
