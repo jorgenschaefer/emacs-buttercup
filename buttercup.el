@@ -205,11 +205,13 @@ failed."
           ,@body)))
 
 (defun buttercup--function-as-matcher (fun)
+  "Wrap FUN in code to unpack function-wrapped arguments."
   (cl-assert (functionp fun) t)
   (lambda (&rest args)
     (apply fun (mapcar #'funcall args))))
 
 (defun buttercup--find-matcher-function (matcher)
+  "Return the matcher function for MATCHER."
   (let ((matcher-prop
          (when (symbolp matcher)
            (get matcher 'buttercup-matcher))))
@@ -1201,7 +1203,7 @@ responsibility to ensure ARG is a command."
            buttercup--spy-contexts))
 
 (defun buttercup--spy-calls-add (spy-function context)
-  "Add CONTEXT to the recorded calls to SPY."
+  "Add CONTEXT to the recorded calls to SPY-FUNCTION."
   (puthash spy-function
            (append (gethash spy-function
                             buttercup--spy-contexts)
@@ -1710,7 +1712,7 @@ FMT and ARGS are passed to `format'."
 
 
 (defadvice display-warning (around buttercup-defer-warnings activate)
-  "Log all warnings to a special buffer while running buttercup tests.
+  "Log all warnings to a special buffer while running buttercup specs.
 
 Emacs' normal display logic for warnings doesn't mix well with
 buttercup, for several reasons. So instead, while a buttercup
