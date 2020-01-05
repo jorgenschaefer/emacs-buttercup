@@ -1091,7 +1091,7 @@
         (expect 'reporter :to-have-been-called-with 'buttercup-started buttercup-suites)
         (expect 'reporter :to-have-been-called-with 'buttercup-done buttercup-suites)))
     )
-  (it "should call `buttercup--run-suite once per suite"
+  (it "should call `buttercup--run-suite' once per suite"
     (let ((buttercup-suites (list parent-suite)) runner)
       (ignore runner)
       (setf (symbol-function 'runner) (lambda (suite) (ignore suite)))
