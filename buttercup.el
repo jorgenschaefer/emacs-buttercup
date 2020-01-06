@@ -647,7 +647,7 @@ See also `buttercup-define-matcher'."
   (setq spy (funcall spy)
         number (funcall number))
   (cl-assert (symbolp spy))
-  (let* ((call-count (length (spy-calls-all spy))))
+  (let* ((call-count (spy-calls-count spy)))
     (cond
      ((= number call-count)
       t)
@@ -1023,9 +1023,14 @@ DESCRIPTION has the same meaning as in `xit'. FUNCTION is ignored."
   "A mapping of currently-defined spies to their contexts.")
 
 (cl-defstruct spy-context
-  args
-  return-value
-  current-buffer)
+  args current-buffer)
+;; The struct and slot names are kind of a cheat so that the accessor
+;; function names remain unchanged: `spy-context-return-value' and
+;; `spy-context-thrown-signal'.
+(cl-defstruct (spy-context-return (:include spy-context))
+  value)
+(cl-defstruct (spy-context-thrown (:include spy-context))
+  signal)
 
 (defun spy-on (symbol &optional keyword arg)
   "Create a spy (mock) for the function SYMBOL.
@@ -1094,32 +1099,50 @@ responsibility to ensure ARG is a command."
                 nil))
             (_
              (error "Invalid `spy-on' keyword: `%S'" keyword)))))
-    (buttercup--spy-on-and-call-fake symbol replacement)))
+    (buttercup--spy-on-and-call-replacement symbol replacement)))
 
-(defun buttercup--spy-on-and-call-fake (spy fake-function)
-  "Replace the function in symbol SPY with a spy calling FAKE-FUNCTION."
+(defun buttercup--spy-on-and-call-replacement (spy fun)
+  "Replace the function in symbol SPY with a spy calling FUN."
   (let ((orig-function (symbol-function spy)))
-    (fset spy (buttercup--make-spy fake-function))
+    (fset spy (buttercup--make-spy fun))
     (buttercup--add-cleanup (lambda ()
                               (fset spy orig-function)))))
 
-(defun buttercup--make-spy (fake-function)
-  "Create a new spy function wrapping FAKE-FUNCTION and tracking calls to itself."
+(defun buttercup--make-spy (fun)
+  "Create a new spy function wrapping FUN and tracking calls to itself."
   (let (this-spy-function)
-    (setq this-spy-function
-          (lambda (&rest args)
-            (let ((return-value (apply fake-function args)))
+    (setq
+     this-spy-function
+     (lambda (&rest args)
+       (let ((returned nil)
+             (return-value nil))
+         (condition-case err
+             (progn
+               (setq return-value (apply fun args)
+                     returned t)
+               (buttercup--spy-calls-add
+                this-spy-function
+                (make-spy-context-return :args args
+                                         :value return-value
+                                         :current-buffer (current-buffer)))
+               return-value)
+           (error
+            ;; If returned is non-nil, then the error we caught
+            ;; didn't come from FUN, so we shouldn't record it.
+            (unless returned
               (buttercup--spy-calls-add
                this-spy-function
-               (make-spy-context :args args
-                                 :return-value return-value
-                                 :current-buffer (current-buffer)))
-              return-value)))
-    ;; Add the interactive form from `fake-function', if any
-    (when (interactive-form fake-function)
+               (make-spy-context-thrown :args args
+                                        :signal err
+                                        :current-buffer (current-buffer))))
+            ;; Regardless, we only caught this error in order to
+            ;; record it, so we need to re-throw it.
+            (signal (car err) (cdr err)))))))
+    ;; Add the interactive form from `fun', if any
+    (when (interactive-form fun)
       (setq this-spy-function
             `(lambda (&rest args)
-               ,(interactive-form fake-function)
+               ,(interactive-form fun)
                (apply ',this-spy-function args))))
     this-spy-function))
 
@@ -1171,6 +1194,16 @@ responsibility to ensure ARG is a command."
 (defun spy-calls-count (spy)
   "Return the number of times SPY has been called so far."
   (length (spy-calls-all spy)))
+
+(defun spy-calls-count-returned (spy)
+  "Return the number of times SPY has been called successfully so far."
+  (length (cl-remove-if-not 'spy-context-return-p
+                            (spy-calls-all spy))))
+
+(defun spy-calls-count-errors (spy)
+  "Return the number of times SPY has been called and thrown errors so far."
+  (length (cl-remove-if-not 'spy-context-thrown-p
+                            (spy-calls-all spy))))
 
 (defun spy-calls-args-for (spy index)
   "Return the context of the INDEXth call to SPY."

@@ -524,7 +524,8 @@ will `signal` the specified value as an error.
 ### Other tracking properties
 
 Every call to a spy is tracked and exposed using the `spy-calls`
-accessor.
+accessor. This tracks both successful calls and calls that throw
+errors.
 
 `spy-calls-any` returns `nil` if the spy has not been called at all,
 and then `t` once at least one call happens. `spy-calls-count` returns
@@ -535,6 +536,13 @@ current buffer and arguments passed to all calls.
 `spy-calls-most-recent` returns the current buffer and arguments for
 the most recent call. `spy-calls-first` returns the current buffer and
 arguments for the first call.
+
+Each spy context is a struct with 3 slots. A successful function call
+is represented by a `spy-context-return` struct with slots `args`,
+`current-buffer`, and `value`. A function call the signalled an error
+is represented by a `spy-context-thrown` struct with slots `args`,
+`current-buffer`, and `signal`. See the examples below for accessing
+these slots.
 
 Finally, `spy-calls-reset` clears all tracking for a spy.
 
@@ -595,9 +603,9 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
     (expect (spy-calls-all 'set-foo)
             :to-equal
-            `(,(make-spy-context :current-buffer (current-buffer)
-                                 :args '(123)
-                                 :return-value nil))))
+            `(,(make-spy-context-return :current-buffer (current-buffer)
+                                        :args '(123)
+                                        :value nil))))
 
   (it "has a shortcut to the most recent call"
     (set-foo 123)
@@ -605,9 +613,9 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
     (expect (spy-calls-most-recent 'set-foo)
             :to-equal
-            (make-spy-context :current-buffer (current-buffer)
-                              :args '(456 "baz")
-                              :return-value nil)))
+            (make-spy-context-return :current-buffer (current-buffer)
+                                     :args '(456 "baz")
+                                     :value nil)))
 
   (it "has a shortcut to the first call"
     (set-foo 123)
@@ -615,9 +623,65 @@ Finally, `spy-calls-reset` clears all tracking for a spy.
 
     (expect (spy-calls-first 'set-foo)
             :to-equal
-            (make-spy-context :current-buffer (current-buffer)
-                              :args '(123)
-                              :return-value nil)))
+            (make-spy-context-return :current-buffer (current-buffer)
+                                     :args '(123)
+                                     :value nil)))
+
+  (it "tracks the return values and error signals of each call"
+    ;; Set up `set-foo' so that it can either return a value or throw
+    ;; an error
+    (spy-on 'set-foo :and-call-fake
+            (lambda (val &rest ignored)
+              (if (>= val 0)
+                  val
+                (error "Value must not be negative"))))
+    (expect (set-foo 1) :to-be 1)
+    (expect (set-foo -1) :to-throw 'error)
+    (expect (spy-context-return-p (spy-calls-first 'set-foo)))
+    (expect
+     (spy-context-return-value (spy-calls-first 'set-foo))
+     :to-be 1)
+    ;; Trying to get the thrown signal from a call that didn't throw a
+    ;; signal is an error
+    (expect
+     (spy-context-thrown-signal
+      (spy-calls-first 'set-foo))
+     :to-throw)
+
+    (expect (spy-context-thrown-p (spy-calls-most-recent 'set-foo)))
+    (expect
+     (spy-context-thrown-signal
+      (spy-calls-most-recent 'set-foo))
+     :to-equal '(error "Value must not be negative"))
+    ;; Trying to get the return value from a call that threw a signal
+    ;; raises an error
+    (expect
+     (spy-context-return-value
+      (spy-calls-most-recent 'set-foo))
+     :to-throw))
+
+  (it "counts the number of successful and failed calls"
+    ;; Set up `set-foo' so that it can either return a value or throw
+    ;; an error
+    (spy-on 'set-foo :and-call-fake
+            (lambda (val &rest ignored)
+              (if (>= val 0)
+                  val
+                (error "Value must not be negative"))))
+    (expect (set-foo 1) :to-be 1)
+    (expect (set-foo 2) :to-be 2)
+    (expect (set-foo 3) :to-be 3)
+    (expect (set-foo -1) :to-throw 'error)
+    (expect (set-foo -2) :to-throw 'error)
+    (expect (set-foo -3) :to-throw 'error)
+    (expect (set-foo -4) :to-throw 'error)
+
+    (expect (spy-calls-count 'set-foo)
+            :to-be 7)
+    (expect (spy-calls-count-returned 'set-foo)
+            :to-be 3)
+    (expect (spy-calls-count-errors 'set-foo)
+            :to-be 4))
 
   (it "can be reset"
     (set-foo 123)
