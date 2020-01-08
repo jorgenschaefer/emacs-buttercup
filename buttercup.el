@@ -381,7 +381,17 @@ See also `buttercup-define-matcher'."
             (if explainer
                 ;; %x is the undocumented substitution for the
                 ;; explainer's output
-                "Expected `%A' to be `%f' to `%b', but instead it was `%a' which does not match because: %x."
+                "Expected:
+    `%A'
+
+to be `%f' to:
+    `%b'
+
+but instead it was:
+    `%a'
+
+which does not match because:
+    %x."
               "Expected `%A' to be `%f' to `%b', but instead it was `%a'.")))
     (unless expect-mismatch-phrase
       (setq expect-mismatch-phrase
