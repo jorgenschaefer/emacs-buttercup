@@ -226,6 +226,10 @@ It's important to note that `lexical-binding` must be `non-nil` for
 `:var` and `:var*` to work properly. Within a test file this is
 usually set using a local file variable.
 
+Using `:var` and `:var*` works just like the `let` equivalents, but
+it's recommended to use the `:var` format to be future proof. Future
+internal changes in `buttercup` could break suites using `let`.
+
 ### Setup and Teardown
 
 To help a test suite DRY up any duplicated setup and teardown code,
@@ -361,9 +365,11 @@ pending in results.
 Buttercup has test double functions called spies. While other
 frameworks call these mocks and similar, we call them spies, because
 their main job is to spy in on function calls. Also, Jasmine calls
-them spies, and so do we. A spy can stub any function and tracks calls
+them spies, and so do we. A spy can stub any function - whether it
+already exists or not - and tracks calls
 to it and all arguments. A spy only exists in the `describe` or `it`
-block it is defined in, and will be removed after each spec. There are
+block it is defined in, and will be activated before and deactivated
+and reset after each spec. There are
 special matchers for interacting with spies. The
 `:to-have-been-called` matcher will return true if the spy was called
 at all. The `:to-have-been-called-with` matcher will return true if
@@ -383,7 +389,21 @@ the argument list matches any of the recorded calls to the spy.
    (foo 456 "another param"))
 
   (it "tracks that the spy was called"
-    (expect 'foo :to-have-been-called))
+    (expect 'foo :to-have-been-called)
+    (foo 789))
+
+  (it "resets tracking after each spec"
+    (expect 'foo :not :to-have-been-called-with 789))
+
+  (describe "that is defined in a nested `describe'"
+    (before-each
+      (spy-on 'foo :and-return-value 1))
+    (it "will override any outer spy"
+      (expect (foo 789) :to-equal 1)
+      (expect 'foo :not :to-have-been-called-with 123)))
+
+  (it "will not be active outside it's scope"
+    (expect (foo 789) :to-equal nil))
 
   (it "tracks all arguments of its calls"
     (expect 'foo :to-have-been-called-with 123)
