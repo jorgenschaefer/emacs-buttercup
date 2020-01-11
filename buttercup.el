@@ -237,7 +237,6 @@ failed."
 
 ARGS is a list of functions that must be `funcall'ed to get their
 values.
-
 MATCHER is either a matcher keyword defined with
 `buttercup-define-matcher', or a function."
   (cl-assert (cl-every #'buttercup--wrapper-fun-p args) t)
@@ -246,19 +245,20 @@ MATCHER is either a matcher keyword defined with
     (apply function args)))
 
 (cl-defmacro buttercup--test-expectation
-    (expr &key expect-match-phrase expect-mismatch-phrase)
+    (expression &key expect-match-phrase expect-mismatch-phrase)
   "Wrapper for the common matcher case of two possible messages.
 
 The logic for the return values of buttercup matchers can be
 unintuitive, since the return value is a cons cell whose first
 element is t for a mismatch and nil for a match. In the simple
-case where there are only two possible messages (one for a match
-and one for a mismatch), this macro allows you to simply specify
-those two phrases and the expression to test."
+case where there are only two possible
+messages (EXPECT-MATCH-PHRASE for a match and
+EXPECT-MISMATCH-PHRASE for a mismatch), this macro allows you to
+simply specify those two phrases and the EXPRESSION to test."
   (declare (indent 1))
   (cl-assert expect-match-phrase)
   (cl-assert expect-mismatch-phrase)
-  `(let ((value ,expr))
+  `(let ((value ,expression))
      (if value
          (cons t ,expect-mismatch-phrase)
        (cons nil ,expect-match-phrase))))
@@ -266,7 +266,7 @@ those two phrases and the expression to test."
 (cl-defmacro buttercup-define-matcher-for-unary-function
     (matcher function &key
              expect-match-phrase expect-mismatch-phrase function-name)
-  "Shortcut to define a macther for a 1-argument function.
+  "Shortcut to define a MATCHER for a 1-argument FUNCTION.
 
 When the matcher is used, keyword arguments EXPECT-MATCH-PHRASE
 and EXPECT-MISMATCH-PHRASE are used to construct the return
@@ -340,7 +340,7 @@ See also `buttercup-define-matcher'."
 (cl-defmacro buttercup-define-matcher-for-binary-function
     (matcher function &key
              expect-match-phrase expect-mismatch-phrase function-name)
-  "Shortcut to define a macther for a 2-argument function.
+  "Shortcut to define a MATCHER for a 2-argument FUNCTION.
 
 When the matcher is used, keyword arguments EXPECT-MATCH-PHRASE
 and EXPECT-MISMATCH-PHRASE are used to construct the return
@@ -1152,7 +1152,7 @@ responsibility to ensure ARG is a command."
       (fset spy (buttercup--make-spy fun)))))
 
 (defun buttercup--make-spy (fun)
-  "Create a new spy function wrapping FUN and tracking calls to itself."
+  "Create a new spy function wrapping FUN and tracking every call to itself."
   (let (this-spy-function)
     (setq
      this-spy-function
@@ -1209,12 +1209,12 @@ in a `buttercup-with-cleanup' environment.")
           (cons function buttercup--cleanup-functions))))
 
 (defun spy-calls-all (spy)
-  "Return the contexts of calls to SPY."
+  "Return all call contexts for SPY."
   (gethash (symbol-function spy)
            buttercup--spy-contexts))
 
 (defun buttercup--spy-calls-add (spy-function context)
-  "Add CONTEXT to the recorded calls to SPY-FUNCTION."
+  "Add CONTEXT to the call records for SPY-FUNCTION."
   (puthash spy-function
            (append (gethash spy-function
                             buttercup--spy-contexts)
@@ -1222,7 +1222,7 @@ in a `buttercup-with-cleanup' environment.")
            buttercup--spy-contexts))
 
 (defun spy-calls-reset (spy)
-  "Reset SPY, removing all recorded calls."
+  "Reset SPY, removing all stored contexts."
   (puthash (symbol-function spy)
            nil
            buttercup--spy-contexts))
@@ -1259,7 +1259,7 @@ in a `buttercup-with-cleanup' environment.")
       nil)))
 
 (defun spy-calls-all-args (spy)
-  "Return the arguments to all calls to SPY."
+  "Return the arguments for every recorded call to SPY."
   (mapcar 'spy-context-args (spy-calls-all spy)))
 
 (defun spy-calls-most-recent (spy)
