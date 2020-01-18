@@ -56,7 +56,7 @@ Now create a file called `test-feature.el` with these contents:
 You can now use buttercup to run this test:
 
 ```
-$ emacs -batch -f package-initialize -f buttercup-run-discover
+$ emacs -batch -f package-initialize -L . -f buttercup-run-discover
 Running 1 specs.
 
 A suite
