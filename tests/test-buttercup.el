@@ -329,7 +329,7 @@
          buttercup--after-each
          buttercup--before-all
          buttercup--before-each
-         buttercup--cleanup-functions
+         (buttercup--cleanup-functions :invalid)
          buttercup--current-suite
          (buttercup-reporter #'ignore)
          buttercup-suites
@@ -696,7 +696,20 @@
          :not :to-throw)
         (expect
          (test-function 1 2)
-         :to-throw 'error)))
+         :to-throw 'error))
+
+      (describe "will signal en error if"
+        (it "used in before-all"
+          (with-local-buttercup
+            (let ((suite (describe "A bad spy scope"
+                           (before-all
+                             (spy-on 'some-function)))))
+              (expect (run--suite suite)
+                      :to-throw))))
+        (it "used directly in describe"
+          (with-local-buttercup
+            (expect (describe "Not in describe"
+                      (spy-on 'foo)) :to-throw)))))
 
     (describe ":to-have-been-called matcher"
       (before-each
