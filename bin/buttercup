@@ -31,6 +31,11 @@ Buttercup options:
                           which case tests will be run if they match
                           any of the given patterns.
 
+--silent-skipping, -s   When a test is skipped due to patterns or
+                          "xit" form, don't print anything about it.
+                          Likewise, don't omit all suite output if all
+                          specs inside it are skipped.
+
 --no-color, -c          Do not colorize test output.
 
 --traceback STYLE       When printing backtraces for errors that occur
@@ -70,7 +75,7 @@ do
             shift
             shift
             ;;
-        "-c"|"--no-color")
+        "-c"|"--no-color"|"-s"|"--silent-skipping")
             BUTTERCUP_ARGS+=("$1")
             shift
             ;;

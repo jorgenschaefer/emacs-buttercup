@@ -663,6 +663,12 @@ See also `buttercup-define-matcher'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Suite and spec data structures
 
+(defvar buttercup-silent-skipping nil
+  "Don't print anything about skipped tests.
+Any skipped test and any suite containing only skipped tests will
+be excluded from the standard report. Other reporters are free to
+use this option or not as is most suitable.")
+
 (cl-defstruct buttercup-suite-or-spec
   ;; The name of this specific suite
   description
@@ -759,6 +765,18 @@ Return CHILD."
                 " "
                 (buttercup-spec-description spec))
       (buttercup-spec-description spec))))
+
+(defun buttercup-omitted-p (suite-or-spec)
+  "Determine if SUITE-OR-SPEC should be omitted from the output.
+Specs are omitted if they are SKIPPED. Suites are omitted if all
+of the contained specs are skipped."
+  (when buttercup-silent-skipping
+    (if (buttercup-suite-p suite-or-spec)
+        (cl-every #'buttercup-omitted-p
+                  (buttercup--specs (list suite-or-spec)))
+      (and
+       (eq (buttercup-spec-status suite-or-spec) 'pending)
+       (equal (buttercup-spec-failure-description suite-or-spec) "SKIPPED")))))
 
 (defun buttercup--full-spec-names (spec-or-suite-list)
   "Return full names of all specs in SPEC-OR-SUITE-LIST."
@@ -1358,6 +1376,9 @@ current directory."
        ((member (car args) '("-c" "--no-color"))
         (setq buttercup-color nil)
         (setq args (cdr args)))
+       ((member (car args) '("-s" "--silent-skipping"))
+        (setq buttercup-silent-skipping t)
+        (setq args (cdr args)))
        (t
         (push (car args) dirs)
         (setq args (cdr args)))))
@@ -1381,7 +1402,8 @@ SUITES is a list of suites. PATTERNS is a list of regexps."
                   (cl-return t)))
         (setf (buttercup-spec-function spec)
               (lambda () (signal 'buttercup-pending "SKIPPED"))
-              (buttercup-spec-status spec) 'pending)))))
+              (buttercup-spec-status spec) 'pending
+              (buttercup-spec-failure-description spec) "SKIPPED")))))
 
 ;;;###autoload
 (defun buttercup-run-markdown-buffer (&rest markdown-buffers)
@@ -1568,16 +1590,18 @@ EVENT and ARG are described in `buttercup-reporter'."
            (buttercup--print "Running %s specs.\n\n" defined))))
 
       (`suite-started
-       (let ((level (length (buttercup-suite-or-spec-parents arg))))
-         (buttercup--print "%s%s\n"
-                           (make-string (* 2 level) ?\s)
-                           (buttercup-suite-description arg))))
+       (unless (buttercup-omitted-p arg)
+         (let ((level (length (buttercup-suite-or-spec-parents arg))))
+           (buttercup--print "%s%s\n"
+                             (make-string (* 2 level) ?\s)
+                             (buttercup-suite-description arg)))))
 
       (`spec-started
-       (let ((level (length (buttercup-suite-or-spec-parents arg))))
-         (buttercup--print "%s%s"
-                           (make-string (* 2 level) ?\s)
-                           (buttercup-spec-description arg))))
+       (unless (buttercup-omitted-p arg)
+         (let ((level (length (buttercup-suite-or-spec-parents arg))))
+           (buttercup--print "%s%s"
+                             (make-string (* 2 level) ?\s)
+                             (buttercup-spec-description arg)))))
 
       (`spec-done
        (cond
@@ -1588,16 +1612,19 @@ EVENT and ARG are described in `buttercup-reporter'."
                (append buttercup-reporter-batch--failures
                        (list arg))))
         ((eq (buttercup-spec-status arg) 'pending)
-         (buttercup--print "  %s" (buttercup-spec-failure-description arg)))
+         (unless (buttercup-omitted-p arg)
+           (buttercup--print "  %s" (buttercup-spec-failure-description arg))))
         (t
          (error "Unknown spec status %s" (buttercup-spec-status arg))))
-       (buttercup--print " (%s)\n"
-                         (seconds-to-string
-                          (float-time (buttercup-elapsed-time arg)))))
+       (unless (buttercup-omitted-p arg)
+         (buttercup--print " (%s)\n"
+                           (seconds-to-string
+                            (float-time (buttercup-elapsed-time arg))))))
 
       (`suite-done
-       (when (= 0 (length (buttercup-suite-or-spec-parents arg)))
-         (buttercup--print "\n")))
+       (and (not (buttercup-omitted-p arg))
+            (null (buttercup-suite-or-spec-parents arg))
+            (buttercup--print "\n")))
 
       (`buttercup-done
        (dolist (failed buttercup-reporter-batch--failures)
@@ -1664,17 +1691,19 @@ EVENT and ARG are described in `buttercup-reporter'."
                (append buttercup-reporter-batch--failures
                        (list arg))))
         ((eq (buttercup-spec-status arg) 'pending)
-         (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
-             (buttercup--print "  %s" (buttercup-spec-failure-description arg))
-           (buttercup--print (buttercup-colorize "\r%s%s  %s" 'yellow)
-                             (make-string (* 2 level) ?\s)
-                             (buttercup-spec-description arg)
-                             (buttercup-spec-failure-description arg))))
+         (unless (buttercup-omitted-p arg)
+           (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
+               (buttercup--print "  %s" (buttercup-spec-failure-description arg))
+             (buttercup--print (buttercup-colorize "\r%s%s  %s" 'yellow)
+                               (make-string (* 2 level) ?\s)
+                               (buttercup-spec-description arg)
+                               (buttercup-spec-failure-description arg)))))
         (t
          (error "Unknown spec status %s" (buttercup-spec-status arg))))
-       (buttercup--print " (%s)\n"
-                         (seconds-to-string
-                          (float-time (buttercup-elapsed-time arg))))))
+       (unless (buttercup-omitted-p arg)
+         (buttercup--print " (%s)\n"
+                           (seconds-to-string
+                            (float-time (buttercup-elapsed-time arg)))))))
 
     (`buttercup-done
      (dolist (failed buttercup-reporter-batch--failures)
