@@ -663,6 +663,9 @@ See also `buttercup-define-matcher'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Suite and spec data structures
 
+(defvar buttercup-silent-skipping nil
+  "Don't print anything about skipped tests.")
+
 (cl-defstruct buttercup-suite-or-spec
   ;; The name of this specific suite
   description
@@ -757,6 +760,12 @@ See also `buttercup-define-matcher'."
                 " "
                 (buttercup-spec-description spec))
       (buttercup-spec-description spec))))
+
+(defun buttercup-spec-omitted-p (spec)
+  "Determine if the SPEC should be omitted from the output."
+  (and buttercup-silent-skipping
+       (eq (buttercup-spec-status spec) 'pending)
+       (equal (buttercup-spec-failure-description spec) "SKIPPED")))
 
 (defun buttercup--full-spec-names (spec-or-suite-list)
   "Return full names of all specs in SPEC-OR-SUITE-LIST."
@@ -1347,6 +1356,9 @@ current directory."
        ((member (car args) '("-c" "--no-color"))
         (setq buttercup-color nil)
         (setq args (cdr args)))
+       ((member (car args) '("-s" "--silent-skipping"))
+        (setq buttercup-silent-skipping t)
+        (setq args (cdr args)))
        (t
         (push (car args) dirs)
         (setq args (cdr args)))))
@@ -1536,46 +1548,55 @@ EVENT and ARG are described in `buttercup-reporter'."
     (pcase event
       (`buttercup-started
        (setq buttercup-reporter-batch--start-time (float-time)
-             buttercup-reporter-batch--failures nil)
+             buttercup-reporter-batch--failures nil
+             ;; Don't put any output on hold if nothing is ever omitted.
+             buttercup--pending-output (not buttercup-silent-skipping))
        (let ((defined (buttercup-suites-total-specs-defined arg))
              (pending (buttercup-suites-total-specs-pending arg)))
          (if (> pending 0)
              (buttercup--print "Running %s out of %s specs.\n\n"
                                (- defined pending)
                                defined)
-           (buttercup--print "Running %s specs.\n\n" defined))))
+           (buttercup--print "Running %s specs.\n\n" defined)))
+       (buttercup--flush-pending-output))
 
       (`suite-started
        (let ((level (length (buttercup-suite-or-spec-parents arg))))
+         (buttercup--start-output-level)
          (buttercup--print "%s%s\n"
                            (make-string (* 2 level) ?\s)
                            (buttercup-suite-description arg))))
 
       (`spec-started
        (let ((level (length (buttercup-suite-or-spec-parents arg))))
+         (buttercup--start-output-level)
          (buttercup--print "%s%s"
                            (make-string (* 2 level) ?\s)
                            (buttercup-spec-description arg))))
 
       (`spec-done
-       (cond
-        ((eq (buttercup-spec-status arg) 'passed)) ; do nothing
-        ((eq (buttercup-spec-status arg) 'failed)
-         (buttercup--print "  FAILED")
-         (setq buttercup-reporter-batch--failures
-               (append buttercup-reporter-batch--failures
-                       (list arg))))
-        ((eq (buttercup-spec-status arg) 'pending)
-         (buttercup--print "  %s" (buttercup-spec-failure-description arg)))
-        (t
-         (error "Unknown spec status %s" (buttercup-spec-status arg))))
-       (buttercup--print " (%s)\n"
-                         (seconds-to-string
-                          (float-time (buttercup-elapsed-time arg)))))
+       (if (buttercup-spec-omitted-p arg)
+           (buttercup--discard-one-output-level)
+         (cond
+          ((eq (buttercup-spec-status arg) 'passed)) ; do nothing
+          ((eq (buttercup-spec-status arg) 'failed)
+           (buttercup--print "  FAILED")
+           (setq buttercup-reporter-batch--failures
+                 (append buttercup-reporter-batch--failures
+                         (list arg))))
+          ((eq (buttercup-spec-status arg) 'pending)
+           (buttercup--print "  %s" (buttercup-spec-failure-description arg)))
+          (t
+           (error "Unknown spec status %s" (buttercup-spec-status arg))))
+         (buttercup--print " (%s)\n"
+                           (seconds-to-string
+                            (float-time (buttercup-elapsed-time arg))))
+         (buttercup--flush-pending-output)))
 
       (`suite-done
-       (when (= 0 (length (buttercup-suite-or-spec-parents arg)))
-         (buttercup--print "\n")))
+       (unless (buttercup--discard-one-output-level)
+         (when (= 0 (length (buttercup-suite-or-spec-parents arg)))
+           (buttercup--print "\n"))))
 
       (`buttercup-done
        (dolist (failed buttercup-reporter-batch--failures)
@@ -1613,7 +1634,8 @@ EVENT and ARG are described in `buttercup-reporter'."
            (buttercup--print "Ran %s specs, %s failed, in %.1f seconds.\n"
                              defined
                              failed
-                             duration))))
+                             duration)))
+       (buttercup--flush-pending-output))
 
       (_
        (error "Unknown event %s" event)))))
@@ -1627,31 +1649,34 @@ colors.
 EVENT and ARG are described in `buttercup-reporter'."
   (pcase event
     (`spec-done
-     (let ((level (length (buttercup-suite-or-spec-parents arg))))
-       (cond
-        ((eq (buttercup-spec-status arg) 'passed)
-         (buttercup--print (buttercup-colorize "\r%s%s" 'green)
-                           (make-string (* 2 level) ?\s)
-                           (buttercup-spec-description arg)))
-        ((eq (buttercup-spec-status arg) 'failed)
-         (buttercup--print (buttercup-colorize "\r%s%s  FAILED" 'red)
-                           (make-string (* 2 level) ?\s)
-                           (buttercup-spec-description arg))
-         (setq buttercup-reporter-batch--failures
-               (append buttercup-reporter-batch--failures
-                       (list arg))))
-        ((eq (buttercup-spec-status arg) 'pending)
-         (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
-             (buttercup--print "  %s" (buttercup-spec-failure-description arg))
-           (buttercup--print (buttercup-colorize "\r%s%s  %s" 'yellow)
+     (if (buttercup-spec-omitted-p arg)
+         (buttercup--discard-one-output-level)
+       (let ((level (length (buttercup-suite-or-spec-parents arg))))
+         (cond
+          ((eq (buttercup-spec-status arg) 'passed)
+           (buttercup--print (buttercup-colorize "\r%s%s" 'green)
                              (make-string (* 2 level) ?\s)
-                             (buttercup-spec-description arg)
-                             (buttercup-spec-failure-description arg))))
-        (t
-         (error "Unknown spec status %s" (buttercup-spec-status arg))))
-       (buttercup--print " (%s)\n"
-                         (seconds-to-string
-                          (float-time (buttercup-elapsed-time arg))))))
+                             (buttercup-spec-description arg)))
+          ((eq (buttercup-spec-status arg) 'failed)
+           (buttercup--print (buttercup-colorize "\r%s%s  FAILED" 'red)
+                             (make-string (* 2 level) ?\s)
+                             (buttercup-spec-description arg))
+           (setq buttercup-reporter-batch--failures
+                 (append buttercup-reporter-batch--failures
+                         (list arg))))
+          ((eq (buttercup-spec-status arg) 'pending)
+           (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
+               (buttercup--print "  %s" (buttercup-spec-failure-description arg))
+             (buttercup--print (buttercup-colorize "\r%s%s  %s" 'yellow)
+                               (make-string (* 2 level) ?\s)
+                               (buttercup-spec-description arg)
+                               (buttercup-spec-failure-description arg))))
+          (t
+           (error "Unknown spec status %s" (buttercup-spec-status arg))))
+         (buttercup--print " (%s)\n"
+                           (seconds-to-string
+                            (float-time (buttercup-elapsed-time arg))))
+         (buttercup--flush-pending-output))))
 
     (`buttercup-done
      (dolist (failed buttercup-reporter-batch--failures)
@@ -1697,18 +1722,51 @@ EVENT and ARG are described in `buttercup-reporter'."
            ", in %.1f seconds.\n")
           defined
           failed
-          duration))))
+          duration)))
+     (buttercup--flush-pending-output))
 
     (_
      ;; Fall through to buttercup-reporter-batch implementation.
      (buttercup-reporter-batch event arg)))
   )
 
+(defvar buttercup--pending-output t
+  "List of pending output strings, reversed.
+Can also be symbol t to print any output immediately. The list
+can contain nil items that serve as level separators.")
+
 (defun buttercup--print (fmt &rest args)
   "Format a string and send it to terminal without alteration.
+FMT and ARGS are passed to `format'.
 
-FMT and ARGS are passed to `format'."
-  (send-string-to-terminal (apply #'format fmt args)))
+If `buttercup--pending-output' is a list, output is instead put
+on hold until `buttercup--flush-pending-output' is called."
+  (let ((string (apply #'format fmt args)))
+    (if (eq buttercup--pending-output t)
+        (send-string-to-terminal string)
+      (push string buttercup--pending-output))))
+
+(defun buttercup--flush-pending-output ()
+  "Print all strings from `buttercup--pending-output'."
+  (unless (eq buttercup--pending-output t)
+    (dolist (string (nreverse buttercup--pending-output))
+      (when string
+        (send-string-to-terminal string)))
+    (setf buttercup--pending-output nil)))
+
+(defun buttercup--start-output-level ()
+  "Start a level of pending output.
+Output in the level can be later discarded, unless it is flushed
+before that."
+  (unless (eq buttercup--pending-output t)
+    (push nil buttercup--pending-output)))
+
+(defun buttercup--discard-one-output-level ()
+  "Discard one level of pending output.
+Return non-nil if there was something to discard."
+  (unless (eq buttercup--pending-output t)
+    (prog1 buttercup--pending-output
+      (while (pop buttercup--pending-output)))))
 
 
 (defadvice display-warning (around buttercup-defer-warnings activate)

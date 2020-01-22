@@ -954,7 +954,8 @@
     (describe "on the buttercup-started event"
       (it "should emit the number of specs"
         (let ((buttercup-reporter-batch--start-time nil)
-              (buttercup-reporter-batch--failures nil))
+              (buttercup-reporter-batch--failures nil)
+              (buttercup--pending-output t))
           (buttercup-reporter-batch 'buttercup-started (list parent-suite)))
 
         (expect 'buttercup--print
@@ -1039,7 +1040,8 @@
 
     (describe "on the suite-done event"
       (it "should emit a newline at the end of the top-level suite"
-        (buttercup-reporter-batch 'suite-done parent-suite)
+        (let ((buttercup--pending-output t))
+          (buttercup-reporter-batch 'suite-done parent-suite))
 
         (expect 'buttercup--print :to-have-been-called-with "\n"))
 
@@ -1107,11 +1109,32 @@
     (spy-on 'send-string-to-terminal))
 
   (it "should send a formatted string to the terminal"
-    (buttercup--print "Hello, %s" "world")
+    (let ((buttercup--pending-output t))
+      (buttercup--print "Hello, %s" "world"))
 
     (expect 'send-string-to-terminal
             :to-have-been-called-with
-            "Hello, world")))
+            "Hello, world"))
+
+  (it "should put output on hold"
+    (let ((buttercup--pending-output nil))
+      (buttercup--print "not to be printed just yet")
+
+      (expect 'send-string-to-terminal :to-have-been-called-times 0)
+      (expect buttercup--pending-output :to-equal '("not to be printed just yet"))))
+
+  (it "should discard one level of output"
+    (let ((buttercup--pending-output nil))
+      (buttercup--print "1")
+      (buttercup--start-output-level)
+      (buttercup--print "2")
+      (buttercup--discard-one-output-level)
+      (buttercup--print "3")
+      (buttercup--flush-pending-output))
+
+    (expect 'send-string-to-terminal :to-have-been-called-times 2)
+    (expect 'send-string-to-terminal :to-have-been-called-with "1")
+    (expect 'send-string-to-terminal :to-have-been-called-with "3")))
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; ERT Compatibility
