@@ -1130,6 +1130,7 @@
       (buttercup--print "2")
       (buttercup--discard-one-output-level)
       (buttercup--print "3")
+      (expect 'send-string-to-terminal :to-have-been-called-times 0)
       (buttercup--flush-pending-output))
 
     (expect 'send-string-to-terminal :to-have-been-called-times 2)

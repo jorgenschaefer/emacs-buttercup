@@ -32,7 +32,7 @@ Buttercup options:
                           any of the given patterns.
 
 --silent-skipping, -s   When a test is skipped due to patterns or
-                          `xit' form, don't print anything about it.
+                          "xit" form, don't print anything about it.
                           Likewise, don't omit all suite output if all
                           specs inside it are skipped.
 

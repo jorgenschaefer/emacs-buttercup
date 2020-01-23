@@ -1539,6 +1539,11 @@ EVENT and ARG are described in `buttercup-reporter'."
 (defvar buttercup-reporter-batch--failures nil
   "List of failed specs of the current batch report.")
 
+(defvar buttercup--pending-output t
+  "List of pending output strings, reversed.
+Can also be symbol t to print any output immediately. The list
+can contain nil items that serve as level separators.")
+
 (defun buttercup-reporter-batch (event arg)
   "A reporter that handles batch sessions.
 
@@ -1729,11 +1734,6 @@ EVENT and ARG are described in `buttercup-reporter'."
      ;; Fall through to buttercup-reporter-batch implementation.
      (buttercup-reporter-batch event arg)))
   )
-
-(defvar buttercup--pending-output t
-  "List of pending output strings, reversed.
-Can also be symbol t to print any output immediately. The list
-can contain nil items that serve as level separators.")
 
 (defun buttercup--print (fmt &rest args)
   "Format a string and send it to terminal without alteration.
