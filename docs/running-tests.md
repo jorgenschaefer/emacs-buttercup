@@ -95,9 +95,12 @@ Ran 1 specs, 0 failed, in 0.0 seconds.
 ```
 
 That’s it. Buttercup’s built-in discover test runner looks for files
-named `test-*.el`, `*-test.el` or `*-tests.el`. You can specify a
-different pattern using the `--pattern` command line argument to the
-`buttercup` program.
+named `test-*.el`, `*-test.el` or `*-tests.el`.
+
+Use the `--pattern PATTERN` option to only Only run tests with names
+matching PATTERN. The `--pattern` option can be used multiple times,
+in which case tests will be run if they match any of the given
+patterns.
 
 You can run this command whichever way you like. Common choices
 include a makefile or shell scripts.
