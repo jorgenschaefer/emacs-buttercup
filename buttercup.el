@@ -663,6 +663,13 @@ See also `buttercup-define-matcher'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Suite and spec data structures
 
+(defvar buttercup-silent-skipping nil
+  "Don't print anything about skipped tests.")
+
+(defvar buttercup-quiet nil
+  "Only print information about failed tests.
+Implies `buttercup-silent-skipping'.")
+
 (cl-defstruct buttercup-suite-or-spec
   ;; The name of this specific suite
   description
@@ -757,6 +764,18 @@ See also `buttercup-define-matcher'."
                 " "
                 (buttercup-spec-description spec))
       (buttercup-spec-description spec))))
+
+(defun buttercup-spec-omitted-p (spec)
+  "Determine if the SPEC should be omitted from the output."
+  (or (and buttercup-quiet
+           (not (eq (buttercup-spec-status spec) 'failed)))
+      (and buttercup-silent-skipping
+           (eq (buttercup-spec-status spec) 'pending)
+           (equal (buttercup-spec-failure-description spec) "SKIPPED"))))
+
+(defun buttercup-specs-can-be-omitted-p ()
+  "Determine if a spec could be potentially omitted."
+  (or buttercup-silent-skipping buttercup-quiet))
 
 (defun buttercup--full-spec-names (spec-or-suite-list)
   "Return full names of all specs in SPEC-OR-SUITE-LIST."
@@ -1262,9 +1281,59 @@ responsibility to ensure ARG is a command."
 ;;;;;;;;;;;;;;;;
 ;;; Test Runners
 
+(defun buttercup-reporter-delaying-adapter (base-reporter &optional still-send-omitted-events)
+  "Return an adapter of BASE-REPORTER that omits certain output.
+Adapter is a reporter itself that discards certain events based
+on variables `buttercup-silent-skipping' and `buttercup-quiet'.
+Other events get sent to BASE-REPORTER in the correct order, but
+possibly after some delay.
+
+If STILL-SEND-OMITTED-EVENTS is non-nil, events never get
+discarded. Instead, events that would be omitted otherwise, only
+get `-omitted' appended to their name. Such events might still be
+delayed."
+  (let (ever-delaying
+        stack
+        pending)
+    (lambda (event arg)
+      (cond
+       ((eq event 'buttercup-started)
+        (setf ever-delaying (buttercup-specs-can-be-omitted-p))
+        (funcall base-reporter event arg))
+       (ever-delaying
+        (pcase event
+          ((or `suite-started `spec-started)
+           (push (list event arg) stack)
+           (push (car stack) pending))
+          ((or `suite-done `spec-done)
+           (if (if (eq event 'suite-done)
+                   stack
+                 (buttercup-spec-omitted-p arg))
+               (let ((start-event-arg (pop stack)))
+                 (if still-send-omitted-events
+                     (progn (when start-event-arg
+                              (buttercup--omit-event start-event-arg))
+                            (push (list event arg) pending)
+                            (buttercup--omit-event (car pending)))
+                   (pop pending)))
+             (push (list event arg) pending)
+             (setf stack nil))
+           (unless stack
+             (dolist (event-arg (nreverse pending))
+               (apply base-reporter event-arg))
+             (setf pending nil)))
+          (_
+           ;; Other events are never delayed.
+           (funcall base-reporter event arg))))
+       (t
+        (funcall base-reporter event arg))))))
+
+(defun buttercup--omit-event (event-arg)
+  (setf (car event-arg) (intern (format "%s-omitted" (car event-arg)))))
+
 ;; These variables are generally used in the test runners, but set
 ;; elsewhere. They must be defined here before their first use.
-(defvar buttercup-reporter #'buttercup-reporter-adaptive
+(defvar buttercup-reporter (buttercup-reporter-delaying-adapter #'buttercup-reporter-adaptive)
   "The reporter function for buttercup test runs.
 
 During a run of buttercup, the value of this variable is called
@@ -1331,6 +1400,8 @@ current directory."
         (args command-line-args-left))
     (while args
       (cond
+       ((equal (car args) "--")
+        (setq args (cdr args)))
        ((member (car args) '("--traceback"))
         (when (not (cdr args))
           (error "Option requires argument: %s" (car args)))
@@ -1346,6 +1417,12 @@ current directory."
         (setq args (cddr args)))
        ((member (car args) '("-c" "--no-color"))
         (setq buttercup-color nil)
+        (setq args (cdr args)))
+       ((member (car args) '("-s" "--silent-skipping"))
+        (setq buttercup-silent-skipping t)
+        (setq args (cdr args)))
+       ((member (car args) '("-q" "--quiet"))
+        (setq buttercup-quiet t)
         (setq args (cdr args)))
        (t
         (push (car args) dirs)

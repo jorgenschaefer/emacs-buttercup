@@ -1102,6 +1102,30 @@
         (expect (buttercup-run) :not :to-throw)
         (expect 'runner :to-have-been-called-times 5)))))
 
+;; (describe "The `buttercup-reporter-delaying-adapter` function"
+;;   :var (suite-1 suite-1-1 spec-1-1-1 spec 1-1-2 suite-2 spec-2-1 reporter)
+;;   (before-each
+;;     (ignore reporter)
+;;     (setf suite-1    (make-buttercup-suite :description "suite 1")
+;;           suite-1-1  (make-buttercup-suite :description "suite 1-1")
+;;           spec-1-1-1 (make-buttercup-spec :description "spec 1-1-1")
+;;           spec-1-1-2 (make-buttercup-spec :description "spec 1-1-2")
+;;           suite-2    (make-buttercup-suite :description "suite 2")
+;;           spec-2-1   (make-buttercup-spec :description "spec 2-1"))
+;;     (buttercup-suite-add-child suite-1 suite-1-1)
+;;     (buttercup-suite-add-child suite-1-1 spec-1-1-1)
+;;     (buttercup-suite-add-child suite-1-1 spec-1-1-2)
+;;     (buttercup-suite-add-child suite-2 spec-2-1)
+;;     (spy-on 'reporter))
+
+;;   (it "should pass events through"
+;;     (with-local-buttercup
+;;       (cl-letf ((buttercup-reporter (buttercup-reporter-delaying-adapter 'reporter))
+;;                 (buttercup-silent-skipping nil))
+;;         (let ((buttercup-suites (list suite-1 suite-2)))
+;;           (buttercup-run)
+;;           (expect 'reporter :to-have-been-called-times 14))))))
+
 (describe "The `buttercup--print' function"
   (before-each
     (spy-on 'send-string-to-terminal))
