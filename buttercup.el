@@ -1135,14 +1135,16 @@ responsibility to ensure ARG is a command."
                 nil))
             (_
              (error "Invalid `spy-on' keyword: `%S'" keyword)))))
-    (buttercup--spy-on-and-call-replacement symbol replacement)))
+    (unless (buttercup--spy-on-and-call-replacement symbol replacement)
+      (error "Spies can only be created in `before-each'"))))
+
 
 (defun buttercup--spy-on-and-call-replacement (spy fun)
   "Replace the function in symbol SPY with a spy calling FUN."
   (let ((orig-function (symbol-function spy)))
-    (fset spy (buttercup--make-spy fun))
-    (buttercup--add-cleanup (lambda ()
-                              (fset spy orig-function)))))
+    (when (buttercup--add-cleanup (lambda ()
+                                  (fset spy orig-function)))
+      (fset spy (buttercup--make-spy fun)))))
 
 (defun buttercup--make-spy (fun)
   "Create a new spy function wrapping FUN and tracking calls to itself."
@@ -1182,7 +1184,10 @@ responsibility to ensure ARG is a command."
                (apply ',this-spy-function args))))
     this-spy-function))
 
-(defvar buttercup--cleanup-functions nil)
+(defvar buttercup--cleanup-functions :inactive
+  "Stack of cleanup operations.
+Should always be set to a value that is not `listp', except while
+in a `buttercup-with-cleanup' environment.")
 
 (defmacro buttercup-with-cleanup (&rest body)
   "Execute BODY, cleaning spys and the rest afterwards."
@@ -1194,8 +1199,9 @@ responsibility to ensure ARG is a command."
 
 (defun buttercup--add-cleanup (function)
   "Register FUNCTION for cleanup in `buttercup-with-cleanup'."
-  (setq buttercup--cleanup-functions
-        (cons function buttercup--cleanup-functions)))
+  (when (listp buttercup--cleanup-functions)
+    (setq buttercup--cleanup-functions
+          (cons function buttercup--cleanup-functions))))
 
 (defun spy-calls-all (spy)
   "Return the contexts of calls to SPY."

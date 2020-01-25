@@ -367,9 +367,9 @@ frameworks call these mocks and similar, we call them spies, because
 their main job is to spy in on function calls. Also, Jasmine calls
 them spies, and so do we. A spy can stub any function - whether it
 already exists or not - and tracks calls
-to it and all arguments. A spy only exists in the `describe` or `it`
-block it is defined in, and will be activated before and deactivated
-and reset after each spec. There are
+to it and all arguments. Spies may only be created in `before-each` or
+`it` blocks. Spies are removed and all counters reset after each spec
+and its `after-each` blocks have completed. There are
 special matchers for interacting with spies. The
 `:to-have-been-called` matcher will return true if the spy was called
 at all. The `:to-have-been-called-with` matcher will return true if
