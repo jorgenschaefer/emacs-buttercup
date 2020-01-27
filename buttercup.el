@@ -117,6 +117,14 @@ a call to `save-match-data', as `format-spec' modifies that."
 (define-error 'buttercup-pending
   "Buttercup test is pending")
 
+(define-error 'buttercup-abort
+  "Abort Buttercup testing")
+
+(defvar buttercup-abort-message nil
+  "The message explaining why Buttercup testing is aborted.
+Reporters may want to print it if non-nil when handling
+`buttercup-done' event.")
+
 (defmacro expect (arg &optional matcher &rest args)
   "Expect a condition to be true.
 
@@ -1422,12 +1430,15 @@ A suite must be defined within a Markdown \"lisp\" code block."
 (defun buttercup-run ()
   "Run all described suites."
   (if buttercup-suites
-      (progn
+      (let (buttercup-abort-message)
         (funcall buttercup-reporter 'buttercup-started buttercup-suites)
-        (mapc #'buttercup--run-suite buttercup-suites)
-        (funcall buttercup-reporter 'buttercup-done buttercup-suites)
-        (when (> (buttercup-suites-total-specs-failed buttercup-suites) 0)
-          (error "")))
+        (unwind-protect
+            (condition-case error
+                (mapc #'buttercup--run-suite buttercup-suites)
+              (buttercup-abort (setf buttercup-abort-message (cdr error))))
+          (funcall buttercup-reporter 'buttercup-done buttercup-suites)
+          (when (> (buttercup-suites-total-specs-failed buttercup-suites) 0)
+            (error ""))))
     (error "No suites defined")))
 
 (defvar buttercup--before-each nil
@@ -1448,18 +1459,20 @@ Do not change the global value.")
          (buttercup--after-each (append (buttercup-suite-after-each suite)
                                         buttercup--after-each)))
     (funcall buttercup-reporter 'suite-started suite)
-    (dolist (f (buttercup-suite-before-all suite))
-      (buttercup--update-with-funcall suite f))
-    (dolist (sub (buttercup-suite-children suite))
-      (cond
-       ((buttercup-suite-p sub)
-        (buttercup--run-suite sub))
-       ((buttercup-spec-p sub)
-        (buttercup--run-spec sub))))
-    (dolist (f (buttercup-suite-after-all suite))
-      (buttercup--update-with-funcall suite f))
-    (buttercup--set-end-time suite)
-    (funcall buttercup-reporter 'suite-done suite)))
+    (unwind-protect
+        (progn
+          (dolist (f (buttercup-suite-before-all suite))
+            (buttercup--update-with-funcall suite f))
+          (dolist (sub (buttercup-suite-children suite))
+            (cond
+             ((buttercup-suite-p sub)
+              (buttercup--run-suite sub))
+             ((buttercup-spec-p sub)
+              (buttercup--run-spec sub))))
+          (dolist (f (buttercup-suite-after-all suite))
+            (buttercup--update-with-funcall suite f)))
+      (buttercup--set-end-time suite)
+      (funcall buttercup-reporter 'suite-done suite))))
 
 (defun buttercup--run-spec (spec)
   (buttercup--set-start-time spec)
@@ -1471,13 +1484,14 @@ Do not change the global value.")
         (get-buffer-create buttercup-warning-buffer-name)
 
         (funcall buttercup-reporter 'spec-started spec)
-        (buttercup-with-cleanup
-         (dolist (f buttercup--before-each)
-           (buttercup--update-with-funcall spec f))
-         (buttercup--update-with-funcall spec (buttercup-spec-function spec))
-         (dolist (f buttercup--after-each)
-           (buttercup--update-with-funcall spec f)))
-        (funcall buttercup-reporter 'spec-done spec)
+        (unwind-protect
+            (buttercup-with-cleanup
+             (dolist (f buttercup--before-each)
+               (buttercup--update-with-funcall spec f))
+             (buttercup--update-with-funcall spec (buttercup-spec-function spec))
+             (dolist (f buttercup--after-each)
+               (buttercup--update-with-funcall spec f)))
+          (funcall buttercup-reporter 'spec-done spec))
         ;; Display warnings that were issued while running the the
         ;; spec, if any
         (with-current-buffer buttercup-warning-buffer-name
@@ -1587,6 +1601,8 @@ EVENT and ARG are described in `buttercup-reporter'."
        (dolist (failed buttercup-reporter-batch--failures)
          (let ((description (buttercup-spec-failure-description failed))
                (stack (buttercup-spec-failure-stack failed)))
+           (when buttercup-abort-message
+             (buttercup--print "%s\n" (if (stringp buttercup-abort-message) buttercup-abort-message (prin1-to-string buttercup-abort-message))))
            (buttercup--print "%s\n" (make-string 40 ?=))
            (buttercup--print "%s\n" (buttercup-spec-full-name failed))
            (when stack
@@ -1663,6 +1679,8 @@ EVENT and ARG are described in `buttercup-reporter'."
      (dolist (failed buttercup-reporter-batch--failures)
        (let ((description (buttercup-spec-failure-description failed))
              (stack (buttercup-spec-failure-stack failed)))
+         (when (stringp buttercup-abort-message)
+           (buttercup--print "%s\n" (buttercup-colorize buttercup-abort-message 'red)))
          (buttercup--print "%s\n" (make-string 40 ?=))
          (buttercup--print (buttercup-colorize "%s\n" 'red) (buttercup-spec-full-name failed))
          (when stack
