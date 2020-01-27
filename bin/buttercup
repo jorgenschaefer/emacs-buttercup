@@ -31,6 +31,8 @@ Buttercup options:
                           which case tests will be run if they match
                           any of the given patterns.
 
+--abort-on-failure, -a  Abort test execution if any test fails.
+
 --no-color, -c          Do not colorize test output.
 
 --traceback STYLE       When printing backtraces for errors that occur
@@ -70,7 +72,7 @@ do
             shift
             shift
             ;;
-        "-c"|"--no-color")
+        "-c"|"--no-color"|"-a"|"--abort-on-failure")
             BUTTERCUP_ARGS+=("$1")
             shift
             ;;
