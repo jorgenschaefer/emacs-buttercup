@@ -1702,19 +1702,19 @@ EVENT and ARG are described in `buttercup-reporter'."
             (concat
              "Ran %s out of %s specs,"
              (buttercup-colorize " %s failed" (if (eq 0 failed) 'green 'red))
-             ", in %.1f seconds.\n")
+             ", in %s.\n")
             (- defined pending)
             defined
             failed
-            duration)
+            (seconds-to-string duration))
          (buttercup--print
           (concat
            "Ran %s specs,"
            (buttercup-colorize " %s failed" (if (eq 0 failed) 'green 'red))
-           ", in %.1f seconds.\n")
+           ", in %s.\n")
           defined
           failed
-          duration))))
+          (seconds-to-string duration)))))
 
     (_
      ;; Fall through to buttercup-reporter-batch implementation.
