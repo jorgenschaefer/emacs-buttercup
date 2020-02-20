@@ -671,9 +671,6 @@ See also `buttercup-define-matcher'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Suite and spec data structures
 
-(defvar buttercup-stop-on-first-failure nil
-  "Abort Buttercup testing if any spec fails.")
-
 (cl-defstruct buttercup-suite-or-spec
   ;; The name of this specific suite
   description
@@ -1364,9 +1361,6 @@ current directory."
        ((member (car args) '("-c" "--no-color"))
         (setq buttercup-color nil)
         (setq args (cdr args)))
-       ((member (car args) '("-a" "--abort-on-failure"))
-        (setq buttercup-stop-on-first-failure t)
-        (setq args (cdr args)))
        (t
         (push (car args) dirs)
         (setq args (cdr args)))))
@@ -1529,9 +1523,7 @@ failed and pending specs."
                 '(passed pending))
       (setf (buttercup-suite-or-spec-status suite-or-spec) status
             (buttercup-suite-or-spec-failure-description suite-or-spec) description
-            (buttercup-suite-or-spec-failure-stack suite-or-spec) stack)
-      (when (and buttercup-stop-on-first-failure (eq status 'failed))
-        (signal 'buttercup-abort "Aborting early because of the failure")))))
+            (buttercup-suite-or-spec-failure-stack suite-or-spec) stack))))
 
 ;;;;;;;;;;;;;
 ;;; Reporters

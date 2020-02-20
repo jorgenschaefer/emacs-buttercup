@@ -332,7 +332,6 @@
          (buttercup--cleanup-functions :invalid)
          buttercup--current-suite
          (buttercup-reporter #'ignore)
-         buttercup-stop-on-first-failure
          buttercup-suites
          (buttercup-warning-buffer-name " *ignored buttercup warnings*"))
      ,@body))
