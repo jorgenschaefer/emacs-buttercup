@@ -845,7 +845,8 @@ is a function containing the body instructions passed to
            (format "Found duplicate spec names in suite: %S"
                    (delete-dups dups)))))
       (setq buttercup-suites (append buttercup-suites
-                                     (list buttercup--current-suite))))))
+                                     (list buttercup--current-suite)))
+      buttercup--current-suite)))
 
 ;;;;;;;;;;;;;
 ;;; Specs: it
