@@ -1510,8 +1510,13 @@ failed and pending specs."
         (`(error (buttercup-pending . ,pending-description))
          (setq status 'pending
                description pending-description))))
-    (when (memq (buttercup-suite-or-spec-status suite-or-spec)
-                '(passed pending))
+    ;; Only change state when the new state is 'worse' than or same as
+    ;; the current state. The constant list is the prioritized list of
+    ;; states. The new state is worse if it is in the tail of the
+    ;; current state.
+    (when (memq status
+                (memq (buttercup-suite-or-spec-status suite-or-spec)
+                      '(passed pending failed)))
       (setf (buttercup-suite-or-spec-status suite-or-spec) status
             (buttercup-suite-or-spec-failure-description suite-or-spec) description
             (buttercup-suite-or-spec-failure-stack suite-or-spec) stack))))
