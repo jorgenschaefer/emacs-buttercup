@@ -8,7 +8,7 @@ DISTFILES := $(ELISP_FILES) buttercup-pkg.el README.md
 all: test
 
 test: compile
-	./bin/buttercup -L .
+	./bin/buttercup -L . tests
 	$(EMACS) -batch -L . -l buttercup.el -f buttercup-run-markdown docs/writing-tests.md
 
 compile: $(patsubst %.el,%.elc,$(ELISP_FILES))
