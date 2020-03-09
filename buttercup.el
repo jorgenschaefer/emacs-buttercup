@@ -791,6 +791,10 @@ Return CHILD."
    (or (buttercup-suite-or-spec-time-ended suite-or-spec) (current-time))
    (or (buttercup-suite-or-spec-time-started suite-or-spec) (current-time))))
 
+(defun buttercup-elapsed-time-string (suite-or-spec)
+  "Convert the elapsed time for SUITE-OR-SPEC to a short string."
+  (seconds-to-string (float-time (buttercup-elapsed-time suite-or-spec))))
+
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
 
@@ -1591,9 +1595,7 @@ EVENT and ARG are described in `buttercup-reporter'."
          (buttercup--print "  %s" (buttercup-spec-failure-description arg)))
         (t
          (error "Unknown spec status %s" (buttercup-spec-status arg))))
-       (buttercup--print " (%s)\n"
-                         (seconds-to-string
-                          (float-time (buttercup-elapsed-time arg)))))
+       (buttercup--print " (%s)\n" (buttercup-elapsed-time-string arg)))
 
       (`suite-done
        (when (= 0 (length (buttercup-suite-or-spec-parents arg)))
@@ -1672,9 +1674,7 @@ EVENT and ARG are described in `buttercup-reporter'."
                              (buttercup-spec-failure-description arg))))
         (t
          (error "Unknown spec status %s" (buttercup-spec-status arg))))
-       (buttercup--print " (%s)\n"
-                         (seconds-to-string
-                          (float-time (buttercup-elapsed-time arg))))))
+       (buttercup--print " (%s)\n" (buttercup-elapsed-time-string arg))))
 
     (`buttercup-done
      (dolist (failed buttercup-reporter-batch--failures)
