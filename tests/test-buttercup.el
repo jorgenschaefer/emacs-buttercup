@@ -1075,7 +1075,6 @@ text properties using `ansi-color-apply'."
             print-buffer (generate-new-buffer "*btrcp-reporter-test*"))
       (buttercup-suite-add-child parent-suite child-suite)
       (buttercup-suite-add-child child-suite spec)
-      (spy-on 'buttercup--print)
       (spy-on 'send-string-to-terminal :and-call-fake
               (apply-partially #'send-string-to-ansi-buffer print-buffer))
       ;; Convenience function
@@ -1089,35 +1088,21 @@ text properties using `ansi-color-apply'."
       (setq print-buffer nil))
 
     (describe "on the buttercup-started event"
-      (it "should emit the number of specs"
+      (it "should print the number of specs"
         (let ((buttercup-reporter-batch--start-time nil)
               (buttercup-reporter-batch--failures nil))
           (buttercup-reporter-batch 'buttercup-started (list parent-suite)))
-
-        (expect 'buttercup--print
-                :to-have-been-called-with
-                "Running %s specs.\n\n"
-                1)))
+        (expect (buttercup-output) :to-equal "Running 1 specs.\n\n")))
 
     (describe "on the suite-started event"
       (it "should emit an indented suite description"
         (buttercup-reporter-batch 'suite-started child-suite)
-
-        (expect 'buttercup--print
-                :to-have-been-called-with
-                "%s%s\n"
-                "  "
-                "child-suite")))
+        (expect (buttercup-output) :to-equal "  child-suite\n")))
 
     (describe "on the spec-started event"
       (it "should emit an indented spec description"
         (buttercup-reporter-batch 'spec-started spec)
-
-        (expect 'buttercup--print
-                :to-have-been-called-with
-                "%s%s"
-                "    "
-                "spec")))
+        (expect (buttercup-output) :to-equal "    spec")))
 
     (describe "on the spec-done event"
       (it "should print no status tag for a passed spec"
@@ -1125,65 +1110,40 @@ text properties using `ansi-color-apply'."
         (setf (buttercup-spec-failure-description spec) "DONTSHOW")
         (buttercup--set-end-time spec)
         (buttercup-reporter-batch 'spec-done spec)
-
-        (expect (mapconcat (apply-partially #'apply #'format)
-                           (spy-calls-all-args 'buttercup--print)
-                           "")
-                :to-match "^\\s-*([0-9]+\\.[0-9]+\\(h\\|m\\|m?s\\))\n$"))
+        (expect (buttercup-output) :to-equal
+                (format " (%s)\n" (buttercup-elapsed-time-string spec)))
+        )
 
       (it "should say FAILED for a failed spec"
         (setf (buttercup-spec-status spec) 'failed)
-
         (let ((buttercup-reporter-batch--failures nil))
           (buttercup-reporter-batch 'spec-done spec))
-
-        (expect (mapconcat (apply-partially #'apply #'format)
-                           (spy-calls-all-args 'buttercup--print)
-                           "")
-                :to-match "FAILED\\(\\s-+.*\\)?\n$"))
+        (expect (buttercup-output) :to-equal
+                (format "  FAILED (%s)\n" (buttercup-elapsed-time-string spec)))
+        )
 
       (it "should output the failure-description for a pending spec"
         (setf (buttercup-spec-status spec) 'pending
               (buttercup-spec-failure-description spec) "DESCRIPTION")
         (let ((buttercup-reporter-batch--failures nil))
           (buttercup-reporter-batch 'spec-done spec))
-        (expect (mapconcat (apply-partially #'apply #'format)
-                           (spy-calls-all-args 'buttercup--print) "")
-                :to-match "DESCRIPTION\\(\\s-+.*\\)?\n$"))
+        (expect (buttercup-output) :to-equal
+                (format "  DESCRIPTION (%s)\n" (buttercup-elapsed-time-string spec)))
+        )
 
       (it "should throw an error for an unknown spec status"
         (setf (buttercup-spec-status spec) 'unknown)
-
         (expect (buttercup-reporter-batch 'spec-done spec)
-                :to-throw))
-
-      (it "should print the elapsed time for all specs"
-        (dolist (state '(pending failed passed))
-          (spy-calls-reset 'buttercup--print)
-          (setq spec (make-buttercup-spec :description "spec"
-                                          :parent child-suite
-                                          :status state
-                                          :failure-description ""))
-          (buttercup--set-start-time spec)
-          (buttercup--set-end-time spec)
-          (let ((buttercup-reporter-batch--failures nil))
-            (buttercup-reporter-batch 'spec-done spec))
-
-          (expect (mapconcat (apply-partially #'apply #'format)
-                             (spy-calls-all-args 'buttercup--print)
-                             "")
-                  :to-match " ([0-9]+\\(\\.[0-9]+\\)?\\(h\\|m\\|m?s\\))\n$"))))
+                :to-throw)))
 
     (describe "on the suite-done event"
       (it "should emit a newline at the end of the top-level suite"
         (buttercup-reporter-batch 'suite-done parent-suite)
-
-        (expect 'buttercup--print :to-have-been-called-with "\n"))
+        (expect (buttercup-output) :to-equal "\n"))
 
       (it "should not emit anything at the end of other suites"
         (buttercup-reporter-batch 'suite-done child-suite)
-
-        (expect 'buttercup--print :not :to-have-been-called)))
+        (expect (buttercup-output) :to-equal "")))
 
     (describe "on the buttercup-done event"
       ;; This is a lie. It should do a ton more stuff. We should test
