@@ -123,14 +123,14 @@ a call to `save-match-data', as `format-spec' modifies that."
 This macro knows three forms:
 
 \(expect ARG :MATCHER ARGS...)
-  Fail the current test iff the matcher does not match these arguments.
+  Fail the current test if the matcher does not match these arguments.
   See `buttercup-define-matcher' for more information on matchers.
 
 \(expect (function ARG...))
-  Fail the current test iff the function call does not return a true value.
+  Fail the current test if the function call does not return a true value.
 
 \(expect ARG)
-  Fail the current test iff ARG is not true."
+  Fail the current test if ARG is not true."
   (let ((wrapped-args
          (mapcar (lambda (expr) `(lambda () (quote ,expr) ,expr)) args)))
     `(buttercup-expect
