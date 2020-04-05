@@ -25,6 +25,7 @@
 
 (require 'buttercup)
 (require 'autoload)
+(require 'ansi-color)
 (require 'ert)
 (require 'cl-lib)
 
@@ -47,6 +48,49 @@
          buttercup-suites
          (buttercup-warning-buffer-name " *ignored buttercup warnings*"))
      ,@body))
+
+(defun send-string-to-ansi-buffer (buffer string)
+  "A `send-string-to-terminal' variant that sends STRING to BUFFER.
+Any backspace, tab, newline, vertical tab, formfeed, or carriage
+return in STRING will be translared to in-buffer movement to
+emulate a terminal. Escape sequences in STRING are translated to
+text properties using `ansi-color-apply'."
+  (setq string (ansi-color-apply string))
+  (cl-labels ((insert-owrt (text)
+                 "Insert TEXT by first overwriting until end of line."
+                 ;; Delete and insert separately. Otherwise characters
+                 ;; with text properties may remain when the new and
+                 ;; the old text share substrings.
+                 (delete-region (point) ; only delete up to the end of line
+                                (min (+ (point) (length text))
+                                     (line-end-position)))
+                 (insert text))
+              (line-feed ()
+                 "Go to beginning of next line, creating it if necessary."
+                  (end-of-line)
+                  (or (zerop (forward-line))
+                      (insert-and-inherit "\n"))))
+    (with-current-buffer buffer
+      (let ((tab-width 8)          ; terminal uses 8 char tabs
+            (indent-tabs-mode nil) ; make sure move-* does not insert tabs
+            (tab-stop-list nil)    ; default tab-stops (8 char interval)
+            ctrl-char)
+        (save-match-data
+          (while (string-match "\\(.*?\\)\\([\b\t\n\v\f\r]\\)\\([^z-a]*\\)" string)
+            (insert-owrt (match-string 1 string))
+            (setq ctrl-char (aref (match-string 2 string) 0)
+                  string (match-string 3 string))
+            (cl-case ctrl-char
+              (?\b (unless (bolp) (backward-char)))
+              (?\t (move-to-tab-stop))
+              (?\n (line-feed))
+              ((?\v ?\f) (let ((line-pos (current-column)))
+                           (line-feed)
+                           (move-to-column line-pos t)))
+              (?\r (forward-line 0))))
+          ;; print remaining text
+          (insert-owrt string))))))
+
 
 ;;;;;;;;;;
 ;;; expect
