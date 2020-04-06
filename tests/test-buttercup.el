@@ -1066,14 +1066,27 @@ text properties using `ansi-color-apply'."
 ;;; Reporters
 
 (describe "The batch reporter"
+  :var (print-buffer)
   (let (parent-suite child-suite spec)
     (before-each
       (setq parent-suite (make-buttercup-suite :description "parent-suite")
             child-suite (make-buttercup-suite :description "child-suite")
-            spec (make-buttercup-spec :description "spec"))
+            spec (make-buttercup-spec :description "spec")
+            print-buffer (generate-new-buffer "*btrcp-reporter-test*"))
       (buttercup-suite-add-child parent-suite child-suite)
       (buttercup-suite-add-child child-suite spec)
-      (spy-on 'buttercup--print))
+      (spy-on 'buttercup--print)
+      (spy-on 'send-string-to-terminal :and-call-fake
+              (apply-partially #'send-string-to-ansi-buffer print-buffer))
+      ;; Convenience function
+      (spy-on 'buttercup-output :and-call-fake
+              (lambda ()
+                "Return the text of print-buffer."
+                (with-current-buffer print-buffer
+                  (buffer-string)))))
+    (after-each
+      (kill-buffer print-buffer)
+      (setq print-buffer nil))
 
     (describe "on the buttercup-started event"
       (it "should emit the number of specs"
