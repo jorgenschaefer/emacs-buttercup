@@ -1630,15 +1630,15 @@ EVENT and ARG are described in `buttercup-reporter'."
                                     buttercup-reporter-batch--start-time))))
          (if (> pending 0)
              (buttercup--print
-              "Ran %s out of %s specs, %s failed, in %.1f seconds.\n"
+              "Ran %s out of %s specs, %s failed, in %s.\n"
               (- defined pending)
               defined
               failed
-              duration)
-           (buttercup--print "Ran %s specs, %s failed, in %.1f seconds.\n"
+              (seconds-to-string duration))
+           (buttercup--print "Ran %s specs, %s failed, in %s.\n"
                              defined
                              failed
-                             duration))))
+                             (seconds-to-string duration)))))
 
       (_
        (error "Unknown event %s" event)))))
