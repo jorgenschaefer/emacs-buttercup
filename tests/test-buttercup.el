@@ -1149,16 +1149,36 @@ text properties using `ansi-color-apply'."
         (expect (buttercup-output) :to-equal "")))
 
     (describe "on the buttercup-done event"
-      ;; This is a lie. It should do a ton more stuff. We should test
-      ;; that, too.
-      (it "should handle the end event"
-        (buttercup-reporter-batch 'buttercup-done nil))
+      :var ((buttercup-reporter-batch--start-time (current-time))
+            defined-specs pending-specs failed-specs)
+
+      (before-each
+        (setq defined-specs 10 pending-specs 0 failed-specs 0)
+        (spy-on 'buttercup-suites-total-specs-defined :and-call-fake (lambda (&rest a) defined-specs))
+        (spy-on 'buttercup-suites-total-specs-pending :and-call-fake (lambda (&rest a) pending-specs))
+        (spy-on 'buttercup-suites-total-specs-failed :and-call-fake (lambda (&rest a) failed-specs)))
+
+      (it "should print a summary of run and failing specs"
+        (setq failed-specs 6)
+        (let (buttercup-reporter-batch--failures)
+          (buttercup-reporter-batch 'buttercup-done nil))
+        (expect (buttercup-output) :to-match
+                "Ran 10 specs, 6 failed, in [0-9]+.[0-9]+[mu]?s.\n"))
+
+      (it "should print a summary separating run and pending specs"
+        (setq pending-specs 3)
+        (let (buttercup-reporter-batch--failures)
+          (buttercup-reporter-batch 'buttercup-done nil))
+        (expect (buttercup-output) :to-match
+                "Ran 7 out of 10 specs, 0 failed, in [0-9]+.[0-9]+[mu]?s.\n"))
 
       (it "should not raise any error even if a spec failed"
         (setf (buttercup-spec-status spec) 'failed)
-
-        (expect (buttercup-reporter-batch 'buttercup-done (list spec))
-                :not :to-throw)))
+        (let (buttercup-reporter-batch--failures)
+          (expect (buttercup-reporter-batch 'buttercup-done (list spec))
+                  :not :to-throw)))
+      ;; TODO: Backtrace tests
+      )
 
     (describe "on an unknown event"
       (it "should raise an error"
