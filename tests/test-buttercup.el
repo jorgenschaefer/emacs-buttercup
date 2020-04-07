@@ -1109,27 +1109,30 @@ text properties using `ansi-color-apply'."
         (buttercup--set-start-time spec)
         (setf (buttercup-spec-failure-description spec) "DONTSHOW")
         (buttercup--set-end-time spec)
+        (buttercup-reporter-batch 'spec-started spec)
         (buttercup-reporter-batch 'spec-done spec)
         (expect (buttercup-output) :to-equal
-                (format " (%s)\n" (buttercup-elapsed-time-string spec)))
-        )
+                (format "    spec (%s)\n"
+                        (buttercup-elapsed-time-string spec))))
 
       (it "should say FAILED for a failed spec"
         (setf (buttercup-spec-status spec) 'failed)
         (let ((buttercup-reporter-batch--failures nil))
+          (buttercup-reporter-batch 'spec-started spec)
           (buttercup-reporter-batch 'spec-done spec))
         (expect (buttercup-output) :to-equal
-                (format "  FAILED (%s)\n" (buttercup-elapsed-time-string spec)))
-        )
+                (format "    spec  FAILED (%s)\n"
+                        (buttercup-elapsed-time-string spec))))
 
       (it "should output the failure-description for a pending spec"
         (setf (buttercup-spec-status spec) 'pending
               (buttercup-spec-failure-description spec) "DESCRIPTION")
         (let ((buttercup-reporter-batch--failures nil))
+          (buttercup-reporter-batch 'spec-started spec)
           (buttercup-reporter-batch 'spec-done spec))
         (expect (buttercup-output) :to-equal
-                (format "  DESCRIPTION (%s)\n" (buttercup-elapsed-time-string spec)))
-        )
+                (format "    spec  DESCRIPTION (%s)\n"
+                        (buttercup-elapsed-time-string spec))))
 
       (it "should throw an error for an unknown spec status"
         (setf (buttercup-spec-status spec) 'unknown)
