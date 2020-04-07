@@ -1088,11 +1088,24 @@ text properties using `ansi-color-apply'."
       (setq print-buffer nil))
 
     (describe "on the buttercup-started event"
+      :var (skipped
+            ;; Local var for testing. The real variable is used by the
+            ;; reporter attached to the buttercup instance running
+            ;; these tests.
+            buttercup-reporter-batch--start-time)
+      (before-each
+        (setq skipped (make-buttercup-spec :description "skipped" :status 'pending)))
+
       (it "should print the number of specs"
-        (let ((buttercup-reporter-batch--start-time nil)
-              (buttercup-reporter-batch--failures nil))
+        (let ((buttercup-reporter-batch--failures nil))
           (buttercup-reporter-batch 'buttercup-started (list parent-suite)))
-        (expect (buttercup-output) :to-equal "Running 1 specs.\n\n")))
+        (expect (buttercup-output) :to-equal "Running 1 specs.\n\n"))
+
+      (it "should print the number of skipped specs"
+        (let ((buttercup-reporter-batch--failures nil))
+          (buttercup-suite-add-child child-suite skipped)
+          (buttercup-reporter-batch 'buttercup-started (list parent-suite)))
+        (expect (buttercup-output) :to-equal "Running 1 out of 2 specs.\n\n")))
 
     (describe "on the suite-started event"
       (it "should emit an indented suite description"
