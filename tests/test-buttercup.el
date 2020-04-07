@@ -1158,6 +1158,23 @@ text properties using `ansi-color-apply'."
           (expect (buttercup-output) :to-equal-including-properties
                   (ansi-color-apply
                    (format "\e[32m    spec\e[0m (%s)\n"
+                           (buttercup-elapsed-time-string spec)))))
+
+        (it "should print multiline specs cleanly"
+          (setf (buttercup-spec-description spec) "one\ntwo\vthree")
+          (buttercup-reporter-batch 'spec-started spec)
+          (buttercup-reporter-batch 'spec-done spec)
+          (expect (buttercup-output) :to-equal-including-properties
+                  (format "    one\ntwo\n   three (%s)\n"
+                          (buttercup-elapsed-time-string spec))))
+
+        (it "should color-print multiline specs cleanly"
+          (setf (buttercup-spec-description spec) "one\ntwo\vthree")
+          (buttercup-reporter-batch-color 'spec-started spec)
+          (buttercup-reporter-batch-color 'spec-done spec)
+          (expect (buttercup-output) :to-equal-including-properties
+                  (ansi-color-apply
+                   (format "\e[32m    one\ntwo\n   three\e[0m (%s)\n"
                            (buttercup-elapsed-time-string spec))))))
 
       (describe "for a failed spec"

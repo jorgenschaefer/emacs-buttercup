@@ -1651,6 +1651,9 @@ colors.
 
 EVENT and ARG are described in `buttercup-reporter'."
   (pcase event
+    (`spec-started
+     (unless (string-match-p "[\n\v\f]" (buttercup-spec-description arg))
+       (buttercup-reporter-batch event arg)))
     (`spec-done
      (let ((level (length (buttercup-suite-or-spec-parents arg))))
        (cond
