@@ -1215,11 +1215,19 @@ text properties using `ansi-color-apply'."
     (describe "on the suite-done event"
       (it "should emit a newline at the end of the top-level suite"
         (buttercup-reporter-batch 'suite-done parent-suite)
-        (expect (buttercup-output) :to-equal "\n"))
+        (expect (buttercup-output) :to-equal-including-properties "\n"))
+
+      (it "should color-print a newline at the end of the top-level suite"
+        (buttercup-reporter-batch-color 'suite-done parent-suite)
+        (expect (buttercup-output) :to-equal-including-properties "\n"))
 
       (it "should not emit anything at the end of other suites"
         (buttercup-reporter-batch 'suite-done child-suite)
-        (expect (buttercup-output) :to-equal "")))
+        (expect (buttercup-output) :to-equal-including-properties ""))
+
+      (it "should not color-print anything at the end of other suites"
+        (buttercup-reporter-batch-color 'suite-done child-suite)
+        (expect (buttercup-output) :to-equal-including-properties "")))
 
     (describe "on the buttercup-done event"
       :var ((buttercup-reporter-batch--start-time (current-time))
