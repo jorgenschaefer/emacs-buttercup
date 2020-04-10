@@ -1246,12 +1246,42 @@ text properties using `ansi-color-apply'."
         (expect (buttercup-output) :to-match
                 "Ran 10 specs, 6 failed, in [0-9]+.[0-9]+[mu]?s.\n"))
 
+      (it "should color-print `0 failed' specs in green"
+        (let (buttercup-reporter-batch--failures)
+          (buttercup-reporter-batch-color 'buttercup-done nil))
+        (expect (buttercup-output) :to-match
+                "Ran 10 specs, 0 failed, in [0-9]+.[0-9]+[mu]?s.\n")
+        (expect (substring (buttercup-output) 0 (length "Ran 10 specs, 0 failed, in"))
+                :to-equal-including-properties
+                (ansi-color-apply "Ran 10 specs,\e[32m 0 failed\e[0m, in")))
+
+      (it "should color-print `X failed' specs in red"
+        (setq failed-specs 6)
+        (let (buttercup-reporter-batch--failures)
+          (buttercup-reporter-batch-color 'buttercup-done nil))
+        (expect (buttercup-output) :to-match
+                "Ran 10 specs, 6 failed, in [0-9]+.[0-9]+[mu]?s.\n")
+        (expect (substring (buttercup-output) 0 (length "Ran 10 specs, 6 failed, in"))
+                :to-equal-including-properties
+                (ansi-color-apply "Ran 10 specs,\e[31m 6 failed\e[0m, in")))
+
       (it "should print a summary separating run and pending specs"
         (setq pending-specs 3)
         (let (buttercup-reporter-batch--failures)
           (buttercup-reporter-batch 'buttercup-done nil))
         (expect (buttercup-output) :to-match
                 "Ran 7 out of 10 specs, 0 failed, in [0-9]+.[0-9]+[mu]?s.\n"))
+
+      (it "should color-print pending spec count in default color"
+        (setq pending-specs 3)
+        (let (buttercup-reporter-batch--failures)
+          (buttercup-reporter-batch 'buttercup-done nil))
+        (expect (buttercup-output) :to-match
+                "Ran 7 out of 10 specs, 0 failed, in [0-9]+.[0-9]+[mu]?s.\n")
+        (expect (substring (buttercup-output)
+                           0 (length "Ran 7 out of 10 specs, 0 failed, in"))
+                :to-equal-including-properties
+                "Ran 7 out of 10 specs, 0 failed, in"))
 
       (it "should not raise any error even if a spec failed"
         (setf (buttercup-spec-status spec) 'failed)
