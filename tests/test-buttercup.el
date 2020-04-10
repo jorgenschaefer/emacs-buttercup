@@ -1064,8 +1064,10 @@ text properties using `ansi-color-apply'."
 
 ;;;;;;;;;;;;;
 ;;; Reporters
+(buttercup-define-matcher-for-binary-function
+    :to-equal-including-properties equal-including-properties)
 
-(describe "The batch reporter"
+(describe "The batch reporters"
   :var (print-buffer)
   (let (parent-suite child-suite spec)
     (before-each
@@ -1099,13 +1101,24 @@ text properties using `ansi-color-apply'."
       (it "should print the number of specs"
         (let ((buttercup-reporter-batch--failures nil))
           (buttercup-reporter-batch 'buttercup-started (list parent-suite)))
-        (expect (buttercup-output) :to-equal "Running 1 specs.\n\n"))
+        (expect (buttercup-output) :to-equal-including-properties "Running 1 specs.\n\n"))
+
+      (it "should color-print the number of specs with the default color"
+        (let (buttercup-reporter-batch--failures)
+          (buttercup-reporter-batch-color 'buttercup-started (list parent-suite)))
+        (expect (buttercup-output) :to-equal-including-properties "Running 1 specs.\n\n"))
 
       (it "should print the number of skipped specs"
         (let ((buttercup-reporter-batch--failures nil))
           (buttercup-suite-add-child child-suite skipped)
           (buttercup-reporter-batch 'buttercup-started (list parent-suite)))
-        (expect (buttercup-output) :to-equal "Running 1 out of 2 specs.\n\n")))
+        (expect (buttercup-output) :to-equal-including-properties "Running 1 out of 2 specs.\n\n"))
+
+      (it "should color-print the number of skipped specs with the default color"
+        (let (buttercup-reporter-batch--failures)
+          (buttercup-suite-add-child child-suite skipped)
+          (buttercup-reporter-batch-color 'buttercup-started (list parent-suite)))
+        (expect (buttercup-output) :to-equal-including-properties "Running 1 out of 2 specs.\n\n")))
 
     (describe "on the suite-started event"
       (it "should emit an indented suite description"
