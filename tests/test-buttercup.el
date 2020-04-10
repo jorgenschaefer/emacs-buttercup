@@ -1123,12 +1123,20 @@ text properties using `ansi-color-apply'."
     (describe "on the suite-started event"
       (it "should emit an indented suite description"
         (buttercup-reporter-batch 'suite-started child-suite)
-        (expect (buttercup-output) :to-equal "  child-suite\n")))
+        (expect (buttercup-output) :to-equal-including-properties "  child-suite\n"))
+
+      (it "should color-print an indented suite description with the default color"
+        (buttercup-reporter-batch-color 'suite-started child-suite)
+        (expect (buttercup-output) :to-equal-including-properties "  child-suite\n")))
 
     (describe "on the spec-started event"
       (it "should emit an indented spec description"
         (buttercup-reporter-batch 'spec-started spec)
-        (expect (buttercup-output) :to-equal "    spec")))
+        (expect (buttercup-output) :to-equal-including-properties "    spec"))
+
+      (it "should color-print an indented spec description with the default color"
+        (buttercup-reporter-batch-color 'spec-started spec)
+        (expect (buttercup-output) :to-equal-including-properties "    spec")))
 
     (describe "on the spec-done event"
       (it "should print no status tag for a passed spec"
