@@ -1139,34 +1139,73 @@ text properties using `ansi-color-apply'."
         (expect (buttercup-output) :to-equal-including-properties "    spec")))
 
     (describe "on the spec-done event"
-      (it "should print no status tag for a passed spec"
-        (buttercup--set-start-time spec)
-        (setf (buttercup-spec-failure-description spec) "DONTSHOW")
-        (buttercup--set-end-time spec)
-        (buttercup-reporter-batch 'spec-started spec)
-        (buttercup-reporter-batch 'spec-done spec)
-        (expect (buttercup-output) :to-equal
-                (format "    spec (%s)\n"
-                        (buttercup-elapsed-time-string spec))))
+      (describe "for a passed spec"
+        (before-each
+          (buttercup--set-start-time spec)
+          (setf (buttercup-spec-failure-description spec) "DONTSHOW")
+          (buttercup--set-end-time spec))
 
-      (it "should say FAILED for a failed spec"
-        (setf (buttercup-spec-status spec) 'failed)
-        (let ((buttercup-reporter-batch--failures nil))
+        (it "should print no status tag"
           (buttercup-reporter-batch 'spec-started spec)
-          (buttercup-reporter-batch 'spec-done spec))
-        (expect (buttercup-output) :to-equal
-                (format "    spec  FAILED (%s)\n"
-                        (buttercup-elapsed-time-string spec))))
+          (buttercup-reporter-batch 'spec-done spec)
+          (expect (buttercup-output) :to-equal-including-properties
+                  (format "    spec (%s)\n"
+                          (buttercup-elapsed-time-string spec))))
 
-      (it "should output the failure-description for a pending spec"
-        (setf (buttercup-spec-status spec) 'pending
-              (buttercup-spec-failure-description spec) "DESCRIPTION")
-        (let ((buttercup-reporter-batch--failures nil))
-          (buttercup-reporter-batch 'spec-started spec)
-          (buttercup-reporter-batch 'spec-done spec))
-        (expect (buttercup-output) :to-equal
-                (format "    spec  DESCRIPTION (%s)\n"
-                        (buttercup-elapsed-time-string spec))))
+        (it "should color-print the description in green and no status tag"
+          (buttercup-reporter-batch-color 'spec-started spec)
+          (buttercup-reporter-batch-color 'spec-done spec)
+          (expect (buttercup-output) :to-equal-including-properties
+                  (ansi-color-apply
+                   (format "\e[32m    spec\e[0m (%s)\n"
+                           (buttercup-elapsed-time-string spec))))))
+
+      (describe "for a failed spec"
+        (before-each
+          (buttercup--set-start-time spec)
+          (setf (buttercup-spec-status spec) 'failed)
+          (buttercup--set-end-time spec))
+
+        (it "should say FAILED"
+          (let ((buttercup-reporter-batch--failures nil))
+            (buttercup-reporter-batch 'spec-started spec)
+            (buttercup-reporter-batch 'spec-done spec))
+          (expect (buttercup-output) :to-equal-including-properties
+                  (format "    spec  FAILED (%s)\n"
+                          (buttercup-elapsed-time-string spec))))
+
+        (it "should color-print the description in red and say FAILED"
+          (let ((buttercup-reporter-batch--failures nil))
+            (buttercup-reporter-batch-color 'spec-started spec)
+            (buttercup-reporter-batch-color 'spec-done spec))
+          (expect (buttercup-output) :to-equal-including-properties
+                  (ansi-color-apply
+                   (format "\e[31m    spec  FAILED\e[0m (%s)\n"
+                           (buttercup-elapsed-time-string spec))))))
+
+      (describe "for a pending spec"
+        (before-each
+          (buttercup--set-start-time spec)
+          (setf (buttercup-spec-status spec) 'pending
+                (buttercup-spec-failure-description spec) "DESCRIPTION")
+          (buttercup--set-end-time spec))
+
+        (it "should output the failure-description"
+          (let ((buttercup-reporter-batch--failures nil))
+            (buttercup-reporter-batch 'spec-started spec)
+            (buttercup-reporter-batch 'spec-done spec))
+          (expect (buttercup-output) :to-equal-including-properties
+                  (format "    spec  DESCRIPTION (%s)\n"
+                          (buttercup-elapsed-time-string spec))))
+
+        (it "should color-print the description and failure-description in yellow"
+          (let ((buttercup-reporter-batch--failures nil))
+            (buttercup-reporter-batch-color 'spec-started spec)
+            (buttercup-reporter-batch-color 'spec-done spec))
+          (expect (buttercup-output) :to-equal-including-properties
+                  (ansi-color-apply
+                   (format "\e[33m    spec  DESCRIPTION\e[0m (%s)\n"
+                        (buttercup-elapsed-time-string spec))))))
 
       (it "should throw an error for an unknown spec status"
         (setf (buttercup-spec-status spec) 'unknown)
