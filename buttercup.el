@@ -179,7 +179,7 @@ FORMAT and ARGS are passed to `format'."
   (signal 'buttercup-pending (apply #'format format args)))
 
 (defmacro assume (condition &optional message)
-  "Assume CONDITIION for the current test.
+  "Assume CONDITION for the current test.
 
 Assume that CONDITION evaluates to non-nil in the current test.
 If it evaluates to nil cancel the current test with MESSAGE. If
