@@ -1102,10 +1102,10 @@ also be a command with the same interactive form, unless
 `:and-call-fake' is used, in which case it is the caller's
 responsibility to ensure ARG is a command."
   ;; We need to load an autoloaded function before spying on it
-  (when (autoloadp (symbol-function symbol))
+  (when (autoloadp (and (fboundp symbol) (symbol-function symbol)))
     (autoload-do-load (symbol-function symbol) symbol))
-  (cl-assert (not (autoloadp (symbol-function symbol))))
-  (let* ((orig (symbol-function symbol))
+  (cl-assert (not (autoloadp (and (fboundp symbol) (symbol-function symbol)))))
+  (let* ((orig (and (fboundp symbol) (symbol-function symbol)))
          (orig-intform (interactive-form orig))
          (replacement
           (pcase
@@ -1150,7 +1150,7 @@ responsibility to ensure ARG is a command."
 
 (defun buttercup--spy-on-and-call-replacement (spy fun)
   "Replace the function in symbol SPY with a spy calling FUN."
-  (let ((orig-function (symbol-function spy)))
+  (let ((orig-function (and (fboundp spy) (symbol-function spy))))
     (when (buttercup--add-cleanup (lambda ()
                                   (fset spy orig-function)))
       (fset spy (buttercup--make-spy fun)))))

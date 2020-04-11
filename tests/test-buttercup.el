@@ -746,6 +746,11 @@
                         :to-be :loaded-successfully))
             (delete-file function-file nil))))
 
+      (it "can spy on non-existing functions"
+        (spy-on 'local-function)
+        (local-function)
+        (expect 'local-function :to-have-been-called))
+
       (it "only accepts ARG for keywords that use it"
         (expect
          (spy-on 'test-function :and-call-through :arg-not-allowed)
