@@ -56,6 +56,8 @@ Buttercup options:
                           frame with a lambda or M to indicate whether
                           it is a normal function call or a
                           macro/special form.
+
+--stale-file-error      Fail the test run if stale .elc files are loaded.
 EOF
 }
 
@@ -81,7 +83,7 @@ do
             shift
             shift
             ;;
-        "-c"|"--no-color"|"--no-skip"|"--only-error")
+        "-c"|"--no-color"|"--no-skip"|"--only-error"|"--stale-file-error")
             BUTTERCUP_ARGS+=("$1")
             shift
             ;;
@@ -100,3 +102,7 @@ done
 
 # `--' is needed so that Buttercup options don't get parsed by Emacs itself.
 exec "$EMACS_BIN" -batch "${EMACS_ARGS[@]}" -l buttercup -f buttercup-run-discover -- "${BUTTERCUP_ARGS[@]}"
+
+# Local Variables:
+# indent-tabs-mode: nil
+# End:

@@ -109,6 +109,17 @@ If INCLUDE-DIRECTORIES, also include directories that have matching names."
                            (<= (car here) delay)))
                (concat (format "%.2f" (/ delay (car (cddr here)))) (cadr here)))))))
 
+;;;;;;;;;;;;;;;;;;;;;
+;; Introduced in 26.1
+
+(unless (fboundp 'file-attribute-modification-time)
+  (defsubst file-attribute-modification-time (attributes)
+	"The modification time in ATTRIBUTES returned by `file-attributes'.
+This is the time of the last change to the file's contents, and
+is a Lisp timestamp in the style of `current-time'."
+	(nth 5 attributes)))
+
+
 
 (provide 'buttercup-compat)
 ;;; buttercup-compat.el ends here

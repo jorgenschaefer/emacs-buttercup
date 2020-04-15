@@ -1386,6 +1386,9 @@ current directory."
         (push 'pending buttercup-reporter-batch-quiet-statuses)
         (push 'passed buttercup-reporter-batch-quiet-statuses)
         (setq args (cdr args)))
+       ((equal (car args) "--stale-file-error")
+        (buttercup-install-old-elc-error)
+        (setq args (cdr args)))
        (t
         (push (car args) dirs)
         (setq args (cdr args)))))
@@ -2002,6 +2005,32 @@ With buttercup minor mode active the following is activated:
       (font-lock-remove-keywords nil font-lock-form)
       (cl-dolist (form imenu-forms)
         (setq imenu-generic-expression (delete form imenu-generic-expression))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Signal errors when files have to be recompiled
+
+(defun buttercup-check-for-stale-elc (elc-file)
+  "Raise an error when ELC-FILE is an elc-file and older than its el-file."
+  (when (string= (file-name-extension elc-file) "elc")
+    (let ((el-file (substring elc-file 0 -1)))
+      (when (and (file-exists-p el-file)
+                 (time-less-p
+                  (file-attribute-modification-time (file-attributes elc-file))
+                  (file-attribute-modification-time (file-attributes el-file))))
+        (error "%s is newer than %s" el-file elc-file)))))
+
+(defun buttercup-error-on-stale-elc (&optional arg)
+  "Activate errors when an stale (older than .el) .elc-file is loaded.
+
+Enable the functionality if ARG is omitted or nil, toggle it if
+ARG is ‘toggle’; disable otherwise."
+  (cond ((null arg)
+         (add-hook 'after-load-functions #'buttercup-check-for-stale-elc))
+        ((eq arg 'toggle)
+         (if (memq 'buttercup-check-for-stale-elc after-load-functions)
+             (remove-hook 'after-load-functions #'buttercup-check-for-stale-elc)
+           (add-hook 'after-load-functions #'buttercup-check-for-stale-elc)))
+        (t (remove-hook 'after-load-functions #'buttercup-check-for-stale-elc))))
 
 ;; Local Variables:
 ;; indent-tabs-mode: nil

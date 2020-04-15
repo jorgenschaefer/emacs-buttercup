@@ -1649,6 +1649,55 @@ text properties using `ansi-color-apply'."
         (expect (length (cdr specs)) :to-equal 1)
         (expect (cl-caadr specs) :to-equal "should fontify special keywords")))))
 
+;;;;;;;;;;;;;;;;;;;
+;;; Stale elc files
+
+(describe "For stale `elc' file checks"
+  (describe "`buttercup-check-for-stale-elc'"
+    :var (el-time elc-time)
+    (before-each
+      (spy-on 'file-attributes :and-call-fake
+              (lambda (filename &optional id-format)
+                (make-list
+                 10
+                 (make-list 4
+                            (pcase (file-name-extension filename)
+                              ("elc" elc-time)
+                              ("el" el-time)))))))
+    (it "should do nothing for `el' files"
+      (setq el-time 2  ;; elc is older than el
+            elc-time 1)
+      (expect (buttercup-check-for-stale-elc "buttercup.el") :not :to-throw))
+    (it "should signal error when `elc' is older than `el'"
+      (setq el-time 2  ;; elc is older than el
+            elc-time 1)
+      (expect (buttercup-check-for-stale-elc "buttercup.elc") :to-throw))
+    (it "should not signal error when `elc' is newer than `el'"
+      (setq el-time 2  ;; elc is older than el
+            elc-time 3)
+      (expect (buttercup-check-for-stale-elc "buttercup.elc") :not :to-throw))
+    (it "should do nothing if the `el' file does not exist"
+      (setq el-time 3  ;; el is older than elc
+            elc-time 2)
+      (spy-on 'file-exists-p)
+      (expect (buttercup-check-for-stale-elc "buttercup.elc") :not :to-throw)))
+
+  (describe "`buttercup-error-on-stale-elc'"
+    (it "should activate with no argument"
+      (let (after-load-functions)
+        (buttercup-error-on-stale-elc)
+        (expect after-load-functions :to-contain 'buttercup-check-for-stale-elc)))
+    (it "should deactivate with almost any argument"
+      (let ((after-load-functions '(buttercup-check-for-stale-elc)))
+        (buttercup-error-on-stale-elc 2)
+        (expect after-load-functions :not :to-contain 'buttercup-check-for-stale-elc)))
+    (it "should toggle when given `toggle' as argument"
+      (let (after-load-functions)
+        (buttercup-error-on-stale-elc 'toggle)
+        (expect after-load-functions :to-contain 'buttercup-check-for-stale-elc)
+        (buttercup-error-on-stale-elc 'toggle)
+        (expect after-load-functions :not :to-contain 'buttercup-check-for-stale-elc)))))
+
 ;; Local Variables:
 ;; indent-tabs-mode: nil
 ;; sentence-end-double-space: nil
