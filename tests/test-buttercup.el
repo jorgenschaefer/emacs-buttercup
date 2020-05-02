@@ -73,7 +73,8 @@ text properties using `ansi-color-apply'."
     (with-current-buffer buffer
       (let ((tab-width 8)          ; terminal uses 8 char tabs
             (indent-tabs-mode nil) ; make sure move-* does not insert tabs
-            (tab-stop-list nil)    ; default tab-stops (8 char interval)
+            ;; default tab-stops (8 char interval)  Can be nil from 24.4 forward...
+            (tab-stop-list (eval (car (get 'tab-stop-list 'standard-value))))
             ctrl-char)
         (save-match-data
           (while (string-match "\\(.*?\\)\\([\b\t\n\v\f\r]\\)\\([^z-a]*\\)" string)
