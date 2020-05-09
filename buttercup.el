@@ -795,6 +795,12 @@ Return CHILD."
   "Convert the elapsed time for SUITE-OR-SPEC to a short string."
   (seconds-to-string (float-time (buttercup-elapsed-time suite-or-spec))))
 
+(defun buttercup--indented-description (suite-or-spec)
+  "Return the description of SUITE-OR-SPEC indented according to level.
+The indentaion is two spaces per parent."
+  (let ((level (length (buttercup-suite-or-spec-parents suite-or-spec))))
+    (concat (make-string (* 2 level) ?\s) (buttercup-suite-or-spec-description suite-or-spec))))
+
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
 
@@ -1572,17 +1578,9 @@ EVENT and ARG are described in `buttercup-reporter'."
            (buttercup--print "Running %s specs.\n\n" defined))))
 
       (`suite-started
-       (let ((level (length (buttercup-suite-or-spec-parents arg))))
-         (buttercup--print "%s%s\n"
-                           (make-string (* 2 level) ?\s)
-                           (buttercup-suite-description arg))))
-
+         (buttercup--print "%s\n" (buttercup--indented-description arg)))
       (`spec-started
-       (let ((level (length (buttercup-suite-or-spec-parents arg))))
-         (buttercup--print "%s%s"
-                           (make-string (* 2 level) ?\s)
-                           (buttercup-spec-description arg))))
-
+         (buttercup--print "%s" (buttercup--indented-description arg)))
       (`spec-done
        (cond
         ((eq (buttercup-spec-status arg) 'passed)) ; do nothing
@@ -1655,29 +1653,25 @@ EVENT and ARG are described in `buttercup-reporter'."
      (unless (string-match-p "[\n\v\f]" (buttercup-spec-description arg))
        (buttercup-reporter-batch event arg)))
     (`spec-done
-     (let ((level (length (buttercup-suite-or-spec-parents arg))))
        (cond
         ((eq (buttercup-spec-status arg) 'passed)
-         (buttercup--print (buttercup-colorize "\r%s%s" 'green)
-                           (make-string (* 2 level) ?\s)
-                           (buttercup-spec-description arg)))
+         (buttercup--print (buttercup-colorize "\r%s" 'green)
+                           (buttercup--indented-description arg)))
         ((eq (buttercup-spec-status arg) 'failed)
-         (buttercup--print (buttercup-colorize "\r%s%s  FAILED" 'red)
-                           (make-string (* 2 level) ?\s)
-                           (buttercup-spec-description arg))
+         (buttercup--print (buttercup-colorize "\r%s  FAILED" 'red)
+                           (buttercup--indented-description arg))
          (setq buttercup-reporter-batch--failures
                (append buttercup-reporter-batch--failures
                        (list arg))))
         ((eq (buttercup-spec-status arg) 'pending)
          (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
              (buttercup--print "  %s" (buttercup-spec-failure-description arg))
-           (buttercup--print (buttercup-colorize "\r%s%s  %s" 'yellow)
-                             (make-string (* 2 level) ?\s)
-                             (buttercup-spec-description arg)
+           (buttercup--print (buttercup-colorize "\r%s  %s" 'yellow)
+                             (buttercup--indented-description arg)
                              (buttercup-spec-failure-description arg))))
         (t
          (error "Unknown spec status %s" (buttercup-spec-status arg))))
-       (buttercup--print " (%s)\n" (buttercup-elapsed-time-string arg))))
+       (buttercup--print " (%s)\n" (buttercup-elapsed-time-string arg)))
 
     (`buttercup-done
      (dolist (failed buttercup-reporter-batch--failures)
