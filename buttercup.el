@@ -1653,25 +1653,25 @@ EVENT and ARG are described in `buttercup-reporter'."
      (unless (string-match-p "[\n\v\f]" (buttercup-spec-description arg))
        (buttercup-reporter-batch event arg)))
     (`spec-done
-       (cond
-        ((eq (buttercup-spec-status arg) 'passed)
-         (buttercup--print (buttercup-colorize "\r%s" 'green)
-                           (buttercup--indented-description arg)))
-        ((eq (buttercup-spec-status arg) 'failed)
-         (buttercup--print (buttercup-colorize "\r%s  FAILED" 'red)
-                           (buttercup--indented-description arg))
-         (setq buttercup-reporter-batch--failures
-               (append buttercup-reporter-batch--failures
-                       (list arg))))
-        ((eq (buttercup-spec-status arg) 'pending)
-         (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
-             (buttercup--print "  %s" (buttercup-spec-failure-description arg))
-           (buttercup--print (buttercup-colorize "\r%s  %s" 'yellow)
-                             (buttercup--indented-description arg)
-                             (buttercup-spec-failure-description arg))))
-        (t
-         (error "Unknown spec status %s" (buttercup-spec-status arg))))
-       (buttercup--print " (%s)\n" (buttercup-elapsed-time-string arg)))
+     (pcase (buttercup-spec-status arg)
+       (`passed
+        (buttercup--print (buttercup-colorize "\r%s" 'green)
+                          (buttercup--indented-description arg)))
+       (`failed
+        (buttercup--print (buttercup-colorize "\r%s  FAILED" 'red)
+                          (buttercup--indented-description arg))
+        (setq buttercup-reporter-batch--failures
+              (append buttercup-reporter-batch--failures
+                      (list arg))))
+       (`pending
+        (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
+            (buttercup--print "  %s" (buttercup-spec-failure-description arg))
+          (buttercup--print (buttercup-colorize "\r%s  %s" 'yellow)
+                            (buttercup--indented-description arg)
+                            (buttercup-spec-failure-description arg))))
+       (_
+        (error "Unknown spec status %s" (buttercup-spec-status arg))))
+     (buttercup--print " (%s)\n" (buttercup-elapsed-time-string arg)))
 
     (`buttercup-done
      (dolist (failed buttercup-reporter-batch--failures)
