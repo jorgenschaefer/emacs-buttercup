@@ -801,6 +801,18 @@ The indentaion is two spaces per parent."
   (let ((level (length (buttercup-suite-or-spec-parents suite-or-spec))))
     (concat (make-string (* 2 level) ?\s) (buttercup-suite-or-spec-description suite-or-spec))))
 
+(defun buttercup--spec-mark-pending (spec description &optional description-for-now)
+  "Mark SPEC as pending with DESCRIPTION.
+If DESCRIPTION-FOR-NOW is non nil, set the spec
+`pending-description' to that value for now, it will be reset to
+DESCRIPTION when the spec is run. Return SPEC."
+  (setf (buttercup-spec-function spec)
+        (lambda () (signal 'buttercup-pending description))
+        (buttercup-spec-status spec) 'pending)
+  (when description-for-now
+    (setf (buttercup-spec-failure-description spec) description-for-now))
+  spec)
+
 ;;;;;;;;;;;;;;;;;;;;
 ;;; Suites: describe
 
@@ -1022,15 +1034,8 @@ A disabled spec is not run.
 DESCRIPTION has the same meaning as in `xit'. FUNCTION is
 ignored. Return the created spec object."
   (declare (indent 1))
-  (ignore function)
-  (let ((spec (buttercup-it description
-                (lambda ()
-                  (signal 'buttercup-pending "PENDING")))))
-    (setf (buttercup-spec-status spec)
-          'pending
-          (buttercup-spec-failure-description spec)
-          "")
-    spec))
+  (let ((spec (buttercup-it description (or function #'ignore))))
+    (buttercup--spec-mark-pending spec "PENDING" "")))
 
 ;;;;;;;;;
 ;;; Spies
@@ -1389,9 +1394,7 @@ SUITES is a list of suites. PATTERNS is a list of regexps."
       (unless (cl-dolist (p patterns)
                 (when (string-match p spec-full-name)
                   (cl-return t)))
-        (setf (buttercup-spec-function spec)
-              (lambda () (signal 'buttercup-pending "SKIPPED"))
-              (buttercup-spec-status spec) 'pending)))))
+        (buttercup--spec-mark-pending spec "SKIPPED")))))
 
 ;;;###autoload
 (defun buttercup-run-markdown-buffer (&rest markdown-buffers)
