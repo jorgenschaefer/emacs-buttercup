@@ -1383,18 +1383,32 @@ current directory."
         (when (not (string-match "\\(^\\|/\\)\\." (file-relative-name file)))
           (load file nil t))))
     (when patterns
-      (buttercup--mark-skipped buttercup-suites patterns))
+      (buttercup-mark-skipped (regexp-opt patterns) t))
     (buttercup-run)))
 
-(defun buttercup--mark-skipped (suites patterns)
-  "Mark any spec in SUITES not matching PATTERNS as skipped.
-SUITES is a list of suites. PATTERNS is a list of regexps."
+(defun buttercup-mark-skipped (matcher &optional reverse)
+  "Mark any spec that match MATCHER as skipped.
+MATCHER can be either a regex or a function taking a spec as the
+single argument. If REVERSE is non-nil, specs will be marked as
+pending when MATCHER does not match."
+  (cl-etypecase matcher
+    (string (buttercup--mark-skipped
+             buttercup-suites
+             (lambda (spec)
+               (string-match matcher (buttercup-spec-full-name spec)))
+             reverse))
+    (function (buttercup--mark-skipped buttercup-suites matcher reverse))))
+
+(defun buttercup--mark-skipped (suites predicate &optional reverse-predicate)
+  "Mark all specs in SUITES as skipped if PREDICATE(spec) is true.
+If REVERSE-PREDICATE is non-nil, mark spec where PREDICATE(spec)
+is false."
   (dolist (spec (buttercup--specs suites))
-    (let ((spec-full-name (buttercup-spec-full-name spec)))
-      (unless (cl-dolist (p patterns)
-                (when (string-match p spec-full-name)
-                  (cl-return t)))
-        (buttercup--spec-mark-pending spec "SKIPPED")))))
+    ;; cond implements (xor reverse-predicate (funcall predicate
+    ;; spec)) as xor is introduced in Emacs 27
+    (when (cond ((not reverse-predicate) (funcall predicate spec))
+                ((not (funcall predicate spec)) reverse-predicate))
+      (buttercup--spec-mark-pending spec "SKIPPED"))))
 
 ;;;###autoload
 (defun buttercup-run-markdown-buffer (&rest markdown-buffers)

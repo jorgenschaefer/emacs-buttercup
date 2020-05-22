@@ -335,8 +335,8 @@ text properties using `ansi-color-apply'."
       (expect (buttercup-suites-total-specs-pending suites)
               :to-equal 2)))
   (it "should also count skipped specs"
-    (with-local-buttercup
-      (buttercup--mark-skipped suites (list "skipped"))
+    (with-local-buttercup :suites suites
+      (buttercup-mark-skipped "skipped" t)
       (expect (buttercup-suites-total-specs-pending suites)
               :to-equal 3))))
 
@@ -1370,7 +1370,7 @@ text properties using `ansi-color-apply'."
             :to-have-been-called-with
             "Hello, world")))
 
-(describe "The `buttercup--mark-skipped' function"
+(describe "The `buttercup-mark-skipped' function"
   :var (suites)
   (before-each
     (with-local-buttercup
@@ -1389,27 +1389,46 @@ text properties using `ansi-color-apply'."
         (it "2-3 spec" (ignore))
         (it "2-4 spec" (ignore)))
       (setq suites buttercup-suites)))
-  (it "should do nothing with a match-all pattern"
+  (it "should do nothing with a reversed match-all pattern"
     (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
     (expect (buttercup-suites-total-specs-pending suites) :to-equal 5)
-    (buttercup--mark-skipped suites '("."))
+    (with-local-buttercup :suites suites
+      (buttercup-mark-skipped "." t))
     (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
     (expect (buttercup-suites-total-specs-pending suites) :to-equal 5)
-    (with-local-buttercup
-      (setq buttercup-suites suites)
+    (with-local-buttercup :suites suites
       (buttercup-run))
     (expect (buttercup-suites-total-specs-pending suites) :to-equal 5)
     (expect (cl-count "SKIPPED" (buttercup--specs suites)
                       :key #'buttercup-spec-failure-description)
             :to-equal 0))
-  (it "should mark all specs as pending with no pattern"
-    (buttercup--mark-skipped suites '())
+  (it "should mark all specs as pending with a reversed match none pattern"
+    (with-local-buttercup :suites suites
+      (buttercup-mark-skipped "[z-a]" t))
     (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
     (expect (buttercup-suites-total-specs-pending suites) :to-equal 11))
   (it "should handle multiple patterns"
-    (buttercup--mark-skipped suites '("1-1-[1-2]" "[12]-4"))
+    (with-local-buttercup :suites suites
+      (buttercup-mark-skipped (regexp-opt '("1-1-1" "1-1-2" "1-4" "2-4")) t))
     (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
-    (expect (buttercup-suites-total-specs-pending suites) :to-equal 8)))
+    (expect (buttercup-suites-total-specs-pending suites) :to-equal 8))
+  (it "should support predicates"
+    (with-local-buttercup :suites suites
+      (buttercup-mark-skipped
+       (lambda (spec) (= 2 (cl-count ?- (buttercup-spec-full-name spec))))))
+    (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
+    (expect (buttercup-suites-total-specs-pending suites) :to-equal 10))
+  (it "should support reversed predicates"
+    (with-local-buttercup :suites suites
+      (buttercup-mark-skipped
+       (lambda (spec) (= 2 (cl-count ?- (buttercup-spec-full-name spec))))
+       t))
+    (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
+    (expect (buttercup-suites-total-specs-pending suites) :to-equal 6))
+  (it "should signal an error for invalid matchers"
+    (with-local-buttercup
+      (expect (buttercup-mark-skipped 4) :to-throw)))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; ERT Compatibility
