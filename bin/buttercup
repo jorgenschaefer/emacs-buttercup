@@ -29,7 +29,10 @@ Buttercup options:
 --pattern, -p PATTERN   Only run tests with names matching PATTERN.
                           This option can be used multiple times, in
                           which case tests will be run if they match
-                          any of the given patterns.
+                          any of the given patterns. PATTERN is
+                          matched as a substring of the full test
+                          description (the concatenation of the test
+                          and all paremt suites descriptions).
 
 --no-color, -c          Do not colorize test output.
 
