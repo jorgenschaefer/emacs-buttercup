@@ -1620,17 +1620,17 @@ EVENT and ARG are described in `buttercup-reporter'."
       (`spec-started
          (buttercup--print "%s" (buttercup--indented-description arg)))
       (`spec-done
-       (cond
-        ((eq (buttercup-spec-status arg) 'passed)) ; do nothing
-        ((eq (buttercup-spec-status arg) 'failed)
-         (buttercup--print "  FAILED")
-         (setq buttercup-reporter-batch--failures
-               (append buttercup-reporter-batch--failures
-                       (list arg))))
-        ((eq (buttercup-spec-status arg) 'pending)
-         (buttercup--print "  %s" (buttercup-spec-failure-description arg)))
-        (t
-         (error "Unknown spec status %s" (buttercup-spec-status arg))))
+       (pcase (buttercup-spec-status arg)
+         (`passed) ; do nothing
+         (`failed
+          (buttercup--print "  FAILED")
+          (setq buttercup-reporter-batch--failures
+                (append buttercup-reporter-batch--failures
+                        (list arg))))
+         (`pending
+          (buttercup--print "  %s" (buttercup-spec-failure-description arg)))
+         (_
+          (error "Unknown spec status %s" (buttercup-spec-status arg))))
        (buttercup--print " (%s)\n" (buttercup-elapsed-time-string arg)))
 
       (`suite-done
