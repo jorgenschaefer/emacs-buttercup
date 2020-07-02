@@ -1335,10 +1335,21 @@ text properties using `ansi-color-apply'."
   (it "should signal an error if no suites are defined"
     (with-local-buttercup
      (expect (buttercup-run) :to-throw 'error '("No suites defined"))))
+  (it "should return :no-suites for no suites and noerror"
+    (with-local-buttercup
+     (expect (buttercup-run t) :to-equal :no-suites)))
   (it "should raise an error if at least one spec failed"
     (setf (buttercup-spec-status spec) 'failed)
     (with-local-buttercup :suites (list parent-suite)
       (expect (buttercup-run) :to-throw 'error '(""))))
+  (it "should return nil for failing specs and noerror"
+    (setf (buttercup-spec-status spec) 'failed)
+    (with-local-buttercup :suites (list parent-suite)
+      (expect (buttercup-run t) :not :to-be-truthy)))
+  (it "should return t for passing specs"
+    (with-local-buttercup :suites (list parent-suite)
+      (expect (buttercup-run) :to-be-truthy)
+      (expect (buttercup-run t) :to-be-truthy)))
   (it "should call the reporter twice with events buttercup-started and -done"
     (with-local-buttercup :suites (list parent-suite) :reporter 'reporter
       (expect (buttercup-run) :not :to-throw)

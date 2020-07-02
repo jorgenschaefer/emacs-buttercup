@@ -1457,16 +1457,27 @@ A suite must be defined within a Markdown \"lisp\" code block."
   ;; Defined below in a dedicated section
   (defvar buttercup-reporter))
 
-(defun buttercup-run ()
-  "Run all described suites."
+(defun buttercup-run (&optional noerror)
+  "Run all described suites.
+Signal an error if any spec fail or if no suites have been
+defined. Signal no errors if NOERROR is non-nil. Return t if all
+specs pass, nil if at least one spec fail, and :no-suites if no suites
+have been defined."
   (if buttercup-suites
-      (progn
-        (funcall buttercup-reporter 'buttercup-started buttercup-suites)
-        (mapc #'buttercup--run-suite buttercup-suites)
-        (funcall buttercup-reporter 'buttercup-done buttercup-suites)
-        (when (> (buttercup-suites-total-specs-failed buttercup-suites) 0)
-          (error "")))
-    (error "No suites defined")))
+      (buttercup--run-suites buttercup-suites noerror)
+    (or (and noerror :no-suites)
+        (error "No suites defined"))))
+
+(defun buttercup--run-suites (suites &optional noerror)
+  "Run a list of SUITES.
+Signal an error if any spec fail. Signal no error if NOERROR is
+non-nil. Return t if all specs pass, nil if at least one spec
+fail."
+  (funcall buttercup-reporter 'buttercup-started suites)
+  (mapc #'buttercup--run-suite suites)
+  (funcall buttercup-reporter 'buttercup-done suites)
+  (or (zerop (buttercup-suites-total-specs-failed suites))
+      (not (or noerror (error "")))))
 
 (defvar buttercup--before-each nil
   "A list of functions to call before each spec.
