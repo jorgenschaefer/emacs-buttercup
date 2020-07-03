@@ -1323,41 +1323,32 @@ text properties using `ansi-color-apply'."
                 :to-throw)))))
 
 (describe "The `buttercup-run' function"
-  :var (parent-suite child-suite spec reporter)
+  :var (parent-suite child-suite spec)
   (before-each
-    (ignore reporter)
-    (setf (symbol-function 'reporter) (lambda (event arg) (ignore event arg)))
     (setq parent-suite (make-buttercup-suite :description "parent-suite")
           child-suite (make-buttercup-suite :description "child-suite")
           spec (make-buttercup-spec :description "spec"))
     (buttercup-suite-add-child parent-suite child-suite)
     (buttercup-suite-add-child child-suite spec)
-    (spy-on 'reporter))
+    (spy-on 'reporter)
+    (spy-on 'buttercup--run-suite))
+  (it "should signal an error if no suites are defined"
+    (with-local-buttercup
+     (expect (buttercup-run) :to-throw 'error '("No suites defined"))))
   (it "should raise an error if at least one spec failed"
     (setf (buttercup-spec-status spec) 'failed)
-    (cl-letf (((symbol-function 'buttercup--run-suite) #'ignore)
-              (buttercup-reporter 'reporter))
-      (let ((buttercup-suites (list parent-suite)))
-        (expect (buttercup-run) :to-throw))))
+    (with-local-buttercup :suites (list parent-suite)
+      (expect (buttercup-run) :to-throw 'error '(""))))
   (it "should call the reporter twice with events buttercup-started and -done"
-    (cl-letf (((symbol-function 'buttercup--run-suite) #'ignore)
-              (buttercup-reporter 'reporter))
-      (let ((buttercup-suites (list parent-suite)))
-        (expect (buttercup-run) :not :to-throw)
-        (expect 'reporter :to-have-been-called-times 2)
-        (expect 'reporter :to-have-been-called-with 'buttercup-started buttercup-suites)
-        (expect 'reporter :to-have-been-called-with 'buttercup-done buttercup-suites)))
-    )
+    (with-local-buttercup :suites (list parent-suite) :reporter 'reporter
+      (expect (buttercup-run) :not :to-throw)
+      (expect 'reporter :to-have-been-called-times 2)
+      (expect 'reporter :to-have-been-called-with 'buttercup-started buttercup-suites)
+      (expect 'reporter :to-have-been-called-with 'buttercup-done buttercup-suites)))
   (it "should call `buttercup--run-suite' once per suite"
-    (let ((buttercup-suites (list parent-suite)) runner)
-      (ignore runner)
-      (setf (symbol-function 'runner) (lambda (suite) (ignore suite)))
-      (spy-on 'runner)
-      (cl-letf (((symbol-function 'buttercup--run-suite) #'runner)
-                (buttercup-reporter 'reporter)
-                (buttercup-suites (make-list 5 parent-suite)))
-        (expect (buttercup-run) :not :to-throw)
-        (expect 'runner :to-have-been-called-times 5)))))
+    (with-local-buttercup :reporter 'reporter :suites (make-list 5 parent-suite)
+      (expect (buttercup-run) :not :to-throw)
+      (expect 'buttercup--run-suite :to-have-been-called-times 5))))
 
 (describe "The `buttercup--print' function"
   (before-each
