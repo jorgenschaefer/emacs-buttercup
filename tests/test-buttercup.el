@@ -1292,7 +1292,7 @@ text properties using `ansi-color-apply'."
                 "Ran 10 specs, 0 failed, in [0-9]+.[0-9]+[mu]?s.\n")
         (expect (substring (buttercup-output) 0 (length "Ran 10 specs, 0 failed, in"))
                 :to-equal-including-properties
-                (ansi-color-apply "Ran 10 specs,\e[32m 0 failed\e[0m, in")))
+                (ansi-color-apply "Ran 10 specs, \e[32m0 failed\e[0m, in")))
 
       (it "should color-print `X failed' specs in red"
         (setq failed-specs 6)
@@ -1302,7 +1302,7 @@ text properties using `ansi-color-apply'."
                 "Ran 10 specs, 6 failed, in [0-9]+.[0-9]+[mu]?s.\n")
         (expect (substring (buttercup-output) 0 (length "Ran 10 specs, 6 failed, in"))
                 :to-equal-including-properties
-                (ansi-color-apply "Ran 10 specs,\e[31m 6 failed\e[0m, in")))
+                (ansi-color-apply "Ran 10 specs, \e[31m6 failed\e[0m, in")))
 
       (it "should print a summary separating run and pending specs"
         (setq pending-specs 3)

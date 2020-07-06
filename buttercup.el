@@ -1658,26 +1658,29 @@ EVENT and ARG are described in `buttercup-reporter'."
             (t
              (buttercup--print "FAILED: %S\n" description)))
            (buttercup--print "\n")))
-       (let ((defined (buttercup-suites-total-specs-defined arg))
-             (pending (buttercup-suites-total-specs-pending arg))
-             (failed (buttercup-suites-total-specs-failed arg))
-             (duration (float-time (time-subtract
-                                    (current-time)
-                                    buttercup-reporter-batch--start-time))))
-         (if (> pending 0)
-             (buttercup--print
-              "Ran %s out of %s specs, %s failed, in %s.\n"
-              (- defined pending)
-              defined
-              failed
-              (seconds-to-string duration))
-           (buttercup--print "Ran %s specs, %s failed, in %s.\n"
-                             defined
-                             failed
-                             (seconds-to-string duration)))))
+       (buttercup-reporter-batch--print-summary arg nil))
 
       (_
        (error "Unknown event %s" event)))))
+
+(defun buttercup-reporter-batch--print-summary (suites color)
+  "Print a summary of the reults of SUITES.
+
+Colorize parts of the output if COLOR is non-nil."
+  (let* ((defined (buttercup-suites-total-specs-defined suites))
+         (pending (buttercup-suites-total-specs-pending suites))
+         (failed (buttercup-suites-total-specs-failed suites))
+         (duration (seconds-to-string
+                    (float-time
+                     (time-subtract (current-time)
+                                    buttercup-reporter-batch--start-time))))
+         (out-of (if (zerop pending) "" (format " out of %d" defined)))
+         (failed-str (format "%d failed" failed)))
+    (if color
+        (setq failed-str (buttercup-colorize failed-str (if (zerop failed) 'green 'red))))
+    (buttercup--print
+     "Ran %d%s specs, %s, in %s.\n"
+     (- defined pending) out-of failed-str duration)))
 
 (defun buttercup-reporter-batch-color (event arg)
   "A reporter that handles batch sessions.
@@ -1740,29 +1743,7 @@ EVENT and ARG are described in `buttercup-reporter'."
           (t
            (buttercup--print "FAILED: %S\n" description)))
          (buttercup--print "\n")))
-     (let ((defined (buttercup-suites-total-specs-defined arg))
-           (pending (buttercup-suites-total-specs-pending arg))
-           (failed (buttercup-suites-total-specs-failed arg))
-           (duration (float-time (time-subtract (current-time)
-                                                buttercup-reporter-batch--start-time))))
-       (if (> pending 0)
-           (buttercup--print
-            (concat
-             "Ran %s out of %s specs,"
-             (buttercup-colorize " %s failed" (if (eq 0 failed) 'green 'red))
-             ", in %s.\n")
-            (- defined pending)
-            defined
-            failed
-            (seconds-to-string duration))
-         (buttercup--print
-          (concat
-           "Ran %s specs,"
-           (buttercup-colorize " %s failed" (if (eq 0 failed) 'green 'red))
-           ", in %s.\n")
-          defined
-          failed
-          (seconds-to-string duration)))))
+     (buttercup-reporter-batch--print-summary arg buttercup-color))
 
     (_
      ;; Fall through to buttercup-reporter-batch implementation.
