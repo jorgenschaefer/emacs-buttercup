@@ -1639,29 +1639,42 @@ EVENT and ARG are described in `buttercup-reporter'."
 
       (`buttercup-done
        (dolist (failed buttercup-reporter-batch--failures)
-         (let ((description (buttercup-spec-failure-description failed))
-               (stack (buttercup-spec-failure-stack failed)))
-           (buttercup--print "%s\n" (make-string 40 ?=))
-           (buttercup--print "%s\n" (buttercup-spec-full-name failed))
-           (when stack
-             (buttercup--print "\nTraceback (most recent call last):\n")
-             (dolist (frame stack)
-               (let ((frame-text (buttercup--format-stack-frame frame)))
-                 (buttercup--print "%s\n" frame-text))))
-           (cond
-            ((stringp description)
-             (buttercup--print "FAILED: %s\n" description))
-            ((eq (car description) 'error)
-             (buttercup--print "%S: %S\n\n"
-                               (car description)
-                               (cadr description)))
-            (t
-             (buttercup--print "FAILED: %S\n" description)))
-           (buttercup--print "\n")))
+         (buttercup-reporter-batch--print-failed-spec-report failed nil))
        (buttercup-reporter-batch--print-summary arg nil))
 
       (_
        (error "Unknown event %s" event)))))
+
+(defun buttercup-reporter-batch--print-failed-spec-report (failed-spec color)
+  "Print a failure report for FAILED-SPEC.
+
+Colorize parts of the output if COLOR is non-nil."
+  (let ((description (buttercup-spec-failure-description failed-spec))
+        (stack (buttercup-spec-failure-stack failed-spec))
+        (full-name (buttercup-spec-full-name failed-spec)))
+    (if color
+        (setq full-name (buttercup-colorize full-name 'red)))
+    (buttercup--print "%s\n" (make-string 40 ?=))
+    (buttercup--print "%s\n" full-name)
+    (when stack
+      (buttercup--print "\nTraceback (most recent call last):\n")
+      (dolist (frame stack)
+        (let ((frame-text (buttercup--format-stack-frame frame)))
+          (buttercup--print "%s\n" frame-text))))
+    (cond
+     ((stringp description)
+      (buttercup--print "%s: %s\n"
+                        (if color
+                            (buttercup-colorize "FAILED" 'red)
+                          "FAILED")
+                        description))
+     ((eq (car description) 'error)
+      (buttercup--print "%S: %S\n\n"
+                        (car description)
+                        (cadr description)))
+     (t
+      (buttercup--print "FAILED: %S\n" description)))
+    (buttercup--print "\n")))
 
 (defun buttercup-reporter-batch--print-summary (suites color)
   "Print a summary of the reults of SUITES.
@@ -1723,26 +1736,7 @@ EVENT and ARG are described in `buttercup-reporter'."
 
     (`buttercup-done
      (dolist (failed buttercup-reporter-batch--failures)
-       (let ((description (buttercup-spec-failure-description failed))
-             (stack (buttercup-spec-failure-stack failed)))
-         (buttercup--print "%s\n" (make-string 40 ?=))
-         (buttercup--print (buttercup-colorize "%s\n" 'red) (buttercup-spec-full-name failed))
-         (when stack
-           (buttercup--print "\nTraceback (most recent call last):\n")
-           (dolist (frame stack)
-             (let ((frame-text (buttercup--format-stack-frame frame)))
-               (buttercup--print "%s\n" frame-text))))
-         (cond
-          ((stringp description)
-           (buttercup--print (concat (buttercup-colorize "FAILED" 'red ) ": %s\n")
-                             description))
-          ((eq (car description) 'error)
-           (buttercup--print "%S: %S\n\n"
-                             (car description)
-                             (cadr description)))
-          (t
-           (buttercup--print "FAILED: %S\n" description)))
-         (buttercup--print "\n")))
+       (buttercup-reporter-batch--print-failed-spec-report failed t))
      (buttercup-reporter-batch--print-summary arg buttercup-color))
 
     (_
