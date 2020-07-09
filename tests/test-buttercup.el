@@ -1305,9 +1305,9 @@ text properties using `ansi-color-apply'."
         (expect (buttercup-output) :to-match
                 "Ran 7 out of 10 specs, 0 failed, in [0-9]+.[0-9]+[mu]?s.\n")
         (expect (substring (buttercup-output)
-                           0 (length "Ran 7 out of 10 specs, 0 failed, in"))
+                           0 (length "Ran 7 out of 10 specs"))
                 :to-equal-including-properties
-                "Ran 7 out of 10 specs, 0 failed, in"))
+                "Ran 7 out of 10 specs"))
 
       (it "should not raise any error even if a spec failed"
         (setf (buttercup-spec-status spec) 'failed)
