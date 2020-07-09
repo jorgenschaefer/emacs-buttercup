@@ -1574,12 +1574,12 @@ text properties using `ansi-color-apply'."
 ;;; ERT Compatibility
 
 (describe "Buttercup's ERT compatibility wrapper"
-  (it "should convert `ert-test-failed' into `buttercup-failed"
+  (it "should convert `ert-test-failed' into `buttercup-failed'"
     (expect
      (buttercup-with-converted-ert-signals
        (should (equal 1 2)))
      :to-throw 'buttercup-failed))
-  (it "should convert `ert-test-skipped' into `buttercup-pending"
+  (it "should convert `ert-test-skipped' into `buttercup-pending'"
     (assume (functionp 'ert-skip) "Loaded ERT version does not provide `ert-skip'")
     (expect
      (buttercup-with-converted-ert-signals
