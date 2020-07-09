@@ -803,7 +803,7 @@ The indentaion is two spaces per parent."
 
 (defun buttercup--spec-mark-pending (spec description &optional description-for-now)
   "Mark SPEC as pending with DESCRIPTION.
-If DESCRIPTION-FOR-NOW is non nil, set the spec
+If DESCRIPTION-FOR-NOW is non-nil, set the spec
 `pending-description' to that value for now, it will be reset to
 DESCRIPTION when the spec is run. Return SPEC."
   (setf (buttercup-spec-function spec)
@@ -1065,7 +1065,9 @@ CURRENT-BUFFER is the buffer that was current when the spy was called.
 RETURN-VALUE is the returned value, if any.
 THROWN-SIGNAL is the signal raised by the function, if any.
 Only one of RETURN-VALUE and THROWN-SIGNAL may be given. Giving
-none of them is equivalent to `:return-value nil'."
+none of them is equivalent to `:return-value nil'.
+
+\(fn &key ARGS CURRENT-BUFFER RETURN-VALUE THROWN-SIGNAL)"
   (cond
    ((and has-return-value has-thrown-signal)
     (error "Only one of :return-value and :thrown-signal may be given"))
@@ -1311,9 +1313,10 @@ spec-started -- A spec in is starting. The argument is the spec.
 spec-done -- A spec has finished executing. The argument is the
   spec.
 
-suite-done -- A suite has finished. The argument is the spec.
+suite-done -- A suite has finished. The argument is the suite.
 
-buttercup-done -- All suites have run, the test run is over.")
+buttercup-done -- All suites have run, the test run is over. The
+  argument is the list of executed suites.")
 
 (defvar buttercup-stack-frame-style (car '(crop full pretty))
   "Style to use when printing stack traces of tests.
@@ -1521,6 +1524,7 @@ Do not change the global value.")
     (funcall buttercup-reporter 'suite-done suite)))
 
 (defun buttercup--run-spec (spec)
+  "Run SPEC."
   (buttercup--set-start-time spec)
   (unwind-protect
       (progn
@@ -1898,6 +1902,9 @@ failed -- The second value is the description of the expectation
             nil))))
 
 (defun buttercup--debugger (&rest args)
+  "Debugger function that return error context with an exception.
+
+ARGS according to `debugger'."
   ;; If we do not do this, Emacs will not run this handler on
   ;; subsequent calls. Thanks to ert for this.
   (setq num-nonmacro-input-events (1+ num-nonmacro-input-events))
@@ -1905,6 +1912,7 @@ failed -- The second value is the description of the expectation
          (list 'failed args (buttercup--backtrace))))
 
 (defun buttercup--backtrace ()
+  "Create a backtrace, a list of frames returned from `backtrace-frame'."
   (let* ((n 0)
          (frame (backtrace-frame n))
          (frame-list nil)
@@ -1924,6 +1932,9 @@ failed -- The second value is the description of the expectation
     frame-list))
 
 (defun buttercup--format-stack-frame (frame &optional style)
+  "Format stack FRAME according to STYLE.
+STYLE can be one of `full', `crop', or `pretty'.
+If STYLE is nil, use `buttercup-stack-frame-style' or `crop'."
   (pcase (or style buttercup-stack-frame-style 'crop)
     (`full (format "  %S" (cdr frame)))
     (`crop
