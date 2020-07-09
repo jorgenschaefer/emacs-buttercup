@@ -1248,12 +1248,12 @@ text properties using `ansi-color-apply'."
                 :to-throw)))
 
     (describe "on the suite-done event"
-      (it "should emit a newline at the end of the top-level suite"
+      (it "should emit a newline at the end of a top-level suite"
         (with-local-buttercup :color nil
           (buttercup-reporter-batch 'suite-done parent-suite))
         (expect (buttercup-output) :to-equal-including-properties "\n"))
 
-      (it "should color-print a newline at the end of the top-level suite"
+      (it "should color-print a newline at the end of a top-level suite"
         (with-local-buttercup :color t
          (buttercup-reporter-batch-color 'suite-done parent-suite))
         (expect (buttercup-output) :to-equal-including-properties "\n"))
