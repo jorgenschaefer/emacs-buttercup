@@ -36,8 +36,15 @@
           items))
 
 (defmacro with-local-buttercup (&rest body)
-  "Execute BODY with local buttercup state variables."
+  "Execute BODY with local buttercup state variables.
+Keyword arguments kan be used to override the values of `buttercup-KEY'.
+\n(fn &keys COLOR SUITES REPORTER &rest BODY)"
   (declare (debug t) (indent defun))
+  ;; extract keyword arguments
+  (let ((keys '(:color buttercup-color :suites buttercup-suites :reporter buttercup-reporter))
+        extra-vars)
+    (while (plist-member keys (car body))
+      (push (list (plist-get keys (pop body)) (pop body)) extra-vars))
   `(let (buttercup--after-all
          buttercup--after-each
          buttercup--before-all
@@ -46,8 +53,9 @@
          buttercup--current-suite
          (buttercup-reporter #'ignore)
          buttercup-suites
-         (buttercup-warning-buffer-name " *ignored buttercup warnings*"))
-     ,@body))
+         (buttercup-warning-buffer-name " *ignored buttercup warnings*")
+         ,@(nreverse extra-vars))
+     ,@body)))
 
 (defun send-string-to-ansi-buffer (buffer string)
   "A `send-string-to-terminal' variant that sends STRING to BUFFER.
