@@ -1639,8 +1639,8 @@ EVENT and ARG are described in `buttercup-reporter'."
 
       (`buttercup-done
        (dolist (failed buttercup-reporter-batch--failures)
-         (buttercup-reporter-batch--print-failed-spec-report failed nil))
-       (buttercup-reporter-batch--print-summary arg nil))
+         (buttercup-reporter-batch--print-failed-spec-report failed buttercup-color))
+       (buttercup-reporter-batch--print-summary arg buttercup-color))
 
       (_
        (error "Unknown event %s" event)))))
@@ -1733,11 +1733,6 @@ EVENT and ARG are described in `buttercup-reporter'."
        (_
         (error "Unknown spec status %s" (buttercup-spec-status arg))))
      (buttercup--print " (%s)\n" (buttercup-elapsed-time-string arg)))
-
-    (`buttercup-done
-     (dolist (failed buttercup-reporter-batch--failures)
-       (buttercup-reporter-batch--print-failed-spec-report failed t))
-     (buttercup-reporter-batch--print-summary arg buttercup-color))
 
     (_
      ;; Fall through to buttercup-reporter-batch implementation.
