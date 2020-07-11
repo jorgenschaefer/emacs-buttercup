@@ -1618,7 +1618,9 @@ EVENT and ARG are described in `buttercup-reporter'."
       (`suite-started
          (buttercup--print "%s\n" (buttercup--indented-description arg)))
       (`spec-started
-         (buttercup--print "%s" (buttercup--indented-description arg)))
+       (unless (and buttercup-color
+                    (string-match-p "[\n\v\f]" (buttercup-spec-description arg)))
+         (buttercup--print "%s" (buttercup--indented-description arg))))
       (`spec-done
        (pcase (buttercup-spec-status arg)
          (`passed) ; do nothing
@@ -1703,9 +1705,6 @@ colors.
 
 EVENT and ARG are described in `buttercup-reporter'."
   (pcase event
-    (`spec-started
-     (unless (string-match-p "[\n\v\f]" (buttercup-spec-description arg))
-       (buttercup-reporter-batch event arg)))
     (`spec-done
      ;; Carriage returns (\r) should not be colorized. It would mess
      ;; up color handling in Emacs compilation buffers using
