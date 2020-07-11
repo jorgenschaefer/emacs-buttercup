@@ -1792,9 +1792,12 @@ the capturing behavior."
      ,@body))
 
 (defun buttercup-colorize (string color)
-  "Format STRING with COLOR."
-  (let ((color-code (cdr (assoc color buttercup-colors))))
-    (format "\e[%sm%s\e[0m" color-code string)))
+  "Format STRING with COLOR.
+Return STRING unmodified if COLOR is nil."
+  (if color
+      (let ((color-code (cdr (assoc color buttercup-colors))))
+        (format "\e[%sm%s\e[0m" color-code string))
+    string))
 
 (defun buttercup-reporter-interactive (event arg)
   "Reporter for interactive sessions.
