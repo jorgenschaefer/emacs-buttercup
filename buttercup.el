@@ -1586,9 +1586,7 @@ Calls either `buttercup-reporter-batch' or
 
 EVENT and ARG are described in `buttercup-reporter'."
   (if noninteractive
-      (if buttercup-color
-          (buttercup-reporter-batch-color event arg)
-        (buttercup-reporter-batch event arg))
+      (buttercup-reporter-batch event arg)
     (buttercup-reporter-interactive event arg)))
 
 (defvar buttercup-reporter-batch--start-time nil
@@ -1735,19 +1733,6 @@ Colorize parts of the output if COLOR is non-nil."
     (buttercup--print
      "Ran %d%s specs, %s, in %s.\n"
      (- defined pending) out-of failed-str duration)))
-
-(defun buttercup-reporter-batch-color (event arg)
-  "A reporter that handles batch sessions.
-
-Compared to `buttercup-reporter-batch', this reporter uses
-colors.
-
-EVENT and ARG are described in `buttercup-reporter'."
-  (pcase event
-    (_
-     ;; Fall through to buttercup-reporter-batch implementation.
-     (buttercup-reporter-batch event arg)))
-  )
 
 (defun buttercup--print (fmt &rest args)
   "Format a string and send it to terminal without alteration.

@@ -1115,7 +1115,7 @@ text properties using `ansi-color-apply'."
 
       (it "should color-print the number of specs with the default color"
         (with-local-buttercup :color t
-          (buttercup-reporter-batch-color 'buttercup-started (list parent-suite)))
+          (buttercup-reporter-batch 'buttercup-started (list parent-suite)))
         (expect (buttercup-output) :to-equal-including-properties "Running 1 specs.\n\n"))
 
       (it "should print the number of skipped specs"
@@ -1127,7 +1127,7 @@ text properties using `ansi-color-apply'."
       (it "should color-print the number of skipped specs with the default color"
         (with-local-buttercup :color t
           (buttercup-suite-add-child child-suite skipped)
-          (buttercup-reporter-batch-color 'buttercup-started (list parent-suite)))
+          (buttercup-reporter-batch 'buttercup-started (list parent-suite)))
         (expect (buttercup-output) :to-equal-including-properties "Running 1 out of 2 specs.\n\n")))
 
     (describe "on the suite-started event"
@@ -1138,7 +1138,7 @@ text properties using `ansi-color-apply'."
 
       (it "should color-print an indented suite description with the default color"
         (with-local-buttercup :color t
-         (buttercup-reporter-batch-color 'suite-started child-suite))
+         (buttercup-reporter-batch 'suite-started child-suite))
         (expect (buttercup-output) :to-equal-including-properties "  child-suite\n")))
 
     (describe "on the spec-started event"
@@ -1149,7 +1149,7 @@ text properties using `ansi-color-apply'."
 
       (it "should color-print an indented spec description with the default color"
         (with-local-buttercup :color t
-         (buttercup-reporter-batch-color 'spec-started spec))
+         (buttercup-reporter-batch 'spec-started spec))
         (expect (buttercup-output) :to-equal-including-properties "    spec")))
 
     (describe "on the spec-done event"
@@ -1169,8 +1169,8 @@ text properties using `ansi-color-apply'."
 
         (it "should color-print the description in green and no status tag"
           (with-local-buttercup :color t
-           (buttercup-reporter-batch-color 'spec-started spec)
-           (buttercup-reporter-batch-color 'spec-done spec))
+           (buttercup-reporter-batch 'spec-started spec)
+           (buttercup-reporter-batch 'spec-done spec))
           (expect (buttercup-output) :to-equal-including-properties
                   (ansi-color-apply
                    (format "\e[32m    spec\e[0m (%s)\n"
@@ -1188,8 +1188,8 @@ text properties using `ansi-color-apply'."
         (it "should color-print multiline specs cleanly"
           (setf (buttercup-spec-description spec) "one\ntwo\vthree")
           (with-local-buttercup :color t
-           (buttercup-reporter-batch-color 'spec-started spec)
-           (buttercup-reporter-batch-color 'spec-done spec))
+           (buttercup-reporter-batch 'spec-started spec)
+           (buttercup-reporter-batch 'spec-done spec))
           (expect (buttercup-output) :to-equal-including-properties
                   (ansi-color-apply
                    (format "\e[32m    one\ntwo\n   three\e[0m (%s)\n"
@@ -1211,8 +1211,8 @@ text properties using `ansi-color-apply'."
 
         (it "should color-print the description in red and say FAILED"
           (with-local-buttercup :color t
-            (buttercup-reporter-batch-color 'spec-started spec)
-            (buttercup-reporter-batch-color 'spec-done spec))
+            (buttercup-reporter-batch 'spec-started spec)
+            (buttercup-reporter-batch 'spec-done spec))
           (expect (buttercup-output) :to-equal-including-properties
                   (ansi-color-apply
                    (format "\e[31m    spec  FAILED\e[0m (%s)\n"
@@ -1235,8 +1235,8 @@ text properties using `ansi-color-apply'."
 
         (it "should color-print the description and failure-description in yellow"
           (with-local-buttercup :color t
-            (buttercup-reporter-batch-color 'spec-started spec)
-            (buttercup-reporter-batch-color 'spec-done spec))
+            (buttercup-reporter-batch 'spec-started spec)
+            (buttercup-reporter-batch 'spec-done spec))
           (expect (buttercup-output) :to-equal-including-properties
                   (ansi-color-apply
                    (format "\e[33m    spec  DESCRIPTION\e[0m (%s)\n"
@@ -1261,7 +1261,7 @@ text properties using `ansi-color-apply'."
 
       (it "should color-print a newline at the end of a top-level suite"
         (with-local-buttercup :color t
-         (buttercup-reporter-batch-color 'suite-done parent-suite))
+         (buttercup-reporter-batch 'suite-done parent-suite))
         (expect (buttercup-output) :to-equal-including-properties "\n"))
 
       (it "should not emit anything at the end of other suites"
@@ -1271,7 +1271,7 @@ text properties using `ansi-color-apply'."
 
       (it "should not color-print anything at the end of other suites"
         (with-local-buttercup :color t
-          (buttercup-reporter-batch-color 'suite-done child-suite))
+          (buttercup-reporter-batch 'suite-done child-suite))
         (expect (buttercup-output) :to-equal-including-properties "")))
 
     (describe "on the buttercup-done event"
@@ -1293,7 +1293,7 @@ text properties using `ansi-color-apply'."
 
       (it "should color-print `0 failed' specs in green"
         (with-local-buttercup :color t
-          (buttercup-reporter-batch-color 'buttercup-done nil))
+          (buttercup-reporter-batch 'buttercup-done nil))
         (expect (buttercup-output) :to-match
                 "Ran 10 specs, 0 failed, in [0-9]+.[0-9]+[mu]?s.\n")
         (expect (substring (buttercup-output) 0 (length "Ran 10 specs, 0 failed, in"))
@@ -1303,7 +1303,7 @@ text properties using `ansi-color-apply'."
       (it "should color-print `X failed' specs in red"
         (setq failed-specs 6)
         (with-local-buttercup :color t
-          (buttercup-reporter-batch-color 'buttercup-done nil))
+          (buttercup-reporter-batch 'buttercup-done nil))
         (expect (buttercup-output) :to-match
                 "Ran 10 specs, 6 failed, in [0-9]+.[0-9]+[mu]?s.\n")
         (expect (substring (buttercup-output) 0 (length "Ran 10 specs, 6 failed, in"))
@@ -1320,7 +1320,7 @@ text properties using `ansi-color-apply'."
       (it "should color-print pending spec count in default color"
         (setq pending-specs 3)
         (with-local-buttercup :color t
-          (buttercup-reporter-batch-color 'buttercup-done nil))
+          (buttercup-reporter-batch 'buttercup-done nil))
         (expect (buttercup-output) :to-match
                 "Ran 7 out of 10 specs, 0 failed, in [0-9]+.[0-9]+[mu]?s.\n")
         (expect (substring (buttercup-output)
