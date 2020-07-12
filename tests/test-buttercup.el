@@ -1242,10 +1242,16 @@ text properties using `ansi-color-apply'."
                    (format "\e[33m    spec  DESCRIPTION\e[0m (%s)\n"
                         (buttercup-elapsed-time-string spec))))))
 
-      (it "should throw an error for an unknown spec status"
-        (setf (buttercup-spec-status spec) 'unknown)
-        (expect (buttercup-reporter-batch 'spec-done spec)
-                :to-throw)))
+      (describe "should throw an error for an unknown spec status"
+        (before-each (setf (buttercup-spec-status spec) 'unknown))
+        (it "for plain output"
+          (with-local-buttercup :color nil
+            (expect (buttercup-reporter-batch 'spec-done spec)
+                    :to-throw)))
+        (it "for colored output"
+          (with-local-buttercup :color t
+            (expect (buttercup-reporter-batch 'spec-done spec)
+                    :to-throw)))))
 
     (describe "on the suite-done event"
       (it "should emit a newline at the end of a top-level suite"

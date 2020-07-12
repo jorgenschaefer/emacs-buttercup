@@ -1622,18 +1622,11 @@ EVENT and ARG are described in `buttercup-reporter'."
                     (string-match-p "[\n\v\f]" (buttercup-spec-description arg)))
          (buttercup--print "%s" (buttercup--indented-description arg))))
       (`spec-done
-       (pcase (buttercup-spec-status arg)
-         (`passed) ; do nothing
-         (`failed
-          (buttercup--print "  FAILED")
-          (setq buttercup-reporter-batch--failures
-                (append buttercup-reporter-batch--failures
-                        (list arg))))
-         (`pending
-          (buttercup--print "  %s" (buttercup-spec-failure-description arg)))
-         (_
-          (error "Unknown spec status %s" (buttercup-spec-status arg))))
-       (buttercup--print " (%s)\n" (buttercup-elapsed-time-string arg)))
+       (when (eq (buttercup-spec-status arg) 'failed)
+         (setq buttercup-reporter-batch--failures
+               (append buttercup-reporter-batch--failures
+                       (list arg))))
+       (buttercup-reporter-batch--print-spec-done-line arg buttercup-color))
 
       (`suite-done
        (when (= 0 (length (buttercup-suite-or-spec-parents arg)))
@@ -1646,6 +1639,52 @@ EVENT and ARG are described in `buttercup-reporter'."
 
       (_
        (error "Unknown event %s" event)))))
+
+(defun buttercup-reporter-batch--print-spec-done-line (spec color)
+  "Print the remainder of the SPEC report line for `spec-done'.
+
+If COLOR is non-nil, erace the text so far on the current line
+using '\r' and replace it with the same text colored according to
+the SPEC status. Do not erase and replace if the text would have
+been reprinted with the default color.
+
+Then print the SPEC failure description except if the status is
+`passed'. If COLOR is non-nil, print it in the aproprate color
+for the spec status.
+
+Finally print the elapsed time for SPEC."
+  (let* ((status (buttercup-spec-status spec))
+         (failure (buttercup-spec-failure-description spec)))
+    ;; Failed specs do typically not have string filure-descriptions.
+    ;; In this typical case, use the string "FAILED" for the output.
+    (and (eq status 'failed)
+         (not (stringp failure))
+         (setq failure "FAILED"))
+    (unless (memq status '(passed pending failed))
+      (error "Unknown spec status %s" status))
+    ;; Special status in this function;
+    ;;   skipped - a pending spec with failure description "SKIPPED".
+    (and (eq status 'pending)
+         (equal failure "SKIPPED")
+         (setq status 'skipped))
+    ;; Use color both as a boolean for erase-and-reprint and the color
+    ;; to use.  nil means the default color.
+    (setq color (and color (pcase status
+                             (`passed 'green)
+                             (`pending 'yellow)
+                             (`failed 'red)
+                             (`skipped nil))))
+    (when color
+      ;; Carriage returns (\r) should not be colorized. It would mess
+      ;; up color handling in Emacs compilation buffers using
+      ;; `ansi-color-apply-on-region' in `compilation-filter-hook'.
+      (buttercup--print "\r%s"
+                        (buttercup-colorize
+                         (buttercup--indented-description spec) color)))
+    (unless (eq 'passed status)
+      (buttercup--print "%s"
+                        (buttercup-colorize (concat "  " failure) color)))
+    (buttercup--print " (%s)\n" (buttercup-elapsed-time-string spec))))
 
 (defun buttercup-reporter-batch--print-failed-spec-report (failed-spec color)
   "Print a failure report for FAILED-SPEC.
@@ -1706,33 +1745,11 @@ colors.
 EVENT and ARG are described in `buttercup-reporter'."
   (pcase event
     (`spec-done
-     ;; Carriage returns (\r) should not be colorized. It would mess
-     ;; up color handling in Emacs compilation buffers using
-     ;; `ansi-color-apply-on-region' in `compilation-filter-hook'.
-     (pcase (buttercup-spec-status arg)
-       (`passed
-        (buttercup--print
-         "\r%s" (buttercup-colorize (buttercup--indented-description arg) 'green)))
-       (`failed
-        (buttercup--print
-          "\r%s" (buttercup-colorize
-                  (concat (buttercup--indented-description arg) "  FAILED")
-                  'red))
+     (when (eq (buttercup-spec-status arg) 'failed)
         (setq buttercup-reporter-batch--failures
               (append buttercup-reporter-batch--failures
                       (list arg))))
-       (`pending
-        (if (equal (buttercup-spec-failure-description arg) "SKIPPED")
-            (buttercup--print "  %s" (buttercup-spec-failure-description arg))
-          (buttercup--print
-           "\r%s" (buttercup-colorize
-                   (concat (buttercup--indented-description arg) "  "
-                           (buttercup-spec-failure-description arg))
-                   'yellow))))
-       (_
-        (error "Unknown spec status %s" (buttercup-spec-status arg))))
-     (buttercup--print " (%s)\n" (buttercup-elapsed-time-string arg)))
-
+     (buttercup-reporter-batch--print-spec-done-line arg buttercup-color))
     (_
      ;; Fall through to buttercup-reporter-batch implementation.
      (buttercup-reporter-batch event arg)))
