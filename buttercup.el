@@ -1744,12 +1744,6 @@ colors.
 
 EVENT and ARG are described in `buttercup-reporter'."
   (pcase event
-    (`spec-done
-     (when (eq (buttercup-spec-status arg) 'failed)
-        (setq buttercup-reporter-batch--failures
-              (append buttercup-reporter-batch--failures
-                      (list arg))))
-     (buttercup-reporter-batch--print-spec-done-line arg buttercup-color))
     (_
      ;; Fall through to buttercup-reporter-batch implementation.
      (buttercup-reporter-batch event arg)))
