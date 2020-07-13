@@ -3,11 +3,14 @@ name: Build and test
 on:
   pull_request:
   push:
+    branches:
+      - 'master'
+      - '*'
     paths-ignore:
-    - 'bin/*'
-    - 'docs/images/*'
-    - 'docs/running-tests.md'
-    - 'scripts'
+      - 'bin/*'
+      - 'docs/images/*'
+      - 'docs/running-tests.md'
+      - 'scripts'
 
 jobs:
   build:
