@@ -1357,6 +1357,8 @@ current directory."
         (args command-line-args-left))
     (while args
       (cond
+       ((equal (car args) "--")
+        (setq args (cdr args)))
        ((member (car args) '("--traceback"))
         (when (not (cdr args))
           (error "Option requires argument: %s" (car args)))
@@ -1372,6 +1374,14 @@ current directory."
         (setq args (cddr args)))
        ((member (car args) '("-c" "--no-color"))
         (setq buttercup-color nil)
+        (setq args (cdr args)))
+       ((equal (car args) "--no-skip")
+        (push 'skipped buttercup-reporter-batch-quiet-statuses)
+        (push 'disabled buttercup-reporter-batch-quiet-statuses)
+        (setq args (cdr args)))
+       ((equal (car args) "--only-error")
+        (push 'pending buttercup-reporter-batch-quiet-statuses)
+        (push 'passed buttercup-reporter-batch-quiet-statuses)
         (setq args (cdr args)))
        (t
         (push (car args) dirs)
@@ -1595,6 +1605,34 @@ EVENT and ARG are described in `buttercup-reporter'."
 (defvar buttercup-reporter-batch--failures nil
   "List of failed specs of the current batch report.")
 
+(defvar buttercup-reporter-batch-quiet-statuses nil
+  "Do not print results for any spec with any of the listed statuses.")
+
+(defvar buttercup-reporter-batch--suite-stack nil
+  "Stack of unprinted suites.")
+
+(defun buttercup-reporter-batch--quiet-spec-p (spec)
+  "Return non-nil if the status of SPEC is any of the quiet statuses.
+SPEC is considered quiet if its status is listed in
+`buttercup-reporter-batch-quiet-statuses'.
+
+Two special statuses can be listed in
+`buttercup-reporter-batch-quiet-statuses';
+ `skipped': Real spec status `pending' and failure description \"SKIPPED\".
+            This matches specs filtered out with `buttercup-mark-skipped'.
+ `disabled': Real spec status `pending' and failure description \"PENDING\".
+             This matches specs disabled with `xit' or equivalent."
+  (or (memq (buttercup-spec-status spec) buttercup-reporter-batch-quiet-statuses)
+      ;; check for the virtual status `skipped'
+      (and (memq 'skipped buttercup-reporter-batch-quiet-statuses)
+           (eq (buttercup-spec-status spec) 'pending)
+           (string= (buttercup-spec-failure-description spec) "SKIPPED"))
+      ;; check for the virtual status `disabled'
+      (and (memq 'disabled buttercup-reporter-batch-quiet-statuses)
+           (eq (buttercup-spec-status spec) 'pending)
+           (string= (buttercup-spec-failure-description spec) "PENDING"))
+      ))
+
 (defun buttercup-reporter-batch (event arg)
   "A reporter that handles batch sessions.
 
@@ -1604,7 +1642,8 @@ EVENT and ARG are described in `buttercup-reporter'."
     (pcase event
       (`buttercup-started
        (setq buttercup-reporter-batch--start-time (current-time)
-             buttercup-reporter-batch--failures nil)
+             buttercup-reporter-batch--failures nil
+             buttercup-reporter-batch--suite-stack nil)
        (let ((defined (buttercup-suites-total-specs-defined arg))
              (pending (buttercup-suites-total-specs-pending arg)))
          (if (> pending 0)
@@ -1614,21 +1653,37 @@ EVENT and ARG are described in `buttercup-reporter'."
            (buttercup--print "Running %s specs.\n\n" defined))))
 
       (`suite-started
-         (buttercup--print "%s\n" (buttercup--indented-description arg)))
+       (if buttercup-reporter-batch-quiet-statuses
+           (push arg buttercup-reporter-batch--suite-stack)
+         (buttercup--print "%s\n" (buttercup--indented-description arg))))
       (`spec-started
-       (unless (and buttercup-color
-                    (string-match-p "[\n\v\f]" (buttercup-spec-description arg)))
-         (buttercup--print "%s" (buttercup--indented-description arg))))
+       (or buttercup-reporter-batch-quiet-statuses
+           (and buttercup-color
+                (string-match-p "[\n\v\f]" (buttercup-spec-description arg)))
+           (buttercup--print "%s" (buttercup--indented-description arg))))
       (`spec-done
+       (when (and buttercup-reporter-batch-quiet-statuses
+                  (not (buttercup-reporter-batch--quiet-spec-p arg)))
+         (dolist (suite (nreverse buttercup-reporter-batch--suite-stack))
+           (buttercup--print "%s\n" (buttercup--indented-description suite)))
+         (setq buttercup-reporter-batch--suite-stack nil)
+         (buttercup--print "%s" (buttercup--indented-description arg)))
+
+       (unless (buttercup-reporter-batch--quiet-spec-p arg)
+         (buttercup-reporter-batch--print-spec-done-line arg buttercup-color))
+
        (when (eq (buttercup-spec-status arg) 'failed)
          (setq buttercup-reporter-batch--failures
                (append buttercup-reporter-batch--failures
-                       (list arg))))
-       (buttercup-reporter-batch--print-spec-done-line arg buttercup-color))
+                       (list arg)))))
 
       (`suite-done
        (when (= 0 (length (buttercup-suite-or-spec-parents arg)))
-         (buttercup--print "\n")))
+         (if buttercup-reporter-batch-quiet-statuses
+             (unless buttercup-reporter-batch--suite-stack
+               (buttercup--print "\n"))
+           (buttercup--print "\n")))
+       (pop buttercup-reporter-batch--suite-stack))
 
       (`buttercup-done
        (dolist (failed buttercup-reporter-batch--failures)

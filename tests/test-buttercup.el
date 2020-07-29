@@ -37,11 +37,19 @@
 
 (defmacro with-local-buttercup (&rest body)
   "Execute BODY with local buttercup state variables.
-Keyword arguments kan be used to override the values of `buttercup-KEY'.
+Keyword arguments kan be used to override the values of certain
+variables:
+ :color    -> `buttercup-color'
+ :reporter -> `buttercup-reporter'
+ :suites   -> `buttercup-suites'
+ :quiet    -> `buttercup-reporter-batch-quiet-statuses'
 \n(fn &keys COLOR SUITES REPORTER &rest BODY)"
   (declare (debug t) (indent defun))
   ;; extract keyword arguments
-  (let ((keys '(:color buttercup-color :suites buttercup-suites :reporter buttercup-reporter))
+  (let ((keys '(:color buttercup-color
+                       :reporter buttercup-reporter
+                       :suites buttercup-suites
+                       :quiet buttercup-reporter-batch-quiet-statuses))
         extra-vars)
     (while (plist-member keys (car body))
       (push (list (plist-get keys (pop body)) (pop body)) extra-vars))
@@ -53,6 +61,8 @@ Keyword arguments kan be used to override the values of `buttercup-KEY'.
          buttercup--current-suite
          (buttercup-reporter #'ignore)
          buttercup-suites
+         buttercup-reporter-batch-quiet-statuses
+         buttercup-reporter-batch--suite-stack
          buttercup-reporter-batch--failures
          (buttercup-warning-buffer-name " *ignored buttercup warnings*")
          ,@(nreverse extra-vars))
@@ -1340,6 +1350,115 @@ text properties using `ansi-color-apply'."
       (it "should raise an error"
         (expect (buttercup-reporter-batch 'unknown-event nil)
                 :to-throw)))))
+
+(describe "When using quiet specs in the batch reporter"
+  :var (print-buffer)
+  (before-each
+    (setq print-buffer (generate-new-buffer "*btrcp-reporter-test*"))
+    (spy-on 'send-string-to-terminal :and-call-fake
+            (apply-partially #'send-string-to-ansi-buffer print-buffer))
+    ;; Convenience function
+    (spy-on 'buttercup-output :and-call-fake
+            (lambda ()
+              "Return the text of `print-buffer'."
+              (with-current-buffer print-buffer
+                (buffer-string)))))
+  (after-each
+    (kill-buffer print-buffer)
+    (setq print-buffer nil))
+
+  (it "should print nothing if all specs are quiet"
+    (with-local-buttercup :color nil :quiet '(pending) :reporter #'buttercup-reporter-batch
+      (describe "top"
+        (it "spec 1")
+        (describe "second"
+          (it "spec 2")
+          (it "spec 3")))
+      (describe "empty")
+      (buttercup-run))
+    (expect (buttercup-output) :to-match
+            "^Running 0 out of 3 specs\\.\n\nRan 0 out of 3 specs, 0 failed, in [0-9.]+ms\\.$"))
+
+  (it "should print the containing suites for non-quiet specs"
+    (with-local-buttercup :color nil :quiet '(pending) :reporter #'buttercup-reporter-batch
+      (describe "top"
+        (it "spec 1" (ignore))
+        (describe "second"
+          (it "spec 2")
+          (it "spec 3" (ignore))
+          (describe "third"
+            (it "spec 4"))))
+      (describe "empty")
+      (buttercup-run))
+    (expect (buttercup-output) :to-match
+            (concat "^Running 2 out of 4 specs\\.\n\n"
+                    "top\n"
+                    "  spec 1 ([0-9.]+ms)\n"
+                    "  second\n"
+                    "    spec 3 ([0-9.]+ms)\n\n"
+                    "Ran 2 out of 4 specs, 0 failed, in [0-9.]+ms\\.$")))
+
+  (it "should quiet all of the given spec statuses"
+    ;; suppress stacktraces printed at buttercup-done
+    (spy-on 'buttercup-reporter-batch--print-failed-spec-report)
+    (with-local-buttercup
+      :color nil :quiet '(pending passed failed) :reporter #'buttercup-reporter-batch
+      (describe "passed"
+        (it "passed" (ignore)))
+      (describe "failed"
+        (it "failed" (buttercup-fail "because")))
+      (describe "pending"
+        (it "pending"))
+      (buttercup-run t))
+    (expect (buttercup-output) :to-match
+            "^Running 2 out of 3 specs\\.\n\nRan 2 out of 3 specs, 1 failed, in [0-9.]+ms\\.$"))
+
+  (it "should handle `skipped' virtual status in quiet list"
+    ;; suppress stacktraces printed at buttercup-done
+    (spy-on 'buttercup-reporter-batch--print-failed-spec-report)
+    (with-local-buttercup
+      :color nil :quiet '(skipped) :reporter #'buttercup-reporter-batch
+      (describe "passed"
+        (it "passed" (ignore)))
+      (describe "failed"
+        (it "failed" (buttercup-fail "because")))
+      (describe "pending"
+        (it "pending"))
+      (describe "skipped"
+        (it "skipped" (ignore)))
+      (buttercup-mark-skipped "skipped")
+      (buttercup-run t))
+    (expect (buttercup-output) :to-match
+            (concat "^Running 2 out of 4 specs\\.\n\n"
+                    "passed\n  passed ([0-9.]+ms)\n\n"
+                    "failed\n  failed  because ([0-9.]+ms)\n\n"
+                    "pending\n  pending  PENDING ([0-9.]+ms)\n\n"
+                    "Ran 2 out of 4 specs, 1 failed, in [0-9.]+ms\\.\n$")))
+
+    (it "should handle `disabled' virtual status in quiet list"
+      ;; suppress stacktraces printed at buttercup-done
+      (spy-on 'buttercup-reporter-batch--print-failed-spec-report)
+      (with-local-buttercup
+        :color nil :quiet '(disabled) :reporter #'buttercup-reporter-batch
+        (describe "passed"
+          (it "passed" (ignore)))
+        (describe "failed"
+          (it "failed" (buttercup-fail "because")))
+        (describe "pending"
+          (it "pending"))
+        (describe "skipped"
+          (it "skipped" (ignore)))
+        (buttercup-mark-skipped "skipped")
+        (buttercup-run t))
+      (expect (buttercup-output) :to-match
+              (concat "^Running 2 out of 4 specs\\.\n\n"
+                      "passed\n  passed ([0-9.]+ms)\n\n"
+                      "failed\n  failed  because ([0-9.]+ms)\n\n"
+                      "skipped\n  skipped  SKIPPED ([0-9.]+ms)\n\n"
+                      "Ran 2 out of 4 specs, 1 failed, in [0-9.]+ms\\.\n$"))))
+
+;;;;;;;;;;;;;;;;;;;;;
+;;; buttercup-run
 
 (describe "The `buttercup-run' function"
   :var (parent-suite child-suite spec)

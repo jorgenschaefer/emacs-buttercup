@@ -34,6 +34,14 @@ Buttercup options:
                           description (the concatenation of the test
                           and all paremt suites descriptions).
 
+--no-skip               Do not print the descriptions for tests that
+                          are filtered out with "--pattern" or disabled
+                          with "xit". Tests skipped wiath "assume" will
+                          still be priuted,
+
+--only-error            Only print failed tests and their containing suites.
+                          Implies "--no-skip".
+
 --no-color, -c          Do not colorize test output.
 
 --traceback STYLE       When printing backtraces for errors that occur
@@ -73,7 +81,7 @@ do
             shift
             shift
             ;;
-        "-c"|"--no-color")
+        "-c"|"--no-color"|"--no-skip"|"--only-error")
             BUTTERCUP_ARGS+=("$1")
             shift
             ;;
@@ -90,4 +98,5 @@ do
     esac
 done
 
-exec "$EMACS_BIN" -batch "${EMACS_ARGS[@]}" -l buttercup -f buttercup-run-discover "${BUTTERCUP_ARGS[@]}"
+# `--' is needed so that Buttercup options don't get parsed by Emacs itself.
+exec "$EMACS_BIN" -batch "${EMACS_ARGS[@]}" -l buttercup -f buttercup-run-discover -- "${BUTTERCUP_ARGS[@]}"

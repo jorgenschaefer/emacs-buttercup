@@ -30,7 +30,7 @@ feature/feature.el
 
 **feature.el**
 
-```Lisp
+```Emacs-Lisp
 (defun featurize (bug feature)
   (format "It's not a %s, it's a %s" bug feature))
 
@@ -100,7 +100,8 @@ named `test-*.el`, `*-test.el` or `*-tests.el`.
 Use the `--pattern PATTERN` option to only Only run tests with names
 matching PATTERN. The `--pattern` option can be used multiple times,
 in which case tests will be run if they match any of the given
-patterns.
+patterns. Combine with the `--no-skip` option to filter out the
+skipped tests.
 
 You can run this command whichever way you like. Common choices
 include a makefile or shell scripts.
