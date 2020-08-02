@@ -51,16 +51,17 @@ echo --no-color, -c          Do not colorize test output.
 echo.
 echo --traceback STYLE       When printing backtraces for errors that occur
 echo                           during tests, print them in the chosen
-echo                           STYLE. Available styles are "full", which
-echo                           shows the full function call for each stack
-echo                           frame on a single line, "crop", which
-echo                           truncates each stack frame to 80 characters
-echo                           ^(the default^), and "pretty", which uses
-echo                           Emacs' pretty-printing facilities to print
-echo                           each stack frame, and also annotates each
-echo                           frame with a lambda or M to indicate whether
-echo                           it is a normal function call or a
-echo                           macro/special form.
+echo                           STYLE. Available styles are
+echo                          "full", which shows the full function call for
+echo                           each stack frame on a single line,
+echo                          "crop", which truncates each stack frame to 80
+echo                           characters (the default),
+echo                          "pretty", which uses Emacs' pretty-printing
+echo                           facilities to print each stack frame, and also
+echo                           annotates each frame with a lambda or M to
+echo                           indicate whether it is a normal function call
+echo                           or a macro/special form and
+echo                          "omit", which omits the backtraces alltogether.
 echo.
 echo --stale-file-error      Fail the test run if stale .elc files are loaded.
 exit /b

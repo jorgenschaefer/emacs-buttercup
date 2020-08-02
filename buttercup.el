@@ -1761,10 +1761,12 @@ Finally print the elapsed time for SPEC."
                         (buttercup-colorize (concat "  " failure) color)))
     (buttercup--print " (%s)\n" (buttercup-elapsed-time-string spec))))
 
-(defun buttercup-reporter-batch--print-failed-spec-report (failed-spec color)
+(cl-defun buttercup-reporter-batch--print-failed-spec-report (failed-spec color)
   "Print a failure report for FAILED-SPEC.
 
 Colorize parts of the output if COLOR is non-nil."
+  (when (eq buttercup-stack-frame-style 'omit)
+    (cl-return-from buttercup-reporter-batch--print-failed-spec-report))
   (let ((description (buttercup-spec-failure-description failed-spec))
         (stack (buttercup-spec-failure-stack failed-spec))
         (full-name (buttercup-spec-full-name failed-spec)))
@@ -1967,10 +1969,11 @@ ARGS according to `debugger'."
 
 (defun buttercup--format-stack-frame (frame &optional style)
   "Format stack FRAME according to STYLE.
-STYLE can be one of `full', `crop', or `pretty'.
+STYLE can be one of `full', `crop', `pretty', or `omit'.
 If STYLE is nil, use `buttercup-stack-frame-style' or `crop'."
   (setq style (or style buttercup-stack-frame-style 'crop))
   (pcase style
+    (`omit) ; needed to verify valid styles
     (`full (format "  %S" (cdr frame)))
     (`crop
      (let ((line (buttercup--format-stack-frame frame 'full)))

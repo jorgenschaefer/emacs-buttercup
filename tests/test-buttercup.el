@@ -1487,7 +1487,13 @@ text properties using `ansi-color-apply'."
                           (*? (seq "\n   " (* not-newline))) ; any number of pp lines
                           (* not-newline) ")\n")) ;; frame end
                   "error: (" (* anything) ")\n\n"
-                  string-end))))))
+                  string-end)))))
+    (it "`omit' should print nothing"
+      (with-local-buttercup
+        :suites test-suites :reporter #'backtrace-reporter
+        :frame-style 'omit
+        (buttercup-run :noerror)
+        (expect (buttercup-output) :to-equal ""))))
   (it "should signal an error for unknown styles"
     (let ((buttercup-stack-frame-style 'not-a-valid-style))
       (expect (buttercup--format-stack-frame '(t myfun 1 2))
