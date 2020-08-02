@@ -10,7 +10,7 @@ all: test
 test: test-buttercup test-docs
 
 test-buttercup: compile
-	./bin/buttercup -L . tests
+	./bin/buttercup -L . tests $(if $(CI),--traceback pretty)
 
 test-docs: compile
 	$(EMACS) -batch -L . -l buttercup.el -f buttercup-run-markdown docs/writing-tests.md
