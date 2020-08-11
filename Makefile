@@ -25,4 +25,4 @@ release: clean test
 	tar -c $(DISTFILES) --transform "s,^,buttercup-$(VERSION)/," --transform 's/README.md/README.txt/' > "dist/buttercup-$(VERSION).tar"
 
 clean:
-	rm -f *.elc
+	rm -f *.elc tests/*.elc
