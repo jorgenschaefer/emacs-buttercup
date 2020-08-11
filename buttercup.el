@@ -1945,7 +1945,8 @@ ARGS according to `debugger'."
   "Format stack FRAME according to STYLE.
 STYLE can be one of `full', `crop', or `pretty'.
 If STYLE is nil, use `buttercup-stack-frame-style' or `crop'."
-  (pcase (or style buttercup-stack-frame-style 'crop)
+  (setq style (or style buttercup-stack-frame-style 'crop))
+  (pcase style
     (`full (format "  %S" (cdr frame)))
     (`crop
      (let ((line (buttercup--format-stack-frame frame 'full)))
