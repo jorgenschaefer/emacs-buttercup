@@ -1777,7 +1777,7 @@ Colorize parts of the output if COLOR is non-nil."
                           "FAILED")
                         description))
      ((and (consp description) (eq (car description) 'error))
-      (buttercup--print "%S: %S\n\n"
+      (buttercup--print "%S: %S\n"
                         (car description)
                         (cadr description)))
      (t
