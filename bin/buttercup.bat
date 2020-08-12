@@ -33,7 +33,11 @@ echo.
 echo --pattern, -p PATTERN   Only run tests with names matching PATTERN.
 echo                           This option can be used multiple times, in
 echo                           which case tests will be run if they match
-echo                           any of the given patterns.
+echo                           any of the given patterns. PATTERN should be
+echo                           an Emacs regex that will be matched against
+echo                           the full test description (the concatenation
+echo                           of the test and all parent suites
+echo                           descriptions).
 echo.
 echo --no-skip               Do not print the descriptions for tests that
 echo                           are filtered out with "--pattern" or disabled

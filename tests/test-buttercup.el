@@ -1549,7 +1549,7 @@ text properties using `ansi-color-apply'."
     (expect (buttercup-suites-total-specs-pending suites) :to-equal 11))
   (it "should handle multiple patterns"
     (with-local-buttercup :suites suites
-      (buttercup-mark-skipped (regexp-opt '("1-1-1" "1-1-2" "1-4" "2-4")) t))
+      (buttercup-mark-skipped '("1-1-1" "1-1-2" "1-4" "2-4") t))
     (expect (buttercup-suites-total-specs-defined suites) :to-equal 11)
     (expect (buttercup-suites-total-specs-pending suites) :to-equal 8))
   (it "should support predicates"
@@ -1567,7 +1567,9 @@ text properties using `ansi-color-apply'."
     (expect (buttercup-suites-total-specs-pending suites) :to-equal 6))
   (it "should signal an error for invalid matchers"
     (with-local-buttercup
-      (expect (buttercup-mark-skipped 4) :to-throw)))
+      (expect (buttercup-mark-skipped 4) :to-throw))
+    (with-local-buttercup
+      (expect (buttercup-mark-skipped (list "re" "re" 5 "re")) :to-throw)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;
