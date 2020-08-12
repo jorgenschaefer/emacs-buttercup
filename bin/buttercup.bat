@@ -35,6 +35,14 @@ echo                           This option can be used multiple times, in
 echo                           which case tests will be run if they match
 echo                           any of the given patterns.
 echo.
+echo --no-skip               Do not print the descriptions for tests that
+echo                           are filtered out with "--pattern" or disabled
+echo                           with "xit". Tests skipped wiath "assume" will
+echo                           still be priuted,
+echo.
+echo --only-error            Only print failed tests and their containing suites.
+echo                           Implies "--no-skip".
+echo.
 echo --no-color, -c          Do not colorize test output.
 echo.
 echo --traceback STYLE       When printing backtraces for errors that occur
@@ -49,6 +57,8 @@ echo                           each stack frame, and also annotates each
 echo                           frame with a lambda or M to indicate whether
 echo                           it is a normal function call or a
 echo                           macro/special form.
+echo.
+echo --stale-file-error      Fail the test run if stale .elc files are loaded.
 exit /b
 
 :parse_args
@@ -108,6 +118,15 @@ if not [%current_arg%]==[] (
     set buttercup_args=!buttercup_args! !current_arg!
     shift /1
   ) else if !current_arg!==--no-color (
+    set buttercup_args=!buttercup_args! !current_arg!
+    shift /1
+  ) else if !current_arg!==--no-skip (
+    set buttercup_args=!buttercup_args! !current_arg!
+    shift /1
+  ) else if !current_arg!==--only-error (
+    set buttercup_args=!buttercup_args! !current_arg!
+    shift /1
+  ) else if !current_arg!==--stale-file-error (
     set buttercup_args=!buttercup_args! !current_arg!
     shift /1
   ) else if !current_arg!==--traceback (
