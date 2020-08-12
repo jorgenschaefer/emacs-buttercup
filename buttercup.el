@@ -1387,7 +1387,7 @@ current directory."
         (push 'passed buttercup-reporter-batch-quiet-statuses)
         (setq args (cdr args)))
        ((equal (car args) "--stale-file-error")
-        (buttercup-install-old-elc-error)
+        (buttercup-error-on-stale-elc)
         (setq args (cdr args)))
        (t
         (push (car args) dirs)
