@@ -1923,23 +1923,32 @@ ARGS according to `debugger'."
 
 (defun buttercup--backtrace ()
   "Create a backtrace, a list of frames returned from `backtrace-frame'."
-  (let* ((n 0)
-         (frame (backtrace-frame n))
-         (frame-list nil)
-         (in-program-stack nil))
-    (while frame
+  ;; Read the backtrace frames from 0 (the closest) upward.
+  (cl-do* ((n 0 (1+ n))
+           (frame (backtrace-frame n) (backtrace-frame n))
+           (frame-list nil)
+           (in-program-stack nil)
+           (discard-frames nil))
+      ((not frame) frame-list)
+      ;; discard frames until (and including) `buttercup--debugger', they
+      ;; only contain buttercup code
       (when in-program-stack
         (push frame frame-list))
       (when (eq (elt frame 1)
                 'buttercup--debugger)
         (setq in-program-stack t))
-      (when (eq (elt frame 1)
-                'buttercup--funcall)
-        (setq in-program-stack nil
-              frame-list (nthcdr 6 frame-list)))
-      (setq n (1+ n)
-            frame (backtrace-frame n)))
-    frame-list))
+      ;; keep frames until one of the known functions are found, after
+      ;; this is just the buttercup framework and not interesting for
+      ;; users incorrect for testing buttercup. Some frames before the
+      ;; function also have to be discarded
+      (when (and in-program-stack
+                 (setq discard-frames
+                       (pcase (elt frame 1)
+                         (`buttercup--expr-and-value 2)   ; matcher modified with :not
+                         (`buttercup--apply-matcher 4) ; unmodified matcher
+                         (`buttercup--funcall 6))))
+        (setq frame-list (nthcdr discard-frames frame-list))
+        (cl-return frame-list))))
 
 (defun buttercup--format-stack-frame (frame &optional style)
   "Format stack FRAME according to STYLE.
