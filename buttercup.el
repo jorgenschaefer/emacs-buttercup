@@ -1399,21 +1399,28 @@ current directory."
         (when (not (string-match "\\(^\\|/\\)\\." (file-relative-name file)))
           (load file nil t))))
     (when patterns
-      (buttercup-mark-skipped (regexp-opt patterns) t))
+      (buttercup-mark-skipped patterns t))
     (buttercup-run)))
 
 (defun buttercup-mark-skipped (matcher &optional reverse)
   "Mark any spec that match MATCHER as skipped.
-MATCHER can be either a regex or a function taking a spec as the
-single argument. If REVERSE is non-nil, specs will be marked as
-pending when MATCHER does not match."
+MATCHER can be either a regex, a list of regexes, or a function
+taking a spec as the single argument. If REVERSE is non-nil,
+specs will be marked as pending when MATCHER does not match."
   (cl-etypecase matcher
     (string (buttercup--mark-skipped
              buttercup-suites
              (lambda (spec)
                (string-match matcher (buttercup-spec-full-name spec)))
              reverse))
-    (function (buttercup--mark-skipped buttercup-suites matcher reverse))))
+    (function (buttercup--mark-skipped buttercup-suites matcher reverse))
+    (list (cond
+           ((cl-every #'stringp matcher)
+            (buttercup-mark-skipped (mapconcat (lambda (re)
+                                                 (concat "\\(?:" re "\\)"))
+                                               matcher "\\|")
+                                    reverse))
+           (t (error "Bad matcher list: %s, should be list of strings" matcher))))))
 
 (defun buttercup--mark-skipped (suites predicate &optional reverse-predicate)
   "Mark all specs in SUITES as skipped if PREDICATE(spec) is true.
