@@ -1338,8 +1338,8 @@ or a macro/special form.")
 A buffer with this name should only exist while running a test
 spec, and should be killed after running the spec.")
 
-(defvar buttercup-reporter-batch-quiet-statuses nil
-  "Do not print results for any spec with any of the listed statuses.")
+;; predeclaration
+(defvar buttercup-reporter-batch-quiet-statuses)
 
 ;;;###autoload
 (defun buttercup-run-at-point ()
@@ -1621,6 +1621,9 @@ EVENT and ARG are described in `buttercup-reporter'."
 
 (defvar buttercup-reporter-batch--failures nil
   "List of failed specs of the current batch report.")
+
+(defvar buttercup-reporter-batch-quiet-statuses nil
+  "Do not print results for any spec with any of the listed statuses.")
 
 (defvar buttercup-reporter-batch--suite-stack nil
   "Stack of unprinted suites.")
