@@ -28,6 +28,7 @@
 (require 'ansi-color)
 (require 'ert)
 (require 'cl-lib)
+(require 'imenu)
 
 (defun make-list-of-closures (items)
   "For each element of ITEMS, return a closure returning it."
@@ -55,9 +56,7 @@ variables:
         extra-vars)
     (while (plist-member keys (car body))
       (push (list (plist-get keys (pop body)) (pop body)) extra-vars))
-  `(let (buttercup--after-all
-         buttercup--after-each
-         buttercup--before-all
+  `(let (buttercup--after-each
          buttercup--before-each
          (buttercup--cleanup-functions :invalid)
          buttercup--current-suite
@@ -303,7 +302,7 @@ text properties using `ansi-color-apply'."
       (buttercup-suite-add-child grandparent parent)
       (buttercup-suite-add-child parent child)
 
-      (expect (buttercup-suite-parents child)
+      (expect (buttercup-suite-or-spec-parents child)
               :to-equal
               (list parent grandparent)))))
 
@@ -315,7 +314,7 @@ text properties using `ansi-color-apply'."
       (buttercup-suite-add-child grandparent parent)
       (buttercup-suite-add-child parent child)
 
-      (expect (buttercup-spec-parents child)
+      (expect (buttercup-suite-or-spec-parents child)
               :to-equal
               (list parent grandparent)))))
 
@@ -840,7 +839,7 @@ text properties using `ansi-color-apply'."
             (let ((suite (describe "A bad spy scope"
                            (before-all
                              (spy-on 'some-function)))))
-              (expect (run--suite suite)
+              (expect (buttercup--run-suite suite)
                       :to-throw))))
         (it "used directly in describe"
           (with-local-buttercup
@@ -1295,9 +1294,9 @@ text properties using `ansi-color-apply'."
 
       (before-each
         (setq defined-specs 10 pending-specs 0 failed-specs 0)
-        (spy-on 'buttercup-suites-total-specs-defined :and-call-fake (lambda (&rest a) defined-specs))
-        (spy-on 'buttercup-suites-total-specs-pending :and-call-fake (lambda (&rest a) pending-specs))
-        (spy-on 'buttercup-suites-total-specs-failed :and-call-fake (lambda (&rest a) failed-specs)))
+        (spy-on 'buttercup-suites-total-specs-defined :and-call-fake (lambda (&rest _) defined-specs))
+        (spy-on 'buttercup-suites-total-specs-pending :and-call-fake (lambda (&rest _) pending-specs))
+        (spy-on 'buttercup-suites-total-specs-failed :and-call-fake (lambda (&rest _) failed-specs)))
 
       (it "should print a summary of run and failing specs"
         (setq failed-specs 6)
@@ -1868,7 +1867,7 @@ text properties using `ansi-color-apply'."
     :var (el-time elc-time)
     (before-each
       (spy-on 'file-attributes :and-call-fake
-              (lambda (filename &optional id-format)
+              (lambda (filename &optional _id-format)
                 (make-list
                  10
                  (make-list 4
