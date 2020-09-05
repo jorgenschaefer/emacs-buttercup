@@ -557,6 +557,7 @@ text properties using `ansi-color-apply'."
             '(buttercup-it "description"
                (lambda ()
                  (buttercup-with-converted-ert-signals
+                   (buttercup--mark-stackframe)
                    body)))))
 
   (it "without argument should expand to xit."

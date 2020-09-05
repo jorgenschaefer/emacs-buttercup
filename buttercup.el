@@ -132,9 +132,16 @@ This macro knows three forms:
 \(expect ARG)
   Fail the current test if ARG is not true."
   (let ((wrapped-args
-         (mapcar (lambda (expr) `(lambda () (quote ,expr) ,expr)) args)))
+         (mapcar (lambda (expr) `(lambda ()
+                                   (quote ,expr)
+                                   (buttercup--mark-stackframe)
+                                   ,expr))
+                 args)))
     `(buttercup-expect
-      (lambda () (quote ,arg) ,arg)
+      (lambda ()
+        (quote ,arg)
+        (buttercup--mark-stackframe)
+        ,arg)
       ,(or matcher :to-be-truthy)
       ,@wrapped-args)))
 
@@ -885,6 +892,7 @@ most probably including one or more calls to `expect'."
       `(buttercup-it ,description
          (lambda ()
            (buttercup-with-converted-ert-signals
+             (buttercup--mark-stackframe)
              ,@body)))
     `(buttercup-xit ,description)))
 
@@ -1921,14 +1929,16 @@ ARGS according to `debugger'."
   (throw 'buttercup-debugger-continue
          (list 'failed args (buttercup--backtrace))))
 
+(defalias 'buttercup--mark-stackframe 'ignore
+  "Marker to find where the backtrace start.")
+
 (defun buttercup--backtrace ()
   "Create a backtrace, a list of frames returned from `backtrace-frame'."
   ;; Read the backtrace frames from 0 (the closest) upward.
   (cl-do* ((n 0 (1+ n))
            (frame (backtrace-frame n) (backtrace-frame n))
            (frame-list nil)
-           (in-program-stack nil)
-           (discard-frames nil))
+           (in-program-stack nil))
       ((not frame) frame-list)
       ;; discard frames until (and including) `buttercup--debugger', they
       ;; only contain buttercup code
@@ -1941,14 +1951,19 @@ ARGS according to `debugger'."
       ;; this is just the buttercup framework and not interesting for
       ;; users incorrect for testing buttercup. Some frames before the
       ;; function also have to be discarded
-      (when (and in-program-stack
-                 (setq discard-frames
-                       (pcase (elt frame 1)
-                         (`buttercup--expr-and-value 2)   ; matcher modified with :not
-                         (`buttercup--apply-matcher 4) ; unmodified matcher
-                         (`buttercup--funcall 6))))
-        (setq frame-list (nthcdr discard-frames frame-list))
-        (cl-return frame-list))))
+      (cl-labels ((tree-find (key tree)
+                             (cl-block tree-find
+                               (while (consp tree)
+                                 (let ((elem (pop tree)))
+                                   (when (or (and (consp elem)
+                                                  (tree-find key elem))
+                                             (eql key elem))
+                                     (cl-return-from tree-find t))))
+                               (cl-return-from tree-find
+                                 (and tree (eql tree key))))))
+        (when (and in-program-stack (tree-find 'buttercup--mark-stackframe frame))
+          (pop frame-list)
+          (cl-return frame-list)))))
 
 (defun buttercup--format-stack-frame (frame &optional style)
   "Format stack FRAME according to STYLE.
