@@ -56,7 +56,9 @@
 The function MUST have one of the following forms:
 
 \(lambda () EXPR)
+\(lambda () (buttercup--mark-stackframe) EXPR)
 \(closure (ENVLIST) () EXPR)
+\(closure (ENVLIST) () (buttercup--mark-stackframe) EXPR)
 \(lambda () (quote EXPR) EXPR)
 \(closure (ENVLIST) () (quote EXPR) EXPR)
 
@@ -65,12 +67,14 @@ forms are useful if EXPR is a macro call, in which case the
 `quote' ensures access to the un-expanded form."
   (pcase fun
     (`(closure ,(pred listp) nil ,expr) expr)
+    (`(closure ,(pred listp) nil (buttercup--mark-stackframe) ,expr) expr)
     (`(closure ,(pred listp) nil (quote ,expr) . ,_rest) expr)
     (`(closure ,(pred listp) nil ,_expr . ,(pred identity))
      (error "Closure contains multiple expressions: %S" fun))
     (`(closure ,(pred listp) ,(pred identity) . ,(pred identity))
      (error "Closure has nonempty arglist: %S" fun))
     (`(lambda nil ,expr) expr)
+    (`(lambda nil (buttercup--mark-stackframe) ,expr) expr)
     (`(lambda nil (quote ,expr) . ,_rest) expr)
     (`(lambda nil ,_expr . ,(pred identity))
      (error "Function contains multiple expressions: %S" fun))

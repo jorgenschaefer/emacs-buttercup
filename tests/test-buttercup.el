@@ -136,8 +136,10 @@ text properties using `ansi-color-apply'."
       (expect (length expansion) :to-equal 4)
       (expect (nth 0 expansion) :to-be 'buttercup-expect)
       (expect (functionp (nth 1 expansion)))
+      (expect (buttercup--wrapper-fun-p (nth 1 expansion)))
       (expect (nth 2 expansion) :to-be :to-equal)
-      (expect (functionp (nth 3 expansion)))))
+      (expect (functionp (nth 3 expansion)))
+      (expect (buttercup--wrapper-fun-p (nth 3 expansion)))))
 
   (it "with no matcher should use `:to-be-truthy' as the matcher"
     (let ((expansion (macroexpand '(expect (equal (+ 1 1) 2)))))
