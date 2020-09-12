@@ -16,7 +16,7 @@ only those, and test your project in a well-defined environment.
 Buttercup works best in such environments, so the following best
 practices rely on Cask to be installed.
 
-## Project Directory Layout
+### Project Directory Layout
 
 A basic project layout requires a project file, called `feature.el`
 here, a `Cask` file to define dependencies, and a `tests/` directory
@@ -59,7 +59,7 @@ feature/feature.el
             "It's not a bug, it's a feature")))
 ```
 
-## Running Tests
+### Running Tests
 
 You can now use Cask to run your tests.
 
@@ -106,6 +106,65 @@ skipped tests.
 You can run this command whichever way you like. Common choices
 include a makefile or shell scripts.
 
+## Eldev
+
+[Eldev](https://github.com/doublep/eldev) is another Elisp build tool
+and has built-in supports for Buttercup.  Like Cask, it installs
+dependencies of your project automatically, ensuring consistent
+environment.
+
+### Project Directory Layout
+
+Typical project layout used for Cask also works for Eldev.  However,
+the tool is very liberal and with a couple of lines you can configure
+it to handle almost any layout a project could have (see [its
+documentation](https://github.com/doublep/eldev#testing) if needed).
+
+Unlike Cask, however, Eldev needs that your test files include form
+`(require 'buttercup)`.  Otherwise you will get Elisp errors like
+“Symbol’s function definition is void: describe”.  Basically, Eldev
+requires that the `.el` files are *self-contained* and do not depend
+on certain external tool.
+
+### Running Tests
+
+The tool installs project dependencies automatically when needed, so
+you don’t have to bother about that.  All you need to do is to ensure
+the main file of the project correctly declares them.
+
+You also don’t need to declare that the project uses Buttercup for
+testing: Eldev will determine that on-the-fly.
+
+To run your test, just execute:
+
+````
+$ eldev test
+[1/1] Installing package ‘buttercup’ (1.23) from ‘melpa-stable’...
+Running 1 specs.
+
+The feature
+  can use bug and feature (2.58ms)
+
+Ran 1 specs, 0 failed, in 2.68ms.
+````
+
+You can also specify patterns on the command line, to avoid running
+all the tests at once, i.e.:
+
+````
+$ eldev test foo
+````
+
+If you have several test files, you can avoid running all the tests by
+specifying filename after `-f` (`--file`) option:
+
+````
+$ eldev test -f main.el
+````
+
+For more information, please see tool’s own documentation, especially
+[the section about testing](https://github.com/doublep/eldev#testing).
+
 ## Projectile
 
 If you use [Projectile](https://github.com/bbatsov/projectile) for interacting with your projects you can set the "default" project test command to be available when you invoke `projectile-test-project`.  Create a `.dir-locals.el` file in the the root of your project tree (next to your Cask file).  An example:
@@ -119,6 +178,9 @@ If you use [Projectile](https://github.com/bbatsov/projectile) for interacting w
                             "cask exec buttercup -L ."
                             projectile-test-cmd-map))))))
 ```
+
+If you are using Eldev as build tool, Projectile should provide
+testing command on its own, so you don’t need any special steps.
 
 ## Travis
 
@@ -148,3 +210,23 @@ script:
 Most of the complexity here is from installing
 [EVM](https://github.com/rejeep/evm) and Cask to be able to test your
 project using different Emacs versions.
+
+For Eldev, use the following `.travis.yml` file:
+
+````
+language: emacs-lisp
+dist: trusty
+
+env:
+  # Add more lines like this if you want to test on different Emacs versions.
+  - EVM_EMACS=emacs-26.3-travis
+
+install:
+  - curl -fsSL https://raw.github.com/doublep/eldev/master/webinstall/travis-eldev-and-evm > x.sh && source ./x.sh
+  - evm install $EVM_EMACS --use
+
+script:
+  - eldev -p -dtT test
+````
+
+For details, see [tool’s own documentation](https://github.com/doublep/eldev#continuous-integration).
