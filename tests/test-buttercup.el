@@ -28,6 +28,7 @@
 (require 'ansi-color)
 (require 'ert)
 (require 'cl-lib)
+(require 'imenu)
 
 (defun make-list-of-closures (items)
   "For each element of ITEMS, return a closure returning it."
@@ -39,31 +40,33 @@
   "Execute BODY with local buttercup state variables.
 Keyword arguments kan be used to override the values of certain
 variables:
- :color    -> `buttercup-color'
- :reporter -> `buttercup-reporter'
- :suites   -> `buttercup-suites'
- :quiet    -> `buttercup-reporter-batch-quiet-statuses'
+ :color       -> `buttercup-color'
+ :frame-style -> `buttercup-stack-frame-style'
+ :reporter    -> `buttercup-reporter'
+ :suites      -> `buttercup-suites'
+ :quiet       -> `buttercup-reporter-batch-quiet-statuses'
 \n(fn &keys COLOR SUITES REPORTER &rest BODY)"
   (declare (debug t) (indent defun))
   ;; extract keyword arguments
   (let ((keys '(:color buttercup-color
+                       :frame-style buttercup-stack-frame-style
                        :reporter buttercup-reporter
                        :suites buttercup-suites
                        :quiet buttercup-reporter-batch-quiet-statuses))
         extra-vars)
     (while (plist-member keys (car body))
       (push (list (plist-get keys (pop body)) (pop body)) extra-vars))
-  `(let (buttercup--after-all
-         buttercup--after-each
-         buttercup--before-all
+  `(let (buttercup--after-each
          buttercup--before-each
          (buttercup--cleanup-functions :invalid)
          buttercup--current-suite
          (buttercup-reporter #'ignore)
          buttercup-suites
+         buttercup-color
          buttercup-reporter-batch-quiet-statuses
          buttercup-reporter-batch--suite-stack
          buttercup-reporter-batch--failures
+         (buttercup-stack-frame-style 'crop)
          (buttercup-warning-buffer-name " *ignored buttercup warnings*")
          ,@(nreverse extra-vars))
      ,@body)))
@@ -133,8 +136,10 @@ text properties using `ansi-color-apply'."
       (expect (length expansion) :to-equal 4)
       (expect (nth 0 expansion) :to-be 'buttercup-expect)
       (expect (functionp (nth 1 expansion)))
+      (expect (buttercup--wrapper-fun-p (nth 1 expansion)))
       (expect (nth 2 expansion) :to-be :to-equal)
-      (expect (functionp (nth 3 expansion)))))
+      (expect (functionp (nth 3 expansion)))
+      (expect (buttercup--wrapper-fun-p (nth 3 expansion)))))
 
   (it "with no matcher should use `:to-be-truthy' as the matcher"
     (let ((expansion (macroexpand '(expect (equal (+ 1 1) 2)))))
@@ -299,7 +304,7 @@ text properties using `ansi-color-apply'."
       (buttercup-suite-add-child grandparent parent)
       (buttercup-suite-add-child parent child)
 
-      (expect (buttercup-suite-parents child)
+      (expect (buttercup-suite-or-spec-parents child)
               :to-equal
               (list parent grandparent)))))
 
@@ -311,7 +316,7 @@ text properties using `ansi-color-apply'."
       (buttercup-suite-add-child grandparent parent)
       (buttercup-suite-add-child parent child)
 
-      (expect (buttercup-spec-parents child)
+      (expect (buttercup-suite-or-spec-parents child)
               :to-equal
               (list parent grandparent)))))
 
@@ -557,6 +562,7 @@ text properties using `ansi-color-apply'."
             '(buttercup-it "description"
                (lambda ()
                  (buttercup-with-converted-ert-signals
+                   (buttercup--mark-stackframe)
                    body)))))
 
   (it "without argument should expand to xit."
@@ -835,7 +841,7 @@ text properties using `ansi-color-apply'."
             (let ((suite (describe "A bad spy scope"
                            (before-all
                              (spy-on 'some-function)))))
-              (expect (run--suite suite)
+              (expect (buttercup--run-suite suite)
                       :to-throw))))
         (it "used directly in describe"
           (with-local-buttercup
@@ -1290,9 +1296,9 @@ text properties using `ansi-color-apply'."
 
       (before-each
         (setq defined-specs 10 pending-specs 0 failed-specs 0)
-        (spy-on 'buttercup-suites-total-specs-defined :and-call-fake (lambda (&rest a) defined-specs))
-        (spy-on 'buttercup-suites-total-specs-pending :and-call-fake (lambda (&rest a) pending-specs))
-        (spy-on 'buttercup-suites-total-specs-failed :and-call-fake (lambda (&rest a) failed-specs)))
+        (spy-on 'buttercup-suites-total-specs-defined :and-call-fake (lambda (&rest _) defined-specs))
+        (spy-on 'buttercup-suites-total-specs-pending :and-call-fake (lambda (&rest _) pending-specs))
+        (spy-on 'buttercup-suites-total-specs-failed :and-call-fake (lambda (&rest _) failed-specs)))
 
       (it "should print a summary of run and failing specs"
         (setq failed-specs 6)
@@ -1343,13 +1349,217 @@ text properties using `ansi-color-apply'."
         (with-local-buttercup :color nil
           (expect (buttercup-reporter-batch 'buttercup-done (list spec))
                   :not :to-throw)))
-      ;; TODO: Backtrace tests
       )
 
     (describe "on an unknown event"
       (it "should raise an error"
         (expect (buttercup-reporter-batch 'unknown-event nil)
                 :to-throw)))))
+
+(describe "Backtraces"
+  :var (print-buffer)
+  ;; redirect output to a buffer
+  (before-each
+    (setq print-buffer (generate-new-buffer "*btrcp-reporter-test*"))
+    (spy-on 'send-string-to-terminal :and-call-fake
+            (apply-partially #'send-string-to-ansi-buffer print-buffer))
+    ;; Convenience function
+    (spy-on 'buttercup-output :and-call-fake
+            (lambda ()
+              "Return the text of print-buffer."
+              (with-current-buffer print-buffer
+                (buffer-string)))))
+  (after-each
+    (kill-buffer print-buffer)
+    (setq print-buffer nil))
+  ;; define a buttercup-reporter-batch variant that only outputs on
+  ;; buttercup-done
+  (before-each
+    (spy-on 'backtrace-reporter :and-call-fake
+            (lambda (event arg)
+              (if (eq event 'buttercup-done)
+                  (buttercup-reporter-batch event arg)
+                (cl-letf (((symbol-function 'buttercup--print) #'ignore))
+                  (buttercup-reporter-batch event arg))))))
+  ;; suppress the summary line
+  (before-each
+    (spy-on 'buttercup-reporter-batch--print-summary))
+  ;; define a known backtrace with a typical error
+  (before-all
+	(defun bc-bt-foo (a) (bc-bt-bar a))
+	(defun bc-bt-bar (a) (bc-bt-baz a))
+	(defun bc-bt-baz (a)
+      (or (number-or-marker-p a)
+        (signal 'wrong-type-argument `(number-or-marker-p ,a)))))
+  (after-all
+	(fmakunbound 'bc-bt-foo)
+	(fmakunbound 'bc-bt-bar)
+	(fmakunbound 'bc-bt-baz))
+  (it "should be printed for each failed spec"
+    (with-local-buttercup
+      :reporter #'backtrace-reporter
+      (describe "suite"
+        (it "expect 2" (expect (+ 1 2) :to-equal 2))
+        (it "expect nil" (expect nil)))
+      (buttercup-run :noerror))
+    (expect (buttercup-output) :to-match
+            (rx string-start
+                (= 2 (seq (= 40 ?=) "\n"
+                          "suite expect " (or "2" "nil") "\n"
+                          "\n"
+                          "Traceback (most recent call last):\n"
+                          (* (seq "  " (+ not-newline) "\n"))
+                          (or "FAILED" "error") ": " (+ not-newline) "\n\n"))
+                string-end)))
+  (describe "with style"
+    :var (test-suites long-string)
+    ;; Set up tests to test
+    (before-each
+      (setq long-string
+            ;; It's important that this string doesn't contain any
+            ;; regex special characters, it's used in a `rx' `eval'
+            ;; form that will escape them. Later Emacsen have
+            ;; `literal' that is much easier to use.
+            "a string that will be truncated in backtrace crop, at least 70 chars long")
+      (with-local-buttercup
+       (describe "suite"
+         (it "bc-bt-backtrace"
+           (expect
+            (bc-bt-foo long-string)
+            :to-be-truthy)))
+       (setq test-suites buttercup-suites)))
+    (it "`crop' should print truncated lines"
+      (with-local-buttercup
+       :suites test-suites :reporter #'backtrace-reporter
+       :frame-style 'crop
+       (buttercup-run :noerror)
+       (setq long-string (truncate-string-to-width long-string 62))
+       (expect (buttercup-output) :to-match
+               (rx-to-string
+                `(seq
+                  string-start
+                  (= 40 ?=) "\n"
+                  "suite bc-bt-backtrace\n"
+                  "\n"
+                  "Traceback (most recent call last):\n"
+                  "  (bc-bt-foo \"" (eval ,long-string) "...\n"
+                  "  (bc-bt-bar \"" (eval ,long-string) "...\n"
+                  "  (bc-bt-baz \"" (eval ,long-string) "...\n"
+                  (* (seq "  " (or (seq (= 74 not-newline) (= 3 ?.))
+                                   (seq (** 0 74 not-newline) (= 3 (not (any ?.))))) "\n"))
+                  "error: (" (* anything) ")\n\n"
+                  string-end)))))
+    (it "`full' should print full lines"
+      (with-local-buttercup
+       :suites test-suites :reporter #'backtrace-reporter
+       :frame-style 'full
+       (buttercup-run :noerror)
+       (expect (buttercup-output) :to-match
+               (rx-to-string
+                `(seq
+                  string-start
+                  (= 40 ?=) "\n"
+                  "suite bc-bt-backtrace\n"
+                  "\n"
+                  "Traceback (most recent call last):\n"
+                  "  (bc-bt-foo \"" (eval ,long-string) "\")\n"
+                  "  (bc-bt-bar \"" (eval ,long-string) "\")\n"
+                  "  (bc-bt-baz \"" (eval ,long-string) "\")\n"
+                  (* (seq "  " (* not-newline) (= 3 (not (any ?.))) "\n"))
+                  "error: (" (* anything) ")\n\n"
+                  string-end)))))
+    (it "`pretty' should pretty-print frames"
+      (with-local-buttercup
+       :suites test-suites :reporter #'backtrace-reporter
+       :frame-style 'pretty
+       (buttercup-run :noerror)
+       (expect (buttercup-output) :to-match
+               (rx-to-string
+                `(seq
+                  string-start
+                  (= 40 ?=) "\n"
+                  "suite bc-bt-backtrace\n"
+                  "\n"
+                  "Traceback (most recent call last):\n"
+                  "λ (bc-bt-foo \"" (regex ,long-string) "\")\n"
+                  "λ (bc-bt-bar \"" (regex ,long-string) "\")\n"
+                  "λ (bc-bt-baz \"" (regex ,long-string) "\")\n"
+                  (* (seq (or ?M ?λ) " (" (* not-newline) ; frame start
+                          (*? (seq "\n   " (* not-newline))) ; any number of pp lines
+                          (* not-newline) ")\n")) ;; frame end
+                  "error: (" (* anything) ")\n\n"
+                  string-end)))))
+    (it "`omit' should print nothing"
+      (with-local-buttercup
+        :suites test-suites :reporter #'backtrace-reporter
+        :frame-style 'omit
+        (buttercup-run :noerror)
+        (expect (buttercup-output) :to-equal ""))))
+  (it "should signal an error for unknown styles"
+    (let ((buttercup-stack-frame-style 'not-a-valid-style))
+      (expect (buttercup--format-stack-frame '(t myfun 1 2))
+              :to-throw 'error '("Unknown stack trace style: not-a-valid-style"))))
+  (describe "should generate correct backtrace for"
+    (cl-macrolet
+        ((matcher-spec
+          (description &rest matcher)
+          `(it ,description
+             (with-local-buttercup
+              :reporter #'backtrace-reporter
+              (describe "backtrace for"
+                (it "matcher"
+                  (expect (bc-bt-baz "text") ,@matcher)))
+              (buttercup-run :noerror)
+              (expect (buttercup-output) :to-equal
+                      ,(mapconcat
+                        #'identity
+                        `(,(make-string 40 ?=)
+                          "backtrace for matcher"
+                          ""
+                          "Traceback (most recent call last):"
+                          "  (bc-bt-baz \"text\")"
+                          ,(concat
+                            "  (or (number-or-marker-p a) (signal "
+                            (if (< emacs-major-version 27)
+                                "(quote wrong-type-argument) (list (quot..."
+                               "'wrong-type-argument (list 'number-or-m..."))
+                          "  (signal wrong-type-argument (number-or-marker-p \"text\"))"
+                          "error: (wrong-type-argument number-or-marker-p \"text\")"
+                          "" "") "\n"))))))
+      (matcher-spec "no matcher")
+      (matcher-spec ":to-be-truthy" :to-be-truthy)
+      (matcher-spec ":not :to-be-truthy" :not :to-be-truthy)
+      (matcher-spec ":to-be" :to-be 3)
+      (matcher-spec ":not :to-be" :not :to-be 3)
+      (matcher-spec ":to-equal" :to-equal 3)
+      (matcher-spec ":not :to-equal" :not :to-equal 3)
+      (matcher-spec ":to-have-same-items-as" :to-have-same-items-as '(3))
+      (matcher-spec ":not :to-have-same-items-as" :not :to-have-same-items-as '(3))
+      (matcher-spec ":to-match" :to-match ".")
+      (matcher-spec ":not :to-match" :not :to-match ".")
+      (matcher-spec ":to-be-in" :to-be-in '(2))
+      (matcher-spec ":not :to-be-in" :not :to-be-in '(2))
+      (matcher-spec ":to-contain" :to-contain 2)
+      (matcher-spec ":not :to-contain" :not :to-contain 2)
+      (matcher-spec ":to-be-less-than" :to-be-less-than 2)
+      (matcher-spec ":not :to-be-less-than" :not :to-be-less-than 2)
+      (matcher-spec ":to-be-greater-than" :to-be-greater-than 2)
+      (matcher-spec ":not :to-be-greater-than" :not :to-be-greater-than 2)
+      (matcher-spec ":to-be-weakly-less-than" :to-be-weakly-less-than 2)
+      (matcher-spec ":not :to-be-weakly-less-than" :not :to-be-weakly-less-than 2)
+      (matcher-spec ":to-be-weakly-greater-than" :to-be-weakly-greater-than 2)
+      (matcher-spec ":not :to-be-weakly-greater-than" :not :to-be-weakly-greater-than 2)
+      (matcher-spec ":to-be-close-to" :to-be-close-to 2 0.3)
+      (matcher-spec ":not :to-be-close-to" :not :to-be-close-to 2 0.2)
+      ;; (matcher-spec ":to-throw" :to-throw)
+      ;; (matcher-spec ":not :to-throw" :not :to-throw)
+      (matcher-spec ":to-have-been-called" :to-have-been-called)
+      (matcher-spec ":not :to-have-been-called" :not :to-have-been-called)
+      (matcher-spec ":to-have-been-called-with" :to-have-been-called-with 2)
+      (matcher-spec ":not :to-have-been-called-with" :not :to-have-been-called-with 2)
+      (matcher-spec ":to-have-been-called-times" :to-have-been-called-times 2)
+      (matcher-spec ":not :to-have-been-called-times" :not :to-have-been-called-times 2))))
+
 
 (describe "When using quiet specs in the batch reporter"
   :var (print-buffer)
@@ -1659,7 +1869,7 @@ text properties using `ansi-color-apply'."
     :var (el-time elc-time)
     (before-each
       (spy-on 'file-attributes :and-call-fake
-              (lambda (filename &optional id-format)
+              (lambda (filename &optional _id-format)
                 (make-list
                  10
                  (make-list 4

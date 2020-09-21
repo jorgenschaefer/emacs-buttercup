@@ -47,16 +47,17 @@ Buttercup options:
 
 --traceback STYLE       When printing backtraces for errors that occur
                           during tests, print them in the chosen
-                          STYLE. Available styles are "full", which
-                          shows the full function call for each stack
-                          frame on a single line, "crop", which
-                          truncates each stack frame to 80 characters
-                          (the default), and "pretty", which uses
-                          Emacs' pretty-printing facilities to print
-                          each stack frame, and also annotates each
-                          frame with a lambda or M to indicate whether
-                          it is a normal function call or a
-                          macro/special form.
+                          STYLE. Available styles are
+                         "full", which shows the full function call for
+                          each stack frame on a single line,
+                         "crop", which truncates each stack frame to 80
+                          characters (the default),
+                         "pretty", which uses Emacs' pretty-printing
+                          facilities to print each stack frame, and also
+                          annotates each frame with a lambda or M to
+                          indicate whether it is a normal function call
+                          or a macro/special form and
+                         "omit", which omits the backtraces alltogether.
 
 --stale-file-error      Fail the test run if stale .elc files are loaded.
 EOF
