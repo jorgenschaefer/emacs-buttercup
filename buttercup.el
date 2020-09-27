@@ -1411,6 +1411,7 @@ current directory."
     (dolist (dir (or dirs '(".")))
       (dolist (file (directory-files-recursively
                      dir "\\`test-.*\\.el\\'\\|-tests?\\.el\\'"))
+        ;; Exclude any hidden directory, both immediate (^.) and nested (/.) subdirs
         (when (not (string-match "\\(^\\|/\\)\\." (file-relative-name file)))
           (load file nil t))))
     (when patterns

@@ -71,6 +71,32 @@ variables:
          ,@(nreverse extra-vars))
      ,@body)))
 
+(defmacro buttercup--test-with-tempdir (files &rest body)
+  "Create FILES and execute BODY in a temporary directory.
+FILES shall be a list of file names. An empty file with that name
+will be created in the temporary directory. Any path prefix for a
+file will be created in the temporary directory."
+  (declare (debug t) (indent defun))
+  (let ((tmproot (cl-gensym))
+        (subdir (cl-gensym))
+        (olddir (cl-gensym))
+        (file (cl-gensym)))
+    `(let ((,tmproot (make-temp-file "buttercup-test-temp-" t))
+           ,subdir
+           (,olddir default-directory))
+       (dolist (,file ,files)
+         (setq ,subdir (concat ,tmproot "/" (file-name-directory ,file)))
+         (when (and ,subdir (not (file-exists-p ,subdir)))
+           (make-directory ,subdir t))
+         (write-region "" nil (concat ,tmproot "/" ,file)))
+       ;; It is tempting to use unwind-protect or condition-case here,
+       ;; but that will mask actual test failures by interfering with
+       ;; the debugger installed by buttercup
+       (cd ,tmproot)
+       ,@body
+       (cd ,olddir)
+       (delete-directory ,tmproot t))))
+
 (defun send-string-to-ansi-buffer (buffer string)
   "A `send-string-to-terminal' variant that sends STRING to BUFFER.
 Any backspace, tab, newline, vertical tab, formfeed, or carriage
@@ -1797,6 +1823,126 @@ text properties using `ansi-color-apply'."
      (buttercup-with-converted-ert-signals
        (ert-skip "Skipped this test"))
      :to-throw 'buttercup-pending)))
+
+;;;;;;;;;;;;;;;;;;
+;;; test discovery
+
+(describe "`buttercup-run-discover' should"
+  (describe "parse command line arguments"
+    (before-each
+      (spy-on 'buttercup-run)
+      (spy-on 'buttercup-mark-skipped)
+      (spy-on 'directory-files-recursively)
+      (spy-on 'buttercup-error-on-stale-elc))
+    (it "ignoring `--'"
+      (let ((command-line-args-left '("--")))
+        (buttercup-run-discover)
+        (expect command-line-args-left :to-equal nil)))
+    (it "requiring an extra argument for `--traceback'"
+      (let ((command-line-args-left '("--traceback")))
+        (expect (buttercup-run-discover) :to-throw 'error '("Option requires argument: --traceback"))))
+    (it "checking `--traceback' argument for validity"
+      (let ((command-line-args-left '("--traceback" "unknown")))
+        (with-local-buttercup
+          (expect (buttercup-run-discover) :to-throw 'error '("Unknown stack trace style: unknown")))))
+    (it "setting `buttercup-stack-frame-style' from `--traceback' arg"
+      (let ((command-line-args-left '("--traceback" "full")))
+        (with-local-buttercup
+          (buttercup-run-discover)
+          (expect buttercup-stack-frame-style :to-equal 'full))
+        (expect command-line-args-left :to-equal nil)))
+    (it "requiring an extra argument for `--pattern' or `-p'"
+      (let ((command-line-args-left '("--pattern")))
+        (expect (buttercup-run-discover) :to-throw 'error '("Option requires argument: --pattern"))
+        (setq command-line-args-left '("-p"))
+        (expect (buttercup-run-discover) :to-throw 'error '("Option requires argument: -p"))))
+    (it "collecting `--pattern' and `-p' args and send to `buttercup-mark-skipped'"
+      (let ((command-line-args-left '("--pattern" "foo" "-p" "bar" "--pattern" "baz"))
+            buttercup-mark-skipped-args)
+        (buttercup-run-discover)
+        (expect command-line-args-left :to-equal nil)
+        (expect 'buttercup-mark-skipped :to-have-been-called-times 1)
+        (setq buttercup-mark-skipped-args (car (spy-calls-args-for 'buttercup-mark-skipped 0)))
+        (expect buttercup-mark-skipped-args :to-have-same-items-as '("foo" "bar" "baz"))))
+    (it "clearing `buttercup-color' if `--no-color' is given"
+      (let ((command-line-args-left '("--no-color"))
+            (buttercup-color t))
+        (buttercup-run-discover)
+        (expect buttercup-color :to-equal nil)
+        (expect command-line-args-left :to-equal nil)
+        (setq command-line-args-left '("-c")
+              buttercup-color t)
+        (buttercup-run-discover)
+        (expect buttercup-color :to-equal nil)
+        (expect command-line-args-left :to-equal nil)))
+    (it "adding `skipped' and `disabled' to quiet statuses if `--no-skip' is given"
+      (let ((command-line-args-left '("--no-skip")))
+        (with-local-buttercup
+          (buttercup-run-discover)
+          (expect buttercup-reporter-batch-quiet-statuses :to-contain 'skipped)
+          (expect buttercup-reporter-batch-quiet-statuses :to-contain 'disabled))
+        (expect command-line-args-left :to-equal nil)))
+    (it "adding `pending' and `passed' to quiet statuses if `--only-error' is given"
+      (let ((command-line-args-left '("--only-error")))
+        (with-local-buttercup
+          (buttercup-run-discover)
+          (expect buttercup-reporter-batch-quiet-statuses :to-contain 'pending)
+          (expect buttercup-reporter-batch-quiet-statuses :to-contain 'passed))
+        (expect command-line-args-left :to-equal nil)))
+    (it "calling `buttercup-error-on-stale-elc' if `--stale-file-error' is given"
+      (let ((command-line-args-left '("--stale-file-error")))
+        (with-local-buttercup
+          (buttercup-run-discover)
+          (expect 'buttercup-error-on-stale-elc :to-have-been-called-times 1)
+          (expect command-line-args-left :to-equal nil))))
+    (it "search any unknown args for test files"
+      (let ((command-line-args-left '("foo" "--traceback" "full" "bar" "--strange" "baz")))
+        (with-local-buttercup
+          (buttercup-run-discover)
+          (expect 'directory-files-recursively :to-have-been-called-times 4)
+          (expect 'directory-files-recursively :to-have-been-called-with "foo" "\\`test-.*\\.el\\'\\|-tests?\\.el\\'")
+          (expect 'directory-files-recursively :to-have-been-called-with "bar" "\\`test-.*\\.el\\'\\|-tests?\\.el\\'")
+          (expect 'directory-files-recursively :to-have-been-called-with "--strange" "\\`test-.*\\.el\\'\\|-tests?\\.el\\'")
+          (expect 'directory-files-recursively :to-have-been-called-with "baz" "\\`test-.*\\.el\\'\\|-tests?\\.el\\'"))
+        (expect command-line-args-left :to-equal nil)))
+    )
+  (describe "find and load files"
+    (before-each
+      (spy-on 'buttercup-run)
+      (spy-on 'buttercup-mark-skipped)
+      (spy-on 'load)
+      (spy-on 'relative-load-path :and-call-fake
+              (lambda (args)
+                "Return `car' of args relative to `default-directory'."
+                (replace-regexp-in-string
+                 (format "^\\(\\./\\|%s\\)" (regexp-quote default-directory))
+                 ""
+                 (car args))))
+      )
+    (it "named test-*.el and *-tests?.el but no other files"
+      (buttercup--test-with-tempdir
+        '("test.el" "tests.el" "test-actually.el"
+          "foo/test-foo.el" "foo/bar/bar-test.el"
+          "baz/no-test-here.el" "baz/baz-tests.el")
+        (buttercup-run-discover)
+        (expect 'load :to-have-been-called-times 4)
+        (let ((loaded-files (mapcar #'relative-load-path
+                                    (spy-calls-all-args 'load))))
+          (expect loaded-files :to-have-same-items-as '("test-actually.el"
+                                                        "foo/test-foo.el"
+                                                        "foo/bar/bar-test.el"
+                                                        "baz/baz-tests.el")))))
+    (it "only in given directories"
+      (buttercup--test-with-tempdir
+        '("root-tests.el"
+          "a/a-tests.el" "a/b/ab-tests.el"
+          "b/b-tests-el" "b/a/ba-tests.el")
+        (let ((command-line-args-left '("a")))
+          (buttercup-run-discover))
+        (expect 'load :to-have-been-called-times 2)
+        (let ((loaded-files (mapcar #'relative-load-path (spy-calls-all-args 'load))))
+          (expect loaded-files :to-have-same-items-as '("a/a-tests.el"
+                                                        "a/b/ab-tests.el")))))))
 
 ;;;;;;;;;;;;;
 ;;; Utilities
