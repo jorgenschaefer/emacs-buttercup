@@ -643,10 +643,10 @@ See also `buttercup-define-matcher'."
     (cond
      ((not calls)
       (cons nil
-            (format "Expected `%s' to have been called with %s, but it was not called at all" spy args)))
+            (format "Expected `%s' to have been called with %S, but it was not called at all" spy args)))
      ((not (member args calls))
       (cons nil
-            (format "Expected `%s' to have been called with %s, but it was called with %s"
+            (format "Expected `%s' to have been called with %S, but it was called with %s"
                     spy
                     args
                     (mapconcat (lambda (args)
