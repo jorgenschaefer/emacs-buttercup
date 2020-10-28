@@ -1459,7 +1459,7 @@ text properties using `ansi-color-apply'."
        :suites test-suites :reporter #'backtrace-reporter
        :frame-style 'crop
        (buttercup-run :noerror)
-       (setq long-string (truncate-string-to-width long-string 62))
+       (setq long-string (truncate-string-to-width long-string 63))
        (expect (buttercup-output) :to-match
                (rx-to-string
                 `(seq
@@ -1468,9 +1468,9 @@ text properties using `ansi-color-apply'."
                   "suite bc-bt-backtrace\n"
                   "\n"
                   "Traceback (most recent call last):\n"
-                  "  (bc-bt-foo \"" (eval ,long-string) "...\n"
-                  "  (bc-bt-bar \"" (eval ,long-string) "...\n"
-                  "  (bc-bt-baz \"" (eval ,long-string) "...\n"
+                  "  bc-bt-foo(\"" (eval ,long-string) "...\n"
+                  "  bc-bt-bar(\"" (eval ,long-string) "...\n"
+                  "  bc-bt-baz(\"" (eval ,long-string) "...\n"
                   (* (seq "  " (or (seq (= 74 not-newline) (= 3 ?.))
                                    (seq (** 0 74 not-newline) (= 3 (not (any ?.))))) "\n"))
                   "error: (" (* anything) ")\n\n"
@@ -1488,9 +1488,9 @@ text properties using `ansi-color-apply'."
                   "suite bc-bt-backtrace\n"
                   "\n"
                   "Traceback (most recent call last):\n"
-                  "  (bc-bt-foo \"" (eval ,long-string) "\")\n"
-                  "  (bc-bt-bar \"" (eval ,long-string) "\")\n"
-                  "  (bc-bt-baz \"" (eval ,long-string) "\")\n"
+                  "  bc-bt-foo(\"" (eval ,long-string) "\")\n"
+                  "  bc-bt-bar(\"" (eval ,long-string) "\")\n"
+                  "  bc-bt-baz(\"" (eval ,long-string) "\")\n"
                   (* (seq "  " (* not-newline) (= 3 (not (any ?.))) "\n"))
                   "error: (" (* anything) ")\n\n"
                   string-end)))))
@@ -1543,13 +1543,13 @@ text properties using `ansi-color-apply'."
                           "backtrace for matcher"
                           ""
                           "Traceback (most recent call last):"
-                          "  (bc-bt-baz \"text\")"
+                          "  bc-bt-baz(\"text\")"
                           ,(concat
                             "  (or (number-or-marker-p a) (signal "
                             (if (< emacs-major-version 27)
                                 "(quote wrong-type-argument) (list (quot..."
                                "'wrong-type-argument (list 'number-or-m..."))
-                          "  (signal wrong-type-argument (number-or-marker-p \"text\"))"
+                          "  signal(wrong-type-argument (number-or-marker-p \"text\"))"
                           "error: (wrong-type-argument number-or-marker-p \"text\")"
                           "" "") "\n"))))))
       (matcher-spec "no matcher")
