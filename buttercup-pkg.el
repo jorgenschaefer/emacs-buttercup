@@ -1,2 +1,2 @@
-(define-package "buttercup" "1.23"
+(define-package "buttercup" "1.24"
   "Behavior-Driven Emacs Lisp Testing")
