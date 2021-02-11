@@ -1408,7 +1408,7 @@ current directory."
         (push (car args) dirs)
         (setq args (cdr args)))))
     (setq command-line-args-left nil)
-    (dolist (dir (or dirs '(".")))
+    (dolist (dir (or dirs (list default-directory)))
       (dolist (file (directory-files-recursively
                      dir "\\`test-.*\\.el\\'\\|-tests?\\.el\\'"))
         ;; Exclude any hidden directory, both immediate (^.) and nested (/.) subdirs
