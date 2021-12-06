@@ -1,6 +1,6 @@
 ;;; buttercup-test.el --- Tests for buttercup.el -*-lexical-binding:t-*-
 
-;; Copyright (C) 2015  Jorgen Schaefer <contact@jorgenschaefer.de>
+;; Copyright (C) 2015, 2021  Jorgen Schaefer <contact@jorgenschaefer.de>
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License
@@ -27,6 +27,7 @@
 (require 'autoload)
 (require 'ansi-color)
 (require 'ert)
+(require 'ert-x)
 (require 'cl-lib)
 (require 'imenu)
 
@@ -1117,7 +1118,7 @@ text properties using `ansi-color-apply'."
 ;;;;;;;;;;;;;
 ;;; Reporters
 (buttercup-define-matcher-for-binary-function
-    :to-equal-including-properties equal-including-properties)
+    :to-equal-including-properties ert-equal-including-properties)
 
 (describe "The batch reporters"
   :var (print-buffer)
