@@ -1585,7 +1585,18 @@ text properties using `ansi-color-apply'."
       (matcher-spec ":to-have-been-called-with" :to-have-been-called-with 2)
       (matcher-spec ":not :to-have-been-called-with" :not :to-have-been-called-with 2)
       (matcher-spec ":to-have-been-called-times" :to-have-been-called-times 2)
-      (matcher-spec ":not :to-have-been-called-times" :not :to-have-been-called-times 2))))
+      (matcher-spec ":not :to-have-been-called-times" :not :to-have-been-called-times 2)))
+  (it "should not generate backtraces for skipped specs"
+    (let (test-spec)
+      (spy-on 'buttercup--backtrace :and-call-through)
+      (with-local-buttercup
+        (describe "one description"
+          (it "with a pending spec")
+          (buttercup-skip "skip"))
+        (buttercup-run :noerror)
+        (setq test-spec (car (buttercup-suite-children (car buttercup-suites)))))
+      (expect 'buttercup--backtrace :not :to-have-been-called)
+      (expect (buttercup-spec-failure-stack test-spec) :to-be nil))))
 
 
 (describe "When using quiet specs in the batch reporter"

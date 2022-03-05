@@ -1938,7 +1938,10 @@ ARGS according to `debugger'."
   ;; subsequent calls. Thanks to ert for this.
   (setq num-nonmacro-input-events (1+ num-nonmacro-input-events))
   (throw 'buttercup-debugger-continue
-         (list 'failed args (buttercup--backtrace))))
+         (list 'failed args
+               (cl-destructuring-bind (_ (signal-type . _data)) args
+                 (unless (eq signal-type 'buttercup-pending)
+                   (buttercup--backtrace))))))
 
 (defalias 'buttercup--mark-stackframe 'ignore
   "Marker to find where the backtrace start.")
