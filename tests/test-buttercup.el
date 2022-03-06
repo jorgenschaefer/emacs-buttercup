@@ -76,25 +76,28 @@ variables:
   "Create FILES and execute BODY in a temporary directory.
 FILES shall be a list of file names. An empty file with that name
 will be created in the temporary directory. Any path prefix for a
-file will be created in the temporary directory."
+file will be created in the temporary directory. Elements in FILE
+can also be a list of up to two elements where the first is the
+filename as above and the second is the file contents.
+Return the value of the last form in BODY."
   (declare (debug t) (indent defun))
   (let ((tmproot (cl-gensym))
-        (subdir (cl-gensym))
-        (olddir (cl-gensym))
-        (file (cl-gensym)))
+        (olddir (cl-gensym)))
     `(let ((,tmproot (make-temp-file "buttercup-test-temp-" t))
-           ,subdir
            (,olddir default-directory))
-       (dolist (,file ,files)
-         (setq ,subdir (concat ,tmproot "/" (file-name-directory ,file)))
-         (when (and ,subdir (not (file-exists-p ,subdir)))
-           (make-directory ,subdir t))
-         (write-region "" nil (concat ,tmproot "/" ,file)))
+       (cl-labels ((make-file (file &optional content)
+                     (setq file (expand-file-name file ,tmproot))
+                     (make-directory (file-name-directory file) t)
+                     (write-region (or content "") nil file)))
+         (dolist (file ,files)
+           (if (listp file)
+               (apply #'make-file file)
+             (make-file file))))
        ;; It is tempting to use unwind-protect or condition-case here,
        ;; but that will mask actual test failures by interfering with
        ;; the debugger installed by buttercup
        (cd ,tmproot)
-       ,@body
+       (progn ,@body)
        (cd ,olddir)
        (delete-directory ,tmproot t))))
 
