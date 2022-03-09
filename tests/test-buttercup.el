@@ -1959,6 +1959,26 @@ text properties using `ansi-color-apply'."
           (expect loaded-files :to-have-same-items-as '("a/a-tests.el"
                                                         "a/b/ab-tests.el")))))))
 
+;; The nested debuggers of running buttercup specs inside other
+;; buttercup specs does not do the right thing. Write out-of-framework
+;; tests for now.
+
+(buttercup--test-with-tempdir
+  '("ok-test.el"
+    ("test-a.el" "(describe \"foo\"")
+    ("test-b.el" "(describe \"bar\" (it \"baz\" (ignore)))"))
+  (let ((load-path (cons default-directory load-path))
+        buttercup-status-error-caught)
+    (with-local-buttercup
+      (condition-case condition
+          (buttercup-run-discover)
+        (buttercup-run-specs-failed (setq buttercup-status-error-caught t)))
+      (unless buttercup-status-error-caught
+        (error "Expected buttercup-run-discover to signal a buttercup-run-specs-failed error"))
+      (unless (equal 2 (length buttercup-suites))
+        (error "Expected suites from test-b.el to be in buttercup-suites"))
+      )))
+
 ;;;;;;;;;;;;;
 ;;; Utilities
 
