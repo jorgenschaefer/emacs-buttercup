@@ -1375,7 +1375,8 @@ current directory."
   (setq backtrace-on-error-noninteractive nil)
   (let ((dirs nil)
         (patterns nil)
-        (args command-line-args-left))
+        (args command-line-args-left)
+        failed-files-suite)
     (while args
       (cond
        ((equal (car args) "--")
@@ -1411,15 +1412,41 @@ current directory."
         (push (car args) dirs)
         (setq args (cdr args)))))
     (setq command-line-args-left nil)
+    (setq failed-files-suite (make-buttercup-suite
+                              :description "File failed to load completely: "))
     (dolist (dir (or dirs '(".")))
       (dolist (file (directory-files-recursively
                      dir "\\`test-.*\\.el\\'\\|-tests?\\.el\\'"))
         ;; Exclude any hidden directory, both immediate (^.) and nested (/.) subdirs
         (when (not (string-match "\\(^\\|/\\)\\." (file-relative-name file)))
-          (load file nil t))))
+          (buttercup--load-test-file file failed-files-suite))))
     (when patterns
       (buttercup-mark-skipped patterns t))
-    (buttercup-run)))
+    (when (buttercup-suite-children failed-files-suite)
+      ;; At least one file has failed to load, add the
+      ;; failed-files-suite to the end(?) of the suite list
+      (setq buttercup-suites (append buttercup-suites
+                                     (list failed-files-suite)))))
+    (buttercup-run))
+
+(defun buttercup--load-test-file (file failure-suite)
+  "Load FILE keeping track of failures.
+If an error is raised by `load', store the error information in a
+spec and add it to FAILURE-SUITE."
+  (cl-destructuring-bind (status description stack)
+      (buttercup--funcall #'load file nil t)
+    (when (eq status 'failed)
+      ;; Skip all of stack until load is called
+      (while (not (eq (nth 1 (car stack)) 'load))
+        (pop stack))
+      (buttercup-suite-add-child
+       failure-suite
+       (make-buttercup-spec
+        :description file
+        :status 'failed
+        :failure-description (error-message-string (cadr description))
+        :failure-stack stack
+        :function (lambda () (ignore)))))))
 
 (defun buttercup-mark-skipped (matcher &optional reverse)
   "Mark any spec that match MATCHER as skipped.
