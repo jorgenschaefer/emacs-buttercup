@@ -1371,6 +1371,7 @@ spec, and should be killed after running the spec.")
 
 Takes directories as command line arguments, defaulting to the
 current directory."
+  (setq backtrace-on-error-noninteractive nil)
   (let ((dirs nil)
         (patterns nil)
         (args command-line-args-left))
@@ -1483,6 +1484,7 @@ If MARKDOWN-BUFFERS is empty (nil), use the current buffer."
 (defun buttercup-run-markdown ()
   "Run all test suites defined in Markdown files passed as arguments.
 A suite must be defined within a Markdown \"lisp\" code block."
+  (setq backtrace-on-error-noninteractive nil)
   (apply #'buttercup-run-markdown-buffer (mapcar #'find-file-noselect
                                                  command-line-args-left)))
 
