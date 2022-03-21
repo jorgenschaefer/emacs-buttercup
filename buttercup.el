@@ -1939,7 +1939,7 @@ ARGS according to `debugger'."
   (setq num-nonmacro-input-events (1+ num-nonmacro-input-events))
   (throw 'buttercup-debugger-continue
          (list 'failed args
-               (cl-destructuring-bind (_ (signal-type . _data)) args
+               (cl-destructuring-bind (_ (signal-type . data)) args
                  (unless (eq signal-type 'buttercup-pending)
                    (buttercup--backtrace))))))
 
