@@ -1727,7 +1727,7 @@ text properties using `ansi-color-apply'."
   (it "should raise an error if at least one spec failed"
     (setf (buttercup-spec-status spec) 'failed)
     (with-local-buttercup :suites (list parent-suite)
-      (expect (buttercup-run) :to-throw 'error '(""))))
+      (expect (buttercup-run) :to-throw 'buttercup-run-specs-failed '(""))))
   (it "should return nil for failing specs and noerror"
     (setf (buttercup-spec-status spec) 'failed)
     (with-local-buttercup :suites (list parent-suite)

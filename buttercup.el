@@ -48,6 +48,9 @@
 (require 'ert nil t)
 (require 'warnings)
 
+;; A base error for all errors raised by buttercup.
+(define-error 'buttercup-error-base "error")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; wrapper function manipulation
 
@@ -116,11 +119,9 @@ a call to `save-match-data', as `format-spec' modifies that."
 ;;;;;;;;;;
 ;;; expect
 
-(define-error 'buttercup-failed
-  "Buttercup test failed")
+(define-error 'buttercup-failed "Buttercup test failed" 'buttercup-error-base)
 
-(define-error 'buttercup-pending
-  "Buttercup test is pending")
+(define-error 'buttercup-pending "Buttercup test is pending" 'buttercup-error-base)
 
 (defmacro expect (arg &optional matcher &rest args)
   "Expect a condition to be true.
@@ -1510,6 +1511,8 @@ have been defined."
     (or (and noerror :no-suites)
         (error "No suites defined"))))
 
+(define-error 'buttercup-run-specs-failed "buttercup-run failed" 'buttercup-error-base)
+
 (defun buttercup--run-suites (suites &optional noerror)
   "Run a list of SUITES.
 Signal an error if any spec fail. Signal no error if NOERROR is
@@ -1519,7 +1522,7 @@ fail."
   (mapc #'buttercup--run-suite suites)
   (funcall buttercup-reporter 'buttercup-done suites)
   (or (zerop (buttercup-suites-total-specs-failed suites))
-      (not (or noerror (error "")))))
+      (not (or noerror (signal 'buttercup-run-specs-failed '(""))))))
 
 (defvar buttercup--before-each nil
   "A list of functions to call before each spec.
