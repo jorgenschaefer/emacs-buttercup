@@ -119,7 +119,12 @@ This is the time of the last change to the file's contents, and
 is a Lisp timestamp in the style of `current-time'."
 	(nth 5 attributes)))
 
+;;;;;;;;;;;;;;;;;;;;;
+;; Introduced in 29.1
 
+(unless (boundp 'backtrace-on-error-noninteractive)
+  (defvar backtrace-on-error-noninteractive nil
+	"Control eacrly backtrace starting in Emacs 29."))
 
 (provide 'buttercup-compat)
 ;;; buttercup-compat.el ends here
