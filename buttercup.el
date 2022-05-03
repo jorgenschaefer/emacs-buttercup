@@ -1414,7 +1414,7 @@ current directory."
     (setq command-line-args-left nil)
     (setq failed-files-suite (make-buttercup-suite
                               :description "File failed to load completely: "))
-    (dolist (dir (or dirs '(".")))
+    (dolist (dir (or dirs `(,default-directory)))
       (dolist (file (directory-files-recursively
                      dir "\\`test-.*\\.el\\'\\|-tests?\\.el\\'"))
         ;; Exclude any hidden directory, both immediate (^.) and nested (/.) subdirs
