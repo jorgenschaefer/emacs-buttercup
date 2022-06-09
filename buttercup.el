@@ -57,7 +57,8 @@
 (defun buttercup--enclosed-expr (fun)
   "Given a zero-arg function FUN, return its unevaluated expression.
 
-The function MUST have one of the following forms:
+The function MUST be byte-compiled or have one of the following
+forms:
 
 \(lambda () EXPR)
 \(lambda () (buttercup--mark-stackframe) EXPR)
@@ -84,6 +85,10 @@ forms are useful if EXPR is a macro call, in which case the
      (error "Function contains multiple expressions: %S" fun))
     (`(lambda ,(pred identity) . ,(pred identity))
      (error "Function has nonempty arglist: %S" fun))
+    ((and (pred byte-code-function-p) (guard (member (aref fun 0) '(nil 0))))
+     (aref fun 1))
+    ((pred byte-code-function-p)
+     (error "Byte-compiled function expects arguments: %S" fun))
     (_ (error "Not a zero-arg one-expression closure: %S" fun))))
 
 (defun buttercup--expr-and-value (fun)
