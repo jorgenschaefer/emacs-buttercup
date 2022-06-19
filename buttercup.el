@@ -1934,7 +1934,8 @@ EVENT and ARG are described in `buttercup-reporter'."
                                     (goto-char (point-max))
                                     (insert (apply 'format fmt args))))))
       (unwind-protect
-          (buttercup-reporter-batch event arg)
+          (let ((buttercup-color))
+            (buttercup-reporter-batch event arg))
         (fset 'buttercup--print old-print)))
     (let ((w (get-buffer-window (current-buffer))))
       (when w
