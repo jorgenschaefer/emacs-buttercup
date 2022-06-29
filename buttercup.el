@@ -1542,9 +1542,9 @@ have been defined."
 
 (defun buttercup--run-suites (suites &optional noerror)
   "Run a list of SUITES.
-Signal an error if any spec fail. Signal no error if NOERROR is
-non-nil. Return t if all specs pass, nil if at least one spec
-fail."
+Signal a `buttercup-run-specs-failed` error if any spec fail,
+unless NOERROR is non-nil. Return t if all specs pass, nil if at
+least one spec fail."
   (funcall buttercup-reporter 'buttercup-started suites)
   (mapc #'buttercup--run-suite suites)
   (funcall buttercup-reporter 'buttercup-done suites)
