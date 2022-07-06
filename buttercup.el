@@ -123,6 +123,13 @@ a call to `save-match-data', as `format-spec' modifies that."
 
 (define-error 'buttercup-pending "Buttercup test is pending" 'buttercup-error-base)
 
+(defun buttercup--wrap-expr (expr)
+  "Wrap EXPR to be used by `buttercup-expect'."
+  `(lambda ()
+     (quote ,expr)
+     (buttercup--mark-stackframe)
+     ,expr))
+
 (defmacro expect (arg &optional matcher &rest args)
   "Expect a condition to be true.
 
@@ -137,19 +144,9 @@ This macro knows three forms:
 
 \(expect ARG)
   Fail the current test if ARG is not true."
-  (let ((wrapped-args
-         (mapcar (lambda (expr) `(lambda ()
-                                   (quote ,expr)
-                                   (buttercup--mark-stackframe)
-                                   ,expr))
-                 args)))
-    `(buttercup-expect
-      (lambda ()
-        (quote ,arg)
-        (buttercup--mark-stackframe)
-        ,arg)
-      ,(or matcher :to-be-truthy)
-      ,@wrapped-args)))
+  `(buttercup-expect ,(buttercup--wrap-expr arg)
+                     ,(or matcher :to-be-truthy)
+                     ,@(mapcar #'buttercup--wrap-expr args)))
 
 (defun buttercup-expect (arg &optional matcher &rest args)
   "The function for the `expect' macro.
