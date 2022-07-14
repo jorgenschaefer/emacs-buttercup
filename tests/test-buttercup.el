@@ -182,17 +182,17 @@ text properties using `ansi-color-apply'."
   (describe "with a function as a matcher argument"
     (it "should not raise an error if the function returns true"
       (expect (buttercup-expect
-               (lambda () t)
+               (buttercup--wrap-expr t)
                #'eq
-               (lambda () t))
+               (buttercup--wrap-expr t))
               :not :to-throw
               'buttercup-failed))
 
     (it "should raise an error if the function returns false"
       (expect (buttercup-expect
-               (lambda () t)
+               (buttercup--wrap-expr t)
                #'eq
-               (lambda () nil))
+               (buttercup--wrap-expr nil))
               :to-throw
               'buttercup-failed)))
 
@@ -206,7 +206,7 @@ text properties using `ansi-color-apply'."
               'buttercup-failed))
 
     (it "should raise an error if the matcher returns false"
-      (expect (buttercup-expect (lambda () 1) :always-false)
+      (expect (buttercup-expect (buttercup--wrap-expr 1) :always-false)
               :to-throw
               'buttercup-failed))))
 
