@@ -197,16 +197,13 @@ text properties using `ansi-color-apply'."
               'buttercup-failed)))
 
   (describe "with a matcher argument"
-    (buttercup-define-matcher :always-true (_a) t)
-    (buttercup-define-matcher :always-false (_a) nil)
-
     (it "should not raise an error if the matcher returns true"
-      (expect (buttercup-expect (lambda () 1) :always-true)
+      (expect (buttercup-expect (buttercup--wrap-expr (ignore)) #'always)
               :not :to-throw
               'buttercup-failed))
 
     (it "should raise an error if the matcher returns false"
-      (expect (buttercup-expect (buttercup--wrap-expr 1) :always-false)
+      (expect (buttercup-expect (buttercup--wrap-expr t) #'ignore)
               :to-throw
               'buttercup-failed))))
 
