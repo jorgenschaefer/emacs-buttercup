@@ -59,31 +59,36 @@
 
 The function MUST have one of the following forms:
 
-\(lambda () EXPR)
-\(lambda () (buttercup--mark-stackframe) EXPR)
-\(closure (ENVLIST) () EXPR)
-\(closure (ENVLIST) () (buttercup--mark-stackframe) EXPR)
-\(lambda () (quote EXPR) EXPR)
-\(closure (ENVLIST) () (quote EXPR) EXPR)
+\(closure (ENVLIST) () (quote EXPR) (buttercup--mark-stackframe) EXPANDED)
+\(lambda () (quote EXPR) (buttercup--mark-stackframe) EXPR)
 
-and the return value will be EXPR, unevaluated. The latter 2
-forms are useful if EXPR is a macro call, in which case the
-`quote' ensures access to the un-expanded form."
+and the return value will be EXPR, unevaluated. The quoted EXPR
+is useful if EXPR is a macro call, in which case the `quote'
+ensures access to the un-expanded form."
+  (cl-assert (functionp fun) t "Expected FUN to be a function")
   (pcase fun
-    (`(closure ,(pred listp) nil ,expr) expr)
-    (`(closure ,(pred listp) nil (buttercup--mark-stackframe) ,expr) expr)
-    (`(closure ,(pred listp) nil (quote ,expr) . ,_rest) expr)
-    (`(closure ,(pred listp) nil ,_expr . ,(pred identity))
-     (error "Closure contains multiple expressions: %S" fun))
-    (`(closure ,(pred listp) ,(pred identity) . ,(pred identity))
-     (error "Closure has nonempty arglist: %S" fun))
-    (`(lambda nil ,expr) expr)
-    (`(lambda nil (buttercup--mark-stackframe) ,expr) expr)
-    (`(lambda nil (quote ,expr) . ,_rest) expr)
-    (`(lambda nil ,_expr . ,(pred identity))
-     (error "Function contains multiple expressions: %S" fun))
-    (`(lambda ,(pred identity) . ,(pred identity))
-     (error "Function has nonempty arglist: %S" fun))
+    ;; This should be the normal case, a closure with unknown enclosed
+    ;; variables, empty arglist and a body containing
+    ;; * the quoted original expression
+    ;; * the stackframe marker
+    ;; * the macroexpanded original expression
+    (`(closure ,(pred listp) nil
+        (quote ,expr) (buttercup--mark-stackframe) ,_expanded)
+     expr)
+    ;; This a when FUN has not been evaluated. Probably never happens
+    ;; except when testing buttercup. Should probably do something
+    ;; about that.
+    ;; A lambda with an empty arglist and a body containing
+    ;; * the quoted original expression
+    ;; * the stackframe marker
+    ;; * the original expression
+    ;; In this case expr and expr2 should be equal (but not eq?) as
+    ;; expr2 has not been macroexpanded.
+    ((and `(lambda nil
+             (quote ,expr) (buttercup--mark-stackframe) ,expr2)
+          (guard (equal expr expr2)))
+     expr)
+    ;; Error
     (_ (error "Not a zero-arg one-expression closure: %S" fun))))
 
 (defun buttercup--expr-and-value (fun)
