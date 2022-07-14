@@ -138,6 +138,76 @@ text properties using `ansi-color-apply'."
           ;; print remaining text
           (insert-owrt string))))))
 
+;;;;;;;;;;
+;;; helpers
+
+(describe "The buttercup--enclosed-expr function"
+ (describe "should handle"
+    (it "expressions wrapped by buttercup--wrap-expr"
+      (expect (buttercup--enclosed-expr (buttercup--wrap-expr '(ignore)))
+              :to-equal '(ignore)))
+    (it "a closure with expression copy?"
+      (expect (buttercup--enclosed-expr
+               (let ((_foo 1))
+                 (lambda () '(ignore) (buttercup--mark-stackframe) (ignore))))
+              :to-equal '(ignore)))
+    (it "a lambda with expression copy?"
+      ;; I suspect there is nothing to make sure that the quoted
+      ;; expression matches the actual expression
+      (expect (buttercup--enclosed-expr
+               '(lambda () (quote (ignore)) (buttercup--mark-stackframe) (ignore))))
+      :to-equal '(ignore))
+    (xdescribe "byte compiled"
+      (it "lambda objects"
+        (expect (buttercup--enclosed-expr
+                 (byte-compile-sexp '(lambda () '(ignore) (buttercup--mark-stackframe) (ignore))))))
+      (it "wrapped expression"
+        (expect (buttercup--enclosed-expr (byte-compile-sexp (buttercup--wrap-expr '(ignore))))))))
+ (describe "should error"
+    (it "on a simple closure"
+      (expect
+       (buttercup--enclosed-expr (let ((_foo 1)) (lambda () (ignore))))
+       :to-throw
+       'error '("Not a zero-arg one-expression closure: (closure ((_foo . 1) t) nil (ignore))")))
+    (it "on a closure with stackframe marker but no quoted expression"
+      (expect
+       (buttercup--enclosed-expr (let ((_foo 1)) (lambda () (buttercup--mark-stackframe) (ignore))))
+       :to-throw
+       'error '("Not a zero-arg one-expression closure: (closure ((_foo . 1) t) nil (buttercup--mark-stackframe) (ignore))")))
+    (it "for multi-statement closures"
+      (expect (buttercup--enclosed-expr
+               (lambda () '(+ 1 2) (buttercup--mark-stackframe) (+ 1 2) (ignore)))
+              :to-throw
+              'error
+              ;; The formatting differs in different versions of Emacs
+              (list (format "Not a zero-arg one-expression closure: %S"
+                            '(closure (t) nil '(+ 1 2) (buttercup--mark-stackframe) (+ 1 2) (ignore))))))
+    (it "for closures with non-empty argument lists"
+      (expect (buttercup--enclosed-expr
+               (lambda (foo) '(ignore foo) (buttercup--mark-stackframe) (ignore foo)))
+              :to-throw
+              'error
+              ;; The formatting differs in different versions of Emacs
+              (list (format "Not a zero-arg one-expression closure: %S"
+                            '(closure (t) (foo) '(ignore foo) (buttercup--mark-stackframe) (ignore foo))))))
+    (it "on simple lambda objects"
+      (expect (buttercup--enclosed-expr
+               '(lambda () (ignore)))
+              :to-throw))
+    (it "on a lambda with stackframe marker but no quoted expression"
+      (expect (buttercup--enclosed-expr
+               '(lambda () (buttercup--mark-stackframe) (ignore)))
+              :to-throw))
+    (it "for multi-statement lambdas"
+      (expect (buttercup--enclosed-expr
+               '(lambda () (+ 1 2) (ignore)))
+              :to-throw
+              'error '("Not a zero-arg one-expression closure: (lambda nil (+ 1 2) (ignore))")))
+    (it "for lambdas with non-empty argument lists"
+      (expect (buttercup--enclosed-expr
+               '(lambda (foo) (ignore foo)))
+              :to-throw
+              'error '("Not a zero-arg one-expression closure: (lambda (foo) (ignore foo))")))))
 
 ;;;;;;;;;;
 ;;; expect
