@@ -31,12 +31,6 @@
 (require 'cl-lib)
 (require 'imenu)
 
-(defun make-list-of-closures (items)
-  "For each element of ITEMS, return a closure returning it."
-  (mapcar (lambda (item)
-            (lambda () item))
-          items))
-
 (defmacro with-local-buttercup (&rest body)
   "Execute BODY with local buttercup state variables.
 Keyword arguments kan be used to override the values of certain
@@ -240,7 +234,7 @@ text properties using `ansi-color-apply'."
 (describe "The `buttercup-define-matcher' macro"
   (it "should create a matcher usable by apply-matcher"
     (expect (buttercup--apply-matcher
-             :test-matcher (make-list-of-closures '(1 2)))
+             :test-matcher (mapcar #'buttercup--wrap-expr '(1 2)))
             :to-equal
             3)))
 
@@ -248,19 +242,19 @@ text properties using `ansi-color-apply'."
   (it "should work with functions"
     (expect (buttercup--apply-matcher
              #'+
-             (make-list-of-closures '(1 2)))
+             (mapcar #'buttercup--wrap-expr '(1 2)))
             :to-equal
             3))
 
   (it "should work with matchers"
     (expect (buttercup--apply-matcher
-             :test-matcher (make-list-of-closures '(1 2)))
+             :test-matcher (mapcar #'buttercup--wrap-expr '(1 2)))
             :to-equal
             3))
 
   (it "should fail if the matcher is not defined"
     (expect (buttercup--apply-matcher
-             :not-defined (make-list-of-closures '(1 2)))
+             :not-defined (mapcar #'buttercup--wrap-expr '(1 2)))
             :to-throw)))
 
 ;;;;;;;;;;;;;;;;;;;;;
@@ -771,7 +765,7 @@ text properties using `ansi-color-apply'."
 ;;;;;;;;;
 ;;; Spies
 
-(describe "The Spy "
+(describe "The Spy"
   (let (saved-test-function
         saved-test-command
         saved-test-function-throws-on-negative)
@@ -882,7 +876,7 @@ text properties using `ansi-color-apply'."
       (it "returns false if the spy was not called"
         (expect (buttercup--apply-matcher
                  :to-have-been-called
-                 (list (lambda () 'test-function)))
+                 (list (buttercup--wrap-expr ''test-function)))
                 :to-be
                 nil))
 
@@ -890,7 +884,7 @@ text properties using `ansi-color-apply'."
         (test-function 1 2 3)
         (expect (buttercup--apply-matcher
                  :to-have-been-called
-                 (list (lambda () 'test-function)))
+                 (list (buttercup--wrap-expr ''test-function)))
                 :to-be
                 t)))
 
@@ -901,7 +895,7 @@ text properties using `ansi-color-apply'."
       (it "returns false if the spy was not called at all"
         (expect (buttercup--apply-matcher
                  :to-have-been-called-with
-                 (make-list-of-closures '(test-function 1 2 3)))
+                 (mapcar #'buttercup--wrap-expr '('test-function '1 '2 '3)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called with (1 2 3), but it was not called at all")))
@@ -910,7 +904,7 @@ text properties using `ansi-color-apply'."
         (test-function 3 2 1)
         (expect (buttercup--apply-matcher
                  :to-have-been-called-with
-                 (make-list-of-closures '(test-function 1 2 3)))
+                 (mapcar #'buttercup--wrap-expr '('test-function 1 2 3)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called with (1 2 3), but it was called with (3 2 1)")))
@@ -919,7 +913,7 @@ text properties using `ansi-color-apply'."
         (test-function 1 2 3)
         (expect (buttercup--apply-matcher
                  :to-have-been-called-with
-                 (make-list-of-closures '(test-function 1 2 3)))
+                 (mapcar #'buttercup--wrap-expr '('test-function 1 2 3)))
                 :to-be
                 t)))
 
@@ -930,7 +924,7 @@ text properties using `ansi-color-apply'."
       (it "returns error if the spy was called less than expected"
         (expect (buttercup--apply-matcher
                  :to-have-been-called-times
-                 (make-list-of-closures '(test-function 1)))
+                 (mapcar #'buttercup--wrap-expr '('test-function 1)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called 1 time, but it was called 0 times")))
@@ -940,7 +934,7 @@ text properties using `ansi-color-apply'."
         (test-function)
         (expect (buttercup--apply-matcher
                  :to-have-been-called-times
-                 (make-list-of-closures '(test-function 1)))
+                 (mapcar #'buttercup--wrap-expr '('test-function 1)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called 1 time, but it was called 2 times")))
@@ -950,7 +944,7 @@ text properties using `ansi-color-apply'."
         (test-function)
         (expect (buttercup--apply-matcher
                  :to-have-been-called-times
-                 (make-list-of-closures '(test-function 2)))
+                 (mapcar #'buttercup--wrap-expr '('test-function 2)))
                 :to-equal t))
 
       (it "use plural words in error message"
@@ -958,7 +952,7 @@ text properties using `ansi-color-apply'."
         (test-function)
         (expect (buttercup--apply-matcher
                  :to-have-been-called-times
-                 (make-list-of-closures '(test-function 3)))
+                 (mapcar #'buttercup--wrap-expr '('test-function 3)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called 3 times, but it was called 2 times")))
@@ -966,7 +960,7 @@ text properties using `ansi-color-apply'."
       (it "use singular expected word in error message"
         (expect (buttercup--apply-matcher
                  :to-have-been-called-times
-                 (make-list-of-closures '(test-function 1)))
+                 (mapcar #'buttercup--wrap-expr '('test-function 1)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called 1 time, but it was called 0 times")))
@@ -975,7 +969,7 @@ text properties using `ansi-color-apply'."
         (test-function)
         (expect (buttercup--apply-matcher
                  :to-have-been-called-times
-                 (make-list-of-closures '(test-function 2)))
+                 (mapcar #'buttercup--wrap-expr '('test-function 2)))
                 :to-equal
                 (cons nil
                       "Expected `test-function' to have been called 2 times, but it was called 1 time"))))
@@ -1079,7 +1073,7 @@ text properties using `ansi-color-apply'."
         (expect (test-function-throws-on-negative -5) :to-throw)
         (expect (buttercup--apply-matcher
                  :to-have-been-called
-                 (list (lambda () 'test-function-throws-on-negative)))
+                 (list (buttercup--wrap-expr ''test-function-throws-on-negative)))
                 :to-be
                 t))
 
@@ -1088,7 +1082,7 @@ text properties using `ansi-color-apply'."
         (expect (test-function-throws-on-negative -5) :to-throw)
         (expect (buttercup--apply-matcher
                  :to-have-been-called-times
-                 (make-list-of-closures '(test-function-throws-on-negative 2)))
+                 (mapcar #'buttercup--wrap-expr '('test-function-throws-on-negative 2)))
                 :to-equal t))
 
       (it "records args to the function whether it throw an error or not"
@@ -1096,12 +1090,12 @@ text properties using `ansi-color-apply'."
         (expect (test-function-throws-on-negative -5) :to-throw)
         (expect (buttercup--apply-matcher
                  :to-have-been-called-with
-                 (make-list-of-closures '(test-function-throws-on-negative 5)))
+                 (mapcar #'buttercup--wrap-expr '('test-function-throws-on-negative 5)))
                 :to-be
                 t)
         (expect (buttercup--apply-matcher
                  :to-have-been-called-with
-                 (make-list-of-closures '(test-function-throws-on-negative -5)))
+                 (mapcar #'buttercup--wrap-expr '('test-function-throws-on-negative -5)))
                 :to-be
                 t))
 
