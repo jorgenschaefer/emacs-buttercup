@@ -26,6 +26,7 @@
 (require 'buttercup)
 (require 'autoload)
 (require 'ansi-color)
+(require 'bytecomp)
 (require 'ert)
 (require 'ert-x)
 (require 'cl-lib)
@@ -142,7 +143,7 @@ text properties using `ansi-color-apply'."
 ;;; helpers
 
 (describe "The buttercup--enclosed-expr function"
- (describe "should handle"
+  (describe "should handle"
     (it "expressions wrapped by buttercup--wrap-expr"
       (expect (buttercup--enclosed-expr (buttercup--wrap-expr '(ignore)))
               :to-equal '(ignore)))
@@ -157,13 +158,13 @@ text properties using `ansi-color-apply'."
       (expect (buttercup--enclosed-expr
                '(lambda () (quote (ignore)) (buttercup--mark-stackframe) (ignore))))
       :to-equal '(ignore))
-    (xdescribe "byte compiled"
+    (describe "byte compiled"
       (it "lambda objects"
         (expect (buttercup--enclosed-expr
                  (byte-compile-sexp '(lambda () '(ignore) (buttercup--mark-stackframe) (ignore))))))
       (it "wrapped expression"
         (expect (buttercup--enclosed-expr (byte-compile-sexp (buttercup--wrap-expr '(ignore))))))))
- (describe "should error"
+  (describe "should error"
     (it "on a simple closure"
       (expect
        (buttercup--enclosed-expr (let ((_foo 1)) (lambda () (ignore))))
@@ -207,7 +208,11 @@ text properties using `ansi-color-apply'."
       (expect (buttercup--enclosed-expr
                '(lambda (foo) (ignore foo)))
               :to-throw
-              'error '("Not a zero-arg one-expression closure: (lambda (foo) (ignore foo))")))))
+              'error '("Not a zero-arg one-expression closure: (lambda (foo) (ignore foo))")))
+    (it "on byte-compiled functions with arguments"
+      (expect (buttercup--enclosed-expr
+               (byte-compile-sexp '(lambda (_a) '(ignore) (buttercup--mark-stackframe) (ignore))))
+              :to-throw 'error))))
 
 ;;;;;;;;;;
 ;;; expect

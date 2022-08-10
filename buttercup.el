@@ -57,7 +57,8 @@
 (defun buttercup--enclosed-expr (fun)
   "Given a zero-arg function FUN, return its unevaluated expression.
 
-The function MUST have one of the following forms:
+The function MUST be byte-compiled or have one of the following
+forms:
 
 \(closure (ENVLIST) () (quote EXPR) (buttercup--mark-stackframe) EXPANDED)
 \(lambda () (quote EXPR) (buttercup--mark-stackframe) EXPR)
@@ -88,6 +89,13 @@ ensures access to the un-expanded form."
              (quote ,expr) (buttercup--mark-stackframe) ,expr2)
           (guard (equal expr expr2)))
      expr)
+    ;;; This is when FUN has been byte compiled, as when the entire
+    ;;; test file has been byte compiled. Check that it has an empty
+    ;;; arglist, that is all that is possible at this point. The
+    ;;; return value is byte compiled code, not the original
+    ;;; expressions. Also what is possible at this point.
+    ((and (pred byte-code-function-p) (guard (member (aref fun 0) '(nil 0))))
+     (aref fun 1))
     ;; Error
     (_ (error "Not a zero-arg one-expression closure: %S" fun))))
 
