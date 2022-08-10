@@ -57,33 +57,46 @@
 (defun buttercup--enclosed-expr (fun)
   "Given a zero-arg function FUN, return its unevaluated expression.
 
-The function MUST have one of the following forms:
+The function MUST be byte-compiled or have one of the following
+forms:
 
-\(lambda () EXPR)
-\(lambda () (buttercup--mark-stackframe) EXPR)
-\(closure (ENVLIST) () EXPR)
-\(closure (ENVLIST) () (buttercup--mark-stackframe) EXPR)
-\(lambda () (quote EXPR) EXPR)
-\(closure (ENVLIST) () (quote EXPR) EXPR)
+\(closure (ENVLIST) () (quote EXPR) (buttercup--mark-stackframe) EXPANDED)
+\(lambda () (quote EXPR) (buttercup--mark-stackframe) EXPR)
 
-and the return value will be EXPR, unevaluated. The latter 2
-forms are useful if EXPR is a macro call, in which case the
-`quote' ensures access to the un-expanded form."
+and the return value will be EXPR, unevaluated. The quoted EXPR
+is useful if EXPR is a macro call, in which case the `quote'
+ensures access to the un-expanded form."
+  (cl-assert (functionp fun) t "Expected FUN to be a function")
   (pcase fun
-    (`(closure ,(pred listp) nil ,expr) expr)
-    (`(closure ,(pred listp) nil (buttercup--mark-stackframe) ,expr) expr)
-    (`(closure ,(pred listp) nil (quote ,expr) . ,_rest) expr)
-    (`(closure ,(pred listp) nil ,_expr . ,(pred identity))
-     (error "Closure contains multiple expressions: %S" fun))
-    (`(closure ,(pred listp) ,(pred identity) . ,(pred identity))
-     (error "Closure has nonempty arglist: %S" fun))
-    (`(lambda nil ,expr) expr)
-    (`(lambda nil (buttercup--mark-stackframe) ,expr) expr)
-    (`(lambda nil (quote ,expr) . ,_rest) expr)
-    (`(lambda nil ,_expr . ,(pred identity))
-     (error "Function contains multiple expressions: %S" fun))
-    (`(lambda ,(pred identity) . ,(pred identity))
-     (error "Function has nonempty arglist: %S" fun))
+    ;; This should be the normal case, a closure with unknown enclosed
+    ;; variables, empty arglist and a body containing
+    ;; * the quoted original expression
+    ;; * the stackframe marker
+    ;; * the macroexpanded original expression
+    (`(closure ,(pred listp) nil
+        (quote ,expr) (buttercup--mark-stackframe) ,_expanded)
+     expr)
+    ;; This a when FUN has not been evaluated. Probably never happens
+    ;; except when testing buttercup. Should probably do something
+    ;; about that.
+    ;; A lambda with an empty arglist and a body containing
+    ;; * the quoted original expression
+    ;; * the stackframe marker
+    ;; * the original expression
+    ;; In this case expr and expr2 should be equal (but not eq?) as
+    ;; expr2 has not been macroexpanded.
+    ((and `(lambda nil
+             (quote ,expr) (buttercup--mark-stackframe) ,expr2)
+          (guard (equal expr expr2)))
+     expr)
+    ;;; This is when FUN has been byte compiled, as when the entire
+    ;;; test file has been byte compiled. Check that it has an empty
+    ;;; arglist, that is all that is possible at this point. The
+    ;;; return value is byte compiled code, not the original
+    ;;; expressions. Also what is possible at this point.
+    ((and (pred byte-code-function-p) (guard (member (aref fun 0) '(nil 0))))
+     (aref fun 1))
+    ;; Error
     (_ (error "Not a zero-arg one-expression closure: %S" fun))))
 
 (defun buttercup--expr-and-value (fun)
@@ -123,6 +136,13 @@ a call to `save-match-data', as `format-spec' modifies that."
 
 (define-error 'buttercup-pending "Buttercup test is pending" 'buttercup-error-base)
 
+(defun buttercup--wrap-expr (expr)
+  "Wrap EXPR to be used by `buttercup-expect'."
+  `(lambda ()
+     (quote ,expr)
+     (buttercup--mark-stackframe)
+     ,expr))
+
 (defmacro expect (arg &optional matcher &rest args)
   "Expect a condition to be true.
 
@@ -137,19 +157,9 @@ This macro knows three forms:
 
 \(expect ARG)
   Fail the current test if ARG is not true."
-  (let ((wrapped-args
-         (mapcar (lambda (expr) `(lambda ()
-                                   (quote ,expr)
-                                   (buttercup--mark-stackframe)
-                                   ,expr))
-                 args)))
-    `(buttercup-expect
-      (lambda ()
-        (quote ,arg)
-        (buttercup--mark-stackframe)
-        ,arg)
-      ,(or matcher :to-be-truthy)
-      ,@wrapped-args)))
+  `(buttercup-expect ,(buttercup--wrap-expr arg)
+                     ,(or matcher :to-be-truthy)
+                     ,@(mapcar #'buttercup--wrap-expr args)))
 
 (defun buttercup-expect (arg &optional matcher &rest args)
   "The function for the `expect' macro.
