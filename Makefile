@@ -6,12 +6,12 @@ ELISP_FILES := $(wildcard *.el)
 
 all: test
 
-test: test-buttercup test-docs
+check test: check-buttercup check-docs
 
-test-buttercup: compile
+check-buttercup test-buttercup: compile
 	./bin/buttercup -L . tests $(if $(CI),--traceback pretty)
 
-test-docs: compile
+check-docs test-docs: compile
 	$(EMACS) -batch -L . -l buttercup.el -f buttercup-run-markdown docs/writing-tests.md
 
 compile: $(patsubst %.el,%.elc,$(ELISP_FILES))
