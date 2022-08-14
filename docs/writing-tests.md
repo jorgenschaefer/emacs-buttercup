@@ -206,7 +206,9 @@ as full sentences in traditional
 
 The `describe` macro supports the optional `:var` and `:var*` args.
 These bind variables for the suite by passing them as a varlist to the
-`let` and `let*` form respectively.
+`let` and `let*` form respectively. Only one instance of `:var` or
+`:var*` is allowed, and it must come first in the `describe` form.  It
+can not be interspersed between `it` statements.
 
 ```Emacs-Lisp
 (describe "A spec using :VAR"

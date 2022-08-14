@@ -863,7 +863,10 @@ mainly calls to `describe', `it' and `before-each'."
            `((let* ,(elt body 1)
                ,@(cddr body))))
           (t body))))
-    `(buttercup-describe ,description (lambda () ,@new-body))))
+    (if (or (memq :var new-body)
+              (memq :var* new-body))
+      `(error "buttercup: :var(*) found in invalid position of describe form \"%s\"" ,description)
+    `(buttercup-describe ,description (lambda () ,@new-body)))))
 
 (defun buttercup-describe (description body-function)
   "Function to handle a `describe' form.

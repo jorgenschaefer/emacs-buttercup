@@ -611,7 +611,16 @@ text properties using `ansi-color-apply'."
     (expect (macroexpand '(describe "description" :var* (foo bar) (+ foo bar)))
             :to-equal
             '(buttercup-describe "description"
-                                 (lambda () (let* (foo bar) (+ foo bar)))))))
+                                 (lambda () (let* (foo bar) (+ foo bar))))))
+  (describe "should error when "
+    (it ":var is not first"
+      (expect (macroexpand '(describe "description" (it "foo") :var (x)))
+              :to-equal
+              '(error "buttercup: :var(*) found in invalid position of describe form \"%s\"" "description")))
+    (it ":var* is not first"
+      (expect (macroexpand '(describe "description" (it "foo") :var* (x)))
+              :to-equal
+              '(error "buttercup: :var(*) found in invalid position of describe form \"%s\"" "description")))))
 
 (describe "The `buttercup-describe' function"
   (it "should run the enclosing body"
