@@ -345,7 +345,7 @@ See also `buttercup-define-matcher'."
                  (concat expect-match-phrase " "
                          expect-mismatch-phrase))))
       (if (symbolp function)
-          (setq function-name function)
+          (setq function-name (symbol-name function))
         (error "The `:function-name' keyword is required if FUNCTION is not a symbol")))
     `(buttercup-define-matcher ,matcher (arg)
        (let* ((expr (buttercup--enclosed-expr arg))
@@ -421,7 +421,7 @@ See also `buttercup-define-matcher'."
                  (concat expect-match-phrase " "
                          expect-mismatch-phrase))))
       (if (symbolp function)
-          (setq function-name function)
+          (setq function-name (symbol-name function))
         (error "The `:function-name' keyword is required if FUNCTION is not a symbol")))
     `(buttercup-define-matcher ,matcher (a b)
        (cl-destructuring-bind
