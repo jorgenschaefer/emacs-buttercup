@@ -76,18 +76,14 @@ ensures access to the un-expanded form."
     (`(closure ,(pred listp) nil
         (quote ,expr) (buttercup--mark-stackframe) ,_expanded)
      expr)
-    ;; This a when FUN has not been evaluated. Probably never happens
-    ;; except when testing buttercup. Should probably do something
-    ;; about that.
+    ;; This a when FUN has not been evaluated.
+    ;; Why does that happen?
     ;; A lambda with an empty arglist and a body containing
     ;; * the quoted original expression
     ;; * the stackframe marker
-    ;; * the original expression
-    ;; In this case expr and expr2 should be equal (but not eq?) as
-    ;; expr2 has not been macroexpanded.
-    ((and `(lambda nil
-             (quote ,expr) (buttercup--mark-stackframe) ,expr2)
-          (guard (equal expr expr2)))
+    ;; * the expanded expression
+    (`(lambda nil
+        (quote ,expr) (buttercup--mark-stackframe) ,_expanded)
      expr)
     ;;; This is when FUN has been byte compiled, as when the entire
     ;;; test file has been byte compiled. Check that it has an empty
