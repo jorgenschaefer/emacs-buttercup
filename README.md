@@ -1,6 +1,7 @@
 # Buttercup — Behavior-Driven Emacs Lisp Testing
 
 [![Build and test](https://github.com/jorgenschaefer/emacs-buttercup/workflows/Build%20and%20test/badge.svg)](https://github.com/jorgenschaefer/emacs-buttercup/actions?query=workflow%3A%22Build+and+test%22+branch%3Amaster)
+[![NonGNU ELPA](https://elpa.nongnu.org/nongnu/buttercup.svg)](https://elpa.nongnu.org/nongnu/buttercup.html)
 [![MELPA Stable](http://stable.melpa.org/packages/buttercup-badge.svg)](http://stable.melpa.org/#/buttercup)
 
 ![Ranculus repens, photo by sannse](docs/images/buttercup.jpg)
@@ -31,11 +32,15 @@ A simple test looks like this.
 *Full article: [Running Tests](docs/running-tests.md)*
 
 You can install buttercup from
+[NonGNU ELPA](https://elpa.nongnu.org/) or
 [MELPA Stable](http://stable.melpa.org/). Add the following to your
 `init.el` or `.emacs` file:
 
 ```
 (require 'package)
+;; Available as a default in GNU Emacs from version 28.1
+(add-to-list 'package-archives
+             ("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
 (add-to-list 'package-archives
              '("melpa-stable" . "http://stable.melpa.org/packages/") t)
 ```
