@@ -2115,7 +2115,9 @@ text properties using `ansi-color-apply'."
         (expect (cl-caadr suites) :to-equal "A test suite")
         (expect specs :to-be-truthy)
         (expect (length (cdr specs)) :to-equal 1)
-        (expect (cl-caadr specs) :to-equal "should fontify special keywords")))))
+        (expect (cl-caadr specs) :to-equal "should fontify special keywords"))))
+  (it "should define `buttercup-minor-mode-map'"
+    (expect (boundp 'buttercup-minor-mode-map))))
 
 ;;;;;;;;;;;;;;;;;;;
 ;;; Stale elc files

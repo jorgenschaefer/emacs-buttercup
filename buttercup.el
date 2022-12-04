@@ -2085,6 +2085,7 @@ With buttercup minor mode active the following is activated:
 - `describe' and `it' forms are available from `imenu' for
   quicker access."
   :lighter " ❀"
+  :keymap (make-sparse-keymap)
   (let ((font-lock-form '(("(\\(describe\\|buttercup-define-matcher\\|it\\) "
                            1 'font-lock-keyword-face)))
         (imenu-forms '(("Test Suites" "\\((describe\\_> +\\)\"\\(\\_<.+\\_>\\)\"" 2)
