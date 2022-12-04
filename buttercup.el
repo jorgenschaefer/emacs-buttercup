@@ -1929,7 +1929,7 @@ the capturing behavior."
   "Format STRING with COLOR.
 Return STRING unmodified if COLOR is nil."
   (if color
-      (let ((color-code (cdr (assoc color buttercup-colors))))
+      (let ((color-code (cdr (assq color buttercup-colors))))
         (format "\e[%sm%s\e[0m" color-code string))
     string))
 
