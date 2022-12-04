@@ -50,9 +50,18 @@
 
 ;; A base error for all errors raised by buttercup.
 (define-error 'buttercup-error-base "error")
+;; Buttercup internals error, raised on internal implementation
+;; inconsistencies.
+(define-error 'buttercup-internals-error "Internal buttercup error"
+              'buttercup-error-base)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; wrapper function manipulation
+
+;; Error for buttercup--enclosed-expr
+(define-error 'buttercup-enclosed-expression-error
+              "Bad test expression"
+              'buttercup-internals-error)
 
 (defun buttercup--enclosed-expr (fun)
   "Given a zero-arg function FUN, return its unevaluated expression.
@@ -93,7 +102,7 @@ ensures access to the un-expanded form."
     ((and (pred byte-code-function-p) (guard (member (aref fun 0) '(nil 0))))
      (aref fun 1))
     ;; Error
-    (_ (error "Not a zero-arg one-expression closure: %S" fun))))
+    (_ (signal 'buttercup-enclosed-expression-error (format "Not a zero-arg one-expression closure: %S" fun)))))
 
 (defun buttercup--expr-and-value (fun)
   "Given a function, return its quoted expression and value.
