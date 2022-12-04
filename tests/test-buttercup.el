@@ -2159,6 +2159,7 @@ text properties using `ansi-color-apply'."
 ;; Local Variables:
 ;; indent-tabs-mode: nil
 ;; sentence-end-double-space: nil
+;; eval: (buttercup-minor-mode)
 ;; End:
 (provide 'test-buttercup)
 ;;; test-buttercup.el ends here
