@@ -124,7 +124,13 @@ is a Lisp timestamp in the style of `current-time'."
 
 (unless (boundp 'backtrace-on-error-noninteractive)
   (defvar backtrace-on-error-noninteractive nil
-	"Control eacrly backtrace starting in Emacs 29."))
+	"Control early backtrace starting in Emacs 29."))
 
 (provide 'buttercup-compat)
 ;;; buttercup-compat.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; tab-width: 8
+;; sentence-end-double-space: nil
+;; End:

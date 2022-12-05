@@ -1,6 +1,7 @@
 ;;; buttercup-test.el --- Tests for buttercup.el -*-lexical-binding:t-*-
 
-;; Copyright (C) 2015, 2021  Jorgen Schaefer <contact@jorgenschaefer.de>
+;; Copyright (C) 2015-2017 Jorgen Schaefer <contact@jorgenschaefer.de>
+;; Copyright (C) 2017-2022 Ola Nilsson <ola.nilsson@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License
@@ -18,8 +19,8 @@
 ;;; Commentary:
 ;;
 ;; Define test-suites to test buttercup itself. This test suite
-;; should pass for all Emacs versions defined in the .travis.yml file
-;; in the project directory root.
+;; should pass for all Emacs versions defined in the
+;; .github/workflows/test.yml file in the project directory root.
 
 ;;; Code:
 
