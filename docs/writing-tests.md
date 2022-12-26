@@ -159,7 +159,14 @@ that are not included below.
       (expect (+ a 1) :to-throw 'void-variable))
     (it "optionally matches arguments to signals"
         (expect (+ a 1) :not :to-throw 'void-variable '(b))
-        (expect (+ a 1) :to-throw 'void-variable '(a)))))
+        (expect (+ a 1) :to-throw 'void-variable '(a)))
+	(it "matches inherited signals"
+	  (expect (signal 'overflow-error nil) :to-throw 'overflow-error)
+	  (expect (signal 'overflow-error nil) :to-throw 'arith-error)
+	  (expect (signal 'overflow-error nil) :to-throw 'error)
+	  (expect (signal 'arith-error nil) :not :to-throw 'overflow-error)
+	  (expect (signal 'arith-error nil) :to-throw 'arith-error)
+	  (expect (signal 'arith-error nil) :to-throw 'error))))
 ```
 
 If you are migrating from ERT, you can also use `should` and similar
