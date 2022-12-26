@@ -498,7 +498,7 @@ See also `buttercup-define-matcher'."
       ((text-expr . text) (regexp-expr . regexp))
       (mapcar #'buttercup--expr-and-value (list text regexp))
     (save-match-data
-      (let* (;; For string literals, juse use them normally, but for
+      (let* (;; For string literals, just use them normally, but for
              ;; expressions, show both the expr and its string value
              (text-is-literal (equal text-expr text))
              (regexp-is-literal (equal regexp-expr regexp))
@@ -646,8 +646,7 @@ See also `buttercup-define-matcher'."
         :expect-mismatch-phrase expect-mismatch-text))))
 
 (buttercup-define-matcher :to-have-been-called (spy)
-  (setq spy (funcall spy))
-  (cl-assert (symbolp spy))
+  (cl-assert (symbolp (funcall spy)))
   (if (spy-calls-all (funcall spy))
       t
     nil))
@@ -1275,11 +1274,6 @@ in a `buttercup-with-cleanup' environment.")
   (puthash (symbol-function spy)
            nil
            buttercup--spy-contexts))
-
-(buttercup-define-matcher :to-have-been-called (spy)
-  (if (spy-calls-all (funcall spy))
-      t
-    nil))
 
 (defun spy-calls-any (spy)
   "Return t iff SPY has been called at all, nil otherwise."
