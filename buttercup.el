@@ -598,10 +598,6 @@ See also `buttercup-define-matcher'."
         (format "Probable incorrect use of `:to-throw' matcher: pass an expression instead of a function: `%S'"
                 unevaluated-expr)
         'yellow)))
-    ;; If no signal specificaiton, use `error' as the signal symbol
-    (when (and (null expected-signal-symbol)
-               (null expected-signal-args))
-      (setq expected-signal-symbol 'error))
     ;; Set the above 4 variables
     (condition-case err
         (setq expr-value
@@ -2128,9 +2124,11 @@ ARG is ‘toggle’; disable otherwise."
            (add-hook 'after-load-functions #'buttercup-check-for-stale-elc)))
         (t (remove-hook 'after-load-functions #'buttercup-check-for-stale-elc))))
 
+(provide 'buttercup)
+;;; buttercup.el ends here
+
 ;; Local Variables:
 ;; indent-tabs-mode: nil
 ;; sentence-end-double-space: nil
+;; tab-width: 8
 ;; End:
-(provide 'buttercup)
-;;; buttercup.el ends here
