@@ -347,19 +347,19 @@ text properties using `ansi-color-apply'."
     :var (matcher-function)
     (before-all
       (setq matcher-function (buttercup--find-matcher-function :to-be-truthy)))
-    (it "to match for a truthy expression"
+    (it "should match for a truthy expression"
       (expect (buttercup--apply-matcher :to-be-truthy
                                         (mapcar #'buttercup--wrap-expr '((not nil))))
               :to-equal
               '(t . "Expected `(not nil)' to be nil, but instead it was `t'.")))
-    (it "to not match for an untruthy expression"
+    (it "should not match for an untruthy expression"
       (expect (buttercup--apply-matcher :to-be-truthy
                                         (mapcar #'buttercup--wrap-expr '((ignore))))
               :to-equal
               '(nil . "Expected `(ignore)' to be non-nil, but instead it was nil."))))
 
   (describe ":to-be"
-    (it "to match if the args are `eq'"
+    (it "should match if the args are `eq'"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher :to-be (mapcar #'buttercup--wrap-expr '('a 'a)))
@@ -368,7 +368,7 @@ text properties using `ansi-color-apply'."
                 (rx "Expected `"
                     (or "'a" "(quote a)")
                     "' not to be `eq' to `a', but it was."))))
-    (it "to not match if the args are not `eq'"
+    (it "should not match if the args are not `eq'"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher :to-be (mapcar #'buttercup--wrap-expr '('a 'b)))
@@ -380,13 +380,13 @@ text properties using `ansi-color-apply'."
   (describe ":to-equal"
     ;; Assumes (get 'equal 'ert-explainer) => 'ert--explain-equal
     (before-each (spy-on 'ert--explain-equal :and-call-through))
-    (it "to match if the args are `equal'"
+    (it "should match if the args are `equal'"
       (let ((res (buttercup--apply-matcher :to-equal (mapcar #'buttercup--wrap-expr '(0.2 0.2)))))
         ;; Check before using :to-equal to verify the return value
         (expect 'ert--explain-equal :to-have-been-called-times 1)
         (expect res :to-equal
                 '(t . "Expected `0.2' not to be `equal' to `0.2', but it was."))))
-    (it "to not match if the args are not `equal'"
+    (it "should not match if the args are not `equal'"
       (let ((res (buttercup--apply-matcher :to-equal (mapcar #'buttercup--wrap-expr '(0.2 1.0)))))
         ;; Check before using :to-equal to verify the return value
         (expect 'ert--explain-equal :to-have-been-called-times 1)
@@ -395,7 +395,7 @@ text properties using `ansi-color-apply'."
          '(nil . "Expected `0.2' to be `equal' to `1.0', but instead it was `0.2' which does not match because: (different-atoms 0.2 1.0).")))))
 
   (describe ":not"
-    (it "to switch the car of the nested matchers return value"
+    (it "should invert the car of the nested matcher's return value"
       (expect
        (buttercup--apply-matcher
         :not (mapcar #'buttercup--wrap-expr '(1 :to-equal 2)))
@@ -406,7 +406,7 @@ text properties using `ansi-color-apply'."
          (cons (not res) msg)))))
 
   (describe ":to-have-same-items-as"
-    (it "to match equal sets"
+    (it "should match equal sets"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher
@@ -417,7 +417,7 @@ text properties using `ansi-color-apply'."
                 (rx "Expected `"
                     (or "'(1 1 2 3 4)" "(quote (1 1 2 3 4))")
                     "' not to have same items as `(4 2 1 3)'"))))
-    (it "to notice missing elements in the second argument"
+    (it "should notice missing elements in the second argument"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher
@@ -429,7 +429,7 @@ text properties using `ansi-color-apply'."
                     (or "'(1 2 3 4)" "(quote (1 2 3 4))")
                     "' to contain the same items as `(4 2 3)', "
                     "but `(1)' are present unexpectedly."))))
-    (it "to notice extra items in the second argument"
+    (it "should notice extra items in the second argument"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher
@@ -441,7 +441,7 @@ text properties using `ansi-color-apply'."
                     (or "'(1 2 3 4)" "(quote (1 2 3 4))")
                     "' to contain the same items as `(4 1 2 3 5)', "
                     "but `(5)' are missing."))))
-    (it "to notice extra items in both arguments"
+    (it "should notice extra items in both arguments"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher
@@ -454,14 +454,14 @@ text properties using `ansi-color-apply'."
                     "' to contain the same items as `(4 1 3 5)', "
                     "but `(5)' are missing and `(2)' are present unexpectedly.")))))
   (describe ":to-match"
-    (it "to match the first argument against a regex"
+    (it "should match the first argument against a regex"
       (expect
        (buttercup--apply-matcher
         :to-match
         (mapcar #'buttercup--wrap-expr '("some string" ".")))
        :to-equal
        '(t . "Expected some string not to match the regexp \".\", but it matched the substring \"s\" from position 0 to 1.")))
-    (it "to show mismatches"
+    (it "should show regex mismatches"
       (expect
        (buttercup--apply-matcher
         :to-match
@@ -469,7 +469,7 @@ text properties using `ansi-color-apply'."
        :to-equal
        '(nil . "Expected some string to match the regexp \"[0-9]+\", but instead it was \"some string\"."))))
   (describe ":to-be-in"
-    (it "to match when the first argument is a member of the second argument"
+    (it "should match when the first argument is a member of the second argument"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher
@@ -480,7 +480,7 @@ text properties using `ansi-color-apply'."
                 (rx "Expected `"
                     (or "'a" "(quote a)")
                     "' not to be an element of `(b a c)', but it was `a'."))))
-    (it "to not match when the first argument is not a member of the second argument"
+    (it "should not match when the first argument is not a member of the second argument"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher
@@ -496,7 +496,7 @@ text properties using `ansi-color-apply'."
                         "(quote a)")
                     "'.")))))
   (describe ":to-contain"
-    (it "to match when the second argument is a member of the first argument"
+    (it "should match when the second argument is a member of the first argument"
       (cl-destructuring-bind
           (status . msg)
        (buttercup--apply-matcher
@@ -504,7 +504,7 @@ text properties using `ansi-color-apply'."
         (mapcar #'buttercup--wrap-expr '('(b a c) 'a)))
        (expect status)
        (expect msg :to-match "Expected `\\('(b a c)\\|(quote (b a c))\\)' to be a list not containing `a', but instead it was `(b a c)'.")))
-    (it "to not match when the second argument is not a member of the first argument"
+    (it "should not match when the second argument is not a member of the first argument"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher
@@ -514,71 +514,71 @@ text properties using `ansi-color-apply'."
         (expect msg :to-match
                 "Expected `\\('(b d c)\\|(quote (b d c))\\)' to be a list containing `a', but instead it was `(b d c)'."))))
   (describe ":to-be-less-than"
-    (it "to match when the first argument is less than the second argument"
+    (it "should match when the first argument is less than the second argument"
       (expect (buttercup--apply-matcher :to-be-less-than
                                         (mapcar #'buttercup--wrap-expr '(1 2)))
               :to-equal
               '(t . "Expected `1' >= 2, but `1' was 1.")))
-    (it "to not match when the first argument is equal to the second argument"
+    (it "should not match when the first argument is equal to the second argument"
       (expect (buttercup--apply-matcher :to-be-less-than
                                         (mapcar #'buttercup--wrap-expr '(2 2)))
               :to-equal
               '(nil . "Expected `2' < 2, but `2' was 2.")))
-    (it "to not match when the first argument is greater than the second argument"
+    (it "should not match when the first argument is greater than the second argument"
       (expect (buttercup--apply-matcher :to-be-less-than
                                         (mapcar #'buttercup--wrap-expr '(3 2)))
               :to-equal
               '(nil . "Expected `3' < 2, but `3' was 3."))))
   (describe ":to-be-greater-than"
-    (it "to match when the first argument is greater than the second argument"
+    (it "should match when the first argument is greater than the second argument"
       (expect (buttercup--apply-matcher :to-be-greater-than
                                         (mapcar #'buttercup--wrap-expr '(2 1)))
               :to-equal
               '(t . "Expected `2' <= 1, but `2' was 2.")))
-    (it "to not match when the first argument is equal to the second argument"
+    (it "should not match when the first argument is equal to the second argument"
       (expect (buttercup--apply-matcher :to-be-greater-than
                                         (mapcar #'buttercup--wrap-expr '(2 2)))
               :to-equal
               '(nil . "Expected `2' > 2, but `2' was 2.")))
-    (it "to not match when the first argument is greater than the second argument"
+    (it "should not match when the first argument is greater than the second argument"
       (expect (buttercup--apply-matcher :to-be-greater-than
                                         (mapcar #'buttercup--wrap-expr '(2 3)))
               :to-equal
               '(nil . "Expected `2' > 3, but `2' was 2."))))
   (describe ":to-be-weakly-less-than"
-    (it "to match when the first argument is less than the second argument"
+    (it "should match when the first argument is less than the second argument"
       (expect (buttercup--apply-matcher :to-be-weakly-less-than
                                         (mapcar #'buttercup--wrap-expr '(1 2)))
               :to-equal
               '(t . "Expected `1' > 2, but `1' was 1.")))
-    (it "to match when the first argument is equal to the second argument"
+    (it "should match when the first argument is equal to the second argument"
       (expect (buttercup--apply-matcher :to-be-weakly-less-than
                                         (mapcar #'buttercup--wrap-expr '(2 2)))
               :to-equal
               '(t . "Expected `2' > 2, but `2' was 2.")))
-    (it "to not match when the first argument is greater than the second argument"
+    (it "should not match when the first argument is greater than the second argument"
       (expect (buttercup--apply-matcher :to-be-weakly-less-than
                                         (mapcar #'buttercup--wrap-expr '(3 2)))
               :to-equal
               '(nil . "Expected `3' <= 2, but `3' was 3."))))
   (describe ":to-be-weakly-greater-than"
-    (it "to match when the first argument is greater than the second argument"
+    (it "should match when the first argument is greater than the second argument"
       (expect (buttercup--apply-matcher :to-be-weakly-greater-than
                                         (mapcar #'buttercup--wrap-expr '(2 1)))
               :to-equal
               '(t . "Expected `2' < 1, but `2' was 2.")))
-    (it "to match when the first argument is equal to the second argument"
+    (it "should match when the first argument is equal to the second argument"
       (expect (buttercup--apply-matcher :to-be-weakly-greater-than
                                         (mapcar #'buttercup--wrap-expr '(2 2)))
               :to-equal
               '(t . "Expected `2' < 2, but `2' was 2.")))
-    (it "to not match when the first argument is greater than the second argument"
+    (it "should not match when the first argument is greater than the second argument"
       (expect (buttercup--apply-matcher :to-be-weakly-greater-than
                                         (mapcar #'buttercup--wrap-expr '(2 3)))
               :to-equal
               '(nil . "Expected `2' >= 3, but `2' was 2."))))
   (describe ":to-be-close-to"
-    (it "to match when value difference is less than precision"
+    (it "should match when value difference is less than precision"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher :to-be-close-to
@@ -587,7 +587,7 @@ text properties using `ansi-color-apply'."
         (expect
          msg :to-match
          "Expected `0.01' to differ from 0.011 by more than 0.01, but instead it was 0.01, with a difference of 0.00[0-9]+")))
-    (it "to not match when value difference is larger than precision"
+    (it "should not match when value difference is larger than precision"
       (cl-destructuring-bind
           (status . msg)
           (buttercup--apply-matcher :to-be-close-to
@@ -597,22 +597,79 @@ text properties using `ansi-color-apply'."
          msg :to-match
          "Expected `0.01' to be within 0.0001 of 0.011, but instead it was 0.01, with a difference of 0.00[0-9]+"))))
   (describe ":to-throw"
-    (xit "is not possible to test"))
+    ;; Actually tests `buttercup--handle-to-throw'
+    (it "should match when signal symbol and argument match exactly"
+      (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
+                                          (list 'overflow-error (concat "Foo" "bar"))
+                                          '(myfunc) nil)
+              :to-equal
+              '(t . "Expected `(myfunc)' not to throw a child signal of `overflow-error' with args `(\"Foobar\")', but it threw (overflow-error \"Foobar\")")))
+    (it "should match the error symbol without args"
+      (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
+                                          '(overflow-error)
+                                          '(myfunc) nil)
+              :to-equal
+              '(t . "Expected `(myfunc)' not to throw a child signal of `overflow-error', but it threw (overflow-error \"Foobar\")")))
+    (it "should match the with no error signal specified"
+      (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
+                                          '()
+                                          '(myfunc) nil)
+              :to-equal
+              '(t . "Expected `(myfunc)' not to throw a signal, but it threw (overflow-error \"Foobar\")")))
+    (it "should match a child signal"
+      (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
+                                          '(arith-error)
+                                          '(myfunc) nil)
+              :to-equal
+              '(t . "Expected `(myfunc)' not to throw a child signal of `arith-error', but it threw (overflow-error \"Foobar\")")))
+    (it "should match child signals and equal arguments"
+      (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
+                                          `(arith-error ,(concat "Foo" "bar"))
+                                          '(myfunc) nil)
+              :to-equal
+              '(t . "Expected `(myfunc)' not to throw a child signal of `arith-error' with args `(\"Foobar\")', but it threw (overflow-error \"Foobar\")")))
+    (it "should not match with different arguments"
+      (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
+                                          (list 'overflow-error (concat "Foo" "bar" "baz"))
+                                          '(myfunc) nil)
+              :to-equal
+              '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error' with args `(\"Foobarbaz\")', but instead it threw (overflow-error \"Foobar\")")))
+    (it "should not match an unrelated symbol"
+      (expect (buttercup--handle-to-throw '(void-variable "Foobar")
+                                          (list 'overflow-error (concat "Foo" "bar"))
+                                          '(myfunc) nil)
+              :to-equal
+              '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error' with args `(\"Foobar\")', but instead it threw (void-variable \"Foobar\")")))
+    (it "should not match a parent signal"
+      (expect (buttercup--handle-to-throw '(arith-error "Foobar")
+                                          `(overflow-error )
+                                          '(myfunc) nil)
+              :to-equal
+              '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error', but instead it threw (arith-error \"Foobar\")")))
+    (it "should not match when no signal is raised"
+      ;; since thid test does not need to signal an error, it can apply the full matcher
+      (expect (buttercup--apply-matcher
+               :to-throw
+               (mapcar #'buttercup--wrap-expr '((identity t))))
+               :to-equal
+               '(nil . "Expected `(identity t)' to throw a child signal of `error', but instead it evaluated successfully, returning value `t'")))
+    )
+
   (describe ":to-have-been-called"
     (before-each
       (spy-on 'i-spy-with-my-little-eye))
-    (it "to not match if the spy has not been called"
+    (it "should not match if the spy has not been called"
       (expect (buttercup--apply-matcher
                :to-have-been-called
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye)))
               :not :to-be-truthy))
-    (it "to not match if the spy has been called once"
+    (it "should not match if the spy has been called once"
       (i-spy-with-my-little-eye)
       (expect (buttercup--apply-matcher
                :to-have-been-called
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye)))
               :to-be-truthy))
-    (it "to not match if the spy has been called multiple times"
+    (it "should not match if the spy has been called multiple times"
       (dotimes (x 1000)
         (i-spy-with-my-little-eye))
       (expect (buttercup--apply-matcher
@@ -623,7 +680,7 @@ text properties using `ansi-color-apply'."
   (describe ":to-have-been-called-with"
     (before-each
       (spy-on 'i-spy-with-my-little-eye))
-    (it "to not match if the spy has not been called at all"
+    (it "should not match if the spy has not been called at all"
       (expect
        (buttercup--apply-matcher
         :to-have-been-called-with
@@ -632,7 +689,7 @@ text properties using `ansi-color-apply'."
        '(nil
          .
          "Expected `i-spy-with-my-little-eye' to have been called with (123), but it was not called at all")))
-    (it "to not match if the spy has not been called with the specified arguments"
+    (it "should not match if the spy has not been called with the specified arguments"
       (i-spy-with-my-little-eye 123)
       (i-spy-with-my-little-eye 456)
       (i-spy-with-my-little-eye 789)
@@ -648,7 +705,7 @@ text properties using `ansi-color-apply'."
        '(nil
          .
          "Expected `i-spy-with-my-little-eye' to have been called with (234), but it was called with (123), (456), (789), (ABC), (DEF), (HIJ), (KLM)")))
-    (it "to match if the spy has been called once with the specified arguments"
+    (it "should match if the spy has been called once with the specified arguments"
       (i-spy-with-my-little-eye 123)
       (i-spy-with-my-little-eye 456)
       (i-spy-with-my-little-eye 789)
@@ -660,7 +717,7 @@ text properties using `ansi-color-apply'."
                :to-have-been-called-with
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye 789)))
               :to-be-truthy))
-    (it "to not match if the spy has been called multiple times with the specified arguments"
+    (it "should not match if the spy has been called multiple times with the specified arguments"
       (dotimes (x 10)
         (i-spy-with-my-little-eye 123)
         (i-spy-with-my-little-eye 456))
@@ -672,14 +729,14 @@ text properties using `ansi-color-apply'."
   (describe ":to-have-been-called-times"
     (before-each
       (spy-on 'i-spy-with-my-little-eye))
-    (it "to not match if the spy has been called less times"
+    (it "should not match if the spy has been called less times"
       (i-spy-with-my-little-eye)
       (expect (buttercup--apply-matcher
                :to-have-been-called-times
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye 2)))
               :to-equal
               '(nil . "Expected `i-spy-with-my-little-eye' to have been called 2 times, but it was called 1 time")))
-    (it "to not match if the spy has been called more times"
+    (it "should not match if the spy has been called more times"
       (dotimes (x 6)
         (i-spy-with-my-little-eye))
       (expect (buttercup--apply-matcher
@@ -687,14 +744,14 @@ text properties using `ansi-color-apply'."
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye 4)))
               :to-equal
               '(nil . "Expected `i-spy-with-my-little-eye' to have been called 4 times, but it was called 6 times")))
-    (it "to match if the spy has been called the correct number of times"
+    (it "should match if the spy has been called the correct number of times"
       (dotimes (x 6)
         (i-spy-with-my-little-eye))
       (expect (buttercup--apply-matcher
                :to-have-been-called-times
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye 6)))
               :to-be-truthy))
-    (it "to match if the spy has been called 0 times"
+    (it "should match if the spy has been called 0 times"
       (expect (buttercup--apply-matcher
                :to-have-been-called-times
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye 0)))
