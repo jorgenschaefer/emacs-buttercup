@@ -587,9 +587,7 @@ See also `buttercup-define-matcher'."
         (expected-signal-args (and signal-args (funcall signal-args)))
         (unevaluated-expr (buttercup--enclosed-expr expr))
         expr-value
-        thrown-signal
-        thrown-signal-symbol
-        thrown-signal-args)
+        thrown-signal)
     (when (and (functionp unevaluated-expr)
                (member (car unevaluated-expr) '(lambda closure)))
       (display-warning
@@ -598,15 +596,33 @@ See also `buttercup-define-matcher'."
         (format "Probable incorrect use of `:to-throw' matcher: pass an expression instead of a function: `%S'"
                 unevaluated-expr)
         'yellow)))
-    ;; Set the above 4 variables
+    ;; Set the above variables
     (condition-case err
         (setq expr-value
               (funcall expr))
       (error
-       (setq thrown-signal err
-             thrown-signal-symbol (car err)
-             thrown-signal-args (cdr err))
+       (setq thrown-signal err)
        nil))
+    (buttercup--handle-to-throw thrown-signal
+                                (cons expected-signal-symbol expected-signal-args)
+                                unevaluated-expr expr-value)))
+
+(defun buttercup--handle-to-throw (thrown-signal expected-signal unevaluated-expr expr-value)
+  "Handle the results of the :to-throw matcher.
+This is a separate function for testability purposes.
+THROWN-SIGNAL is the signal - a `cons' of symbol and arguments -
+caught by `condition-case', or nil if no signal was raised.
+EXPECTED-SIGNAL is a `cons' of the expected signal symbol and
+arguments. The `cdr' can be nil if the `expect' statement did not
+specify any expected arguments.
+UNEVALUATED-EXPR is the Lisp sexp used before the :to-throw
+matcher keyword in the `expect' statement.
+EXPR-VALUE is the return value from the evaluation of
+UNEVALUATED-EXPR if it did not raise any signal."
+  (let ((thrown-signal-symbol (car thrown-signal))
+        (thrown-signal-args (cdr thrown-signal))
+        (expected-signal-symbol (car expected-signal))
+        (expected-signal-args (cdr expected-signal)))
     (let*
         ((matched
           (and thrown-signal
