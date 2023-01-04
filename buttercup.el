@@ -658,32 +658,33 @@ UNEVALUATED-EXPR if it did not raise any signal."
                    (memq expected-signal-symbol (get thrown-signal-symbol 'error-conditions)))
                (or (null expected-signal-args)
                    (equal thrown-signal-args expected-signal-args))))
+         ;; Some of these replacement are always used, there is no
+         ;; reason not to format them immediately. But e and t are not
+         ;; always used and should be delayed. Use
+         ;; buttercup--simple-format for formatting as format-spec
+         ;; does not support functions until Emacs 29
          (spec (format-spec-make
                 ?E (format "%S" unevaluated-expr)
-                ?e (format "%S" expr-value)
-                ?t (format "%S" thrown-signal)
+                ?e (lambda () (format "%S" expr-value))
+                ?t (lambda () (format "%S" thrown-signal))
                 ?s (if expected-signal-symbol
                        (format "a child signal of `%S'" expected-signal-symbol)
                      "a signal")
                 ?a (if expected-signal-args
                        (format " with args `%S'" expected-signal-args)
                      "")))
-         (result-text
-          (if thrown-signal
-              (buttercup-format-spec "it threw %t" spec)
-            (buttercup-format-spec "it evaluated successfully, returning value `%e'" spec)))
-
-         (expect-match-text
-          (concat (buttercup-format-spec "Expected `%E' to throw %s%a" spec)
-                  ", but instead "
-                  result-text))
-         (expect-mismatch-text
-          (concat (buttercup-format-spec "Expected `%E' not to throw %s%a" spec)
-                  ", but "
-                  result-text)))
+         (result-fmt (if thrown-signal
+                         "it threw %t"
+                       "it evaluated successfully, returning value `%e'")))
       (buttercup--test-expectation matched
-        :expect-match-phrase expect-match-text
-        :expect-mismatch-phrase expect-mismatch-text))))
+        :expect-match-phrase
+        (buttercup--simple-format
+         spec
+         "Expected `%E' to throw %s%a, but instead " result-fmt)
+        :expect-mismatch-phrase
+        (buttercup--simple-format
+         spec
+         "Expected `%E' not to throw %s%a, but " result-fmt)))))
 
 (buttercup-define-matcher :to-have-been-called (spy)
   (cl-assert (symbolp (funcall spy)))
