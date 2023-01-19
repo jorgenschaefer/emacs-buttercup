@@ -134,6 +134,34 @@ a call to `save-match-data', as `format-spec' modifies that."
   (save-match-data
     (format-spec format specification)))
 
+(defun buttercup--simple-format (specification &rest format)
+  "Return a string based on SPECIFICATION and FORMAT.
+A simpler version of `format-spec', which see.
+If more than one FORMAT string is given they will be combined
+before formatting replacements occur.
+
+Does not support flags, width or precision.
+The substitution for a specification character can be a function,
+which is only supported in `format-spec' from Emacs 29.
+Does not have the IGNORE-MISSING and SPLIT parameters."
+  (save-match-data
+    (with-temp-buffer
+      (apply #'insert format)
+      (goto-char 1)
+      (while (search-forward "%" nil t)
+        (cond
+         ((= (following-char) ?%)
+          (delete-char 1))
+         ((looking-at-p (rx alpha))
+          (let* ((char (following-char))
+                 (begin (point))
+                 (replacement (cdr (assq char specification)))
+                 (text (if (functionp replacement) (funcall replacement) replacement)))
+            (insert-and-inherit text)
+            (delete-char 1)
+            (delete-region (1- begin) begin)))))
+      (buffer-string))))
+
 ;;;;;;;;;;
 ;;; expect
 
