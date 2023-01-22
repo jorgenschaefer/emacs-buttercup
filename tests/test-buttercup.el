@@ -603,49 +603,49 @@ text properties using `ansi-color-apply'."
                                           (list 'overflow-error (concat "Foo" "bar"))
                                           '(myfunc) nil)
               :to-equal
-              '(t . "Expected `(myfunc)' not to throw a child signal of `overflow-error' with args `(\"Foobar\")', but it threw (overflow-error \"Foobar\")")))
+              '(t . "Expected `(myfunc)' not to throw a child signal of `overflow-error' with args `(\"Foobar\")', but it threw `overflow-error' with args (\"Foobar\")")))
     (it "should match the error symbol without args"
       (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
                                           '(overflow-error)
                                           '(myfunc) nil)
               :to-equal
-              '(t . "Expected `(myfunc)' not to throw a child signal of `overflow-error', but it threw (overflow-error \"Foobar\")")))
+              '(t . "Expected `(myfunc)' not to throw a child signal of `overflow-error', but it threw `overflow-error' with args (\"Foobar\")")))
     (it "should match the with no error signal specified"
       (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
                                           '()
                                           '(myfunc) nil)
               :to-equal
-              '(t . "Expected `(myfunc)' not to throw a signal, but it threw (overflow-error \"Foobar\")")))
+              '(t . "Expected `(myfunc)' not to throw a signal, but it threw `overflow-error' with args (\"Foobar\")")))
     (it "should match a child signal"
       (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
                                           '(arith-error)
                                           '(myfunc) nil)
               :to-equal
-              '(t . "Expected `(myfunc)' not to throw a child signal of `arith-error', but it threw (overflow-error \"Foobar\")")))
+              '(t . "Expected `(myfunc)' not to throw a child signal of `arith-error', but it threw `overflow-error' with args (\"Foobar\")")))
     (it "should match child signals and equal arguments"
       (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
                                           `(arith-error ,(concat "Foo" "bar"))
                                           '(myfunc) nil)
               :to-equal
-              '(t . "Expected `(myfunc)' not to throw a child signal of `arith-error' with args `(\"Foobar\")', but it threw (overflow-error \"Foobar\")")))
+              '(t . "Expected `(myfunc)' not to throw a child signal of `arith-error' with args `(\"Foobar\")', but it threw `overflow-error' with args (\"Foobar\")")))
     (it "should not match with different arguments"
       (expect (buttercup--handle-to-throw '(overflow-error "Foobar")
                                           (list 'overflow-error (concat "Foo" "bar" "baz"))
                                           '(myfunc) nil)
               :to-equal
-              '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error' with args `(\"Foobarbaz\")', but instead it threw (overflow-error \"Foobar\")")))
+              '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error' with args `(\"Foobarbaz\")', but instead it threw `overflow-error' with args (\"Foobar\")")))
     (it "should not match an unrelated symbol"
       (expect (buttercup--handle-to-throw '(void-variable "Foobar")
                                           (list 'overflow-error (concat "Foo" "bar"))
                                           '(myfunc) nil)
               :to-equal
-              '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error' with args `(\"Foobar\")', but instead it threw (void-variable \"Foobar\")")))
+              '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error' with args `(\"Foobar\")', but instead it threw `void-variable' with args (\"Foobar\")")))
     (it "should not match a parent signal"
       (expect (buttercup--handle-to-throw '(arith-error "Foobar")
                                           `(overflow-error )
                                           '(myfunc) nil)
               :to-equal
-              '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error', but instead it threw (arith-error \"Foobar\")")))
+              '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error', but instead it threw `arith-error' with args (\"Foobar\")")))
     (it "should not match when no signal is raised"
       ;; since thid test does not need to signal an error, it can apply the full matcher
       (expect (buttercup--apply-matcher
