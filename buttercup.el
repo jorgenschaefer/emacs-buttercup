@@ -611,7 +611,7 @@ See also `buttercup-define-matcher'."
                 a-expr b tolerance a (abs (- a b)))))))
 
 (buttercup-define-matcher :to-throw (expr &optional signal signal-args)
-  (let ((expected-signal-symbol (or (and signal (funcall signal)) 'error))
+  (let ((expected-signal-symbol (and signal (funcall signal)))
         (expected-signal-args (and signal-args (funcall signal-args)))
         (unevaluated-expr (buttercup--enclosed-expr expr))
         expr-value

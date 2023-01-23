@@ -646,13 +646,21 @@ text properties using `ansi-color-apply'."
                                           '(myfunc) nil)
               :to-equal
               '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error', but instead it threw `arith-error' with args (\"Foobar\")")))
-    (it "should not match when no signal is raised"
-      ;; since thid test does not need to signal an error, it can apply the full matcher
-      (expect (buttercup--apply-matcher
+    (describe "should not match when no signal is raised"
+      (it "and not mention unspecified signal"
+        ;; since this test does not need to signal an error, it can apply the full matcher
+        (expect (buttercup--apply-matcher
+                 :to-throw
+                 (mapcar #'buttercup--wrap-expr '((identity t))))
+                :to-equal
+                '(nil . "Expected `(identity t)' to throw a signal, but instead it evaluated successfully, returning value `t'")))
+      (it "and mention any specified signal"
+        (expect (buttercup--apply-matcher
                :to-throw
-               (mapcar #'buttercup--wrap-expr '((identity t))))
+               (mapcar #'buttercup--wrap-expr '((identity t) 'arith-error)))
                :to-equal
-               '(nil . "Expected `(identity t)' to throw a child signal of `error', but instead it evaluated successfully, returning value `t'")))
+               '(nil . "Expected `(identity t)' to throw a child signal of `arith-error', but instead it evaluated successfully, returning value `t'")))
+        )
     )
 
   (describe ":to-have-been-called"
