@@ -678,7 +678,10 @@ UNEVALUATED-EXPR if it did not raise any signal."
                 ?e (lambda () (format "%S" expr-value))
                 ?t (lambda () (format "%S" thrown-signal))
                 ?S (lambda () (format "%S" thrown-signal-symbol))
-                ?A (lambda () (format "%S" thrown-signal-args))
+                ?A (lambda ()
+                     (if expected-signal-args
+                         (format " with args `%S'" thrown-signal-args)
+                       ""))
                 ?s (if expected-signal-symbol
                        (format "a child signal of `%S'" expected-signal-symbol)
                      "a signal")
@@ -693,11 +696,11 @@ UNEVALUATED-EXPR if it did not raise any signal."
           :expect-match-phrase
           (buttercup--simple-format
            spec
-           "Expected `%E' to throw %s%a, but instead it threw `%S' with args %A")
+           "Expected `%E' to throw %s%a, but instead it threw `%S'%A")
           :expect-mismatch-phrase
           (buttercup--simple-format
            spec
-           "Expected `%E' not to throw %s%a, but it threw `%S' with args %A"))))))
+           "Expected `%E' not to throw %s%a, but it threw `%S'%A"))))))
 
 (buttercup-define-matcher :to-have-been-called (spy)
   (cl-assert (symbolp (funcall spy)))
