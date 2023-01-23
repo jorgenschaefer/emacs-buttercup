@@ -684,19 +684,20 @@ UNEVALUATED-EXPR if it did not raise any signal."
                      "a signal")
                 ?a (if expected-signal-args
                        (format " with args `%S'" expected-signal-args)
-                     "")))
-         (result-fmt (if thrown-signal
-                         "it threw `%S' with args %A"
-                       "it evaluated successfully, returning value `%e'")))
-      (buttercup--test-expectation matched
-        :expect-match-phrase
-        (buttercup--simple-format
-         spec
-         "Expected `%E' to throw %s%a, but instead " result-fmt)
-        :expect-mismatch-phrase
-        (buttercup--simple-format
-         spec
-         "Expected `%E' not to throw %s%a, but " result-fmt)))))
+                     ""))))
+      (if (null thrown-signal)
+          ;; Match is not possible unless a signal was raied
+          (cons nil (buttercup--simple-format spec "Expected `%E' to throw %s%a, but instead it returned `%e'"))
+        ;; non-matching signal
+        (buttercup--test-expectation matched
+          :expect-match-phrase
+          (buttercup--simple-format
+           spec
+           "Expected `%E' to throw %s%a, but instead it threw `%S' with args %A")
+          :expect-mismatch-phrase
+          (buttercup--simple-format
+           spec
+           "Expected `%E' not to throw %s%a, but it threw `%S' with args %A"))))))
 
 (buttercup-define-matcher :to-have-been-called (spy)
   (cl-assert (symbolp (funcall spy)))

@@ -653,13 +653,13 @@ text properties using `ansi-color-apply'."
                  :to-throw
                  (mapcar #'buttercup--wrap-expr '((identity t))))
                 :to-equal
-                '(nil . "Expected `(identity t)' to throw a signal, but instead it evaluated successfully, returning value `t'")))
+                '(nil . "Expected `(identity t)' to throw a signal, but instead it returned `t'")))
       (it "and mention any specified signal"
         (expect (buttercup--apply-matcher
                :to-throw
                (mapcar #'buttercup--wrap-expr '((identity t) 'arith-error)))
                :to-equal
-               '(nil . "Expected `(identity t)' to throw a child signal of `arith-error', but instead it evaluated successfully, returning value `t'")))
+               '(nil . "Expected `(identity t)' to throw a child signal of `arith-error', but instead it returned `t'")))
         )
     )
 
