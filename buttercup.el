@@ -657,17 +657,22 @@ UNEVALUATED-EXPR is the Lisp sexp used before the :to-throw
 matcher keyword in the `expect' statement.
 EXPR-VALUE is the return value from the evaluation of
 UNEVALUATED-EXPR if it did not raise any signal."
-  (let ((thrown-signal-symbol (car thrown-signal))
-        (thrown-signal-args (cdr thrown-signal))
-        (expected-signal-symbol (car expected-signal))
-        (expected-signal-args (cdr expected-signal)))
+  (let* ((thrown-signal-symbol (car thrown-signal))
+         (thrown-signal-args (cdr thrown-signal))
+         (expected-signal-symbol (car expected-signal))
+         (expected-signal-args (cdr expected-signal))
+         (matching-signal-symbol
+          (or (null expected-signal-symbol)
+              (memq expected-signal-symbol (get thrown-signal-symbol 'error-conditions))))
+         (explained-signal-args ; nil for matched, explained or t for mismatched
+          (when expected-signal-args
+              ;; The ert-explainer for equal does an equal internally,
+              ;; so avoid calling equal twice by calling the explainer
+              ;; directly.
+              (funcall (or (get 'equal 'ert-explainer) (lambda (a b) (not (equal a b))))
+                       thrown-signal-args expected-signal-args))))
     (let*
-        ((matched
-          (and thrown-signal
-               (or (null expected-signal-symbol)
-                   (memq expected-signal-symbol (get thrown-signal-symbol 'error-conditions)))
-               (or (null expected-signal-args)
-                   (equal thrown-signal-args expected-signal-args))))
+        ((matched (and thrown-signal matching-signal-symbol (not explained-signal-args)))
          ;; Some of these replacement are always used, there is no
          ;; reason not to format them immediately. But e and t are not
          ;; always used and should be delayed. Use
