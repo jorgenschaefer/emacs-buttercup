@@ -1586,10 +1586,12 @@ Signal an error if any spec fail or if no suites have been
 defined. Signal no errors if NOERROR is non-nil. Return t if all
 specs pass, nil if at least one spec fail, and :no-suites if no suites
 have been defined."
-  (if buttercup-suites
-      (buttercup--run-suites buttercup-suites noerror)
-    (or (and noerror :no-suites)
-        (error "No suites defined"))))
+  ;; See https://github.com/jorgenschaefer/emacs-buttercup/issues/230.
+  (let ((native-comp-enable-subr-trampolines nil))
+    (if buttercup-suites
+        (buttercup--run-suites buttercup-suites noerror)
+      (or (and noerror :no-suites)
+          (error "No suites defined")))))
 
 (define-error 'buttercup-run-specs-failed "buttercup-run failed" 'buttercup-error-base)
 
