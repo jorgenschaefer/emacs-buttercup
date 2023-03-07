@@ -692,20 +692,30 @@ UNEVALUATED-EXPR if it did not raise any signal."
                      "a signal")
                 ?a (if expected-signal-args
                        (format " with args `%S'" expected-signal-args)
-                     ""))))
-      (if (null thrown-signal)
-          ;; Match is not possible unless a signal was raied
-          (cons nil (buttercup--simple-format spec "Expected `%E' to throw %s%a, but instead it returned `%e'"))
-        ;; non-matching signal
-        (buttercup--test-expectation matched
-          :expect-match-phrase
-          (buttercup--simple-format
-           spec
-           "Expected `%E' to throw %s%a, but instead it threw `%S'%A")
-          :expect-mismatch-phrase
-          (buttercup--simple-format
-           spec
-           "Expected `%E' not to throw %s%a, but it threw `%S'%A"))))))
+                     "")
+                ?q (lambda () (format "%S" explained-signal-args))
+                )))
+      (cond
+       (matched ;; should be the most likely result
+        `(t . ,(buttercup--simple-format
+                spec "Expected `%E' not to throw %s%a, but it threw `%S'%A")))
+       ((null thrown-signal) ; no signal raised
+        `(nil . ,(buttercup--simple-format
+                  spec "Expected `%E' to throw %s%a, but instead it returned `%e'")))
+       ((and explained-signal-args (not matching-signal-symbol)) ; neither symbol nor args matched
+        `(nil . ,(buttercup--simple-format
+                  spec
+                  "Expected `%E' to throw %s%a, but instead it threw `%S'%A")))
+       (explained-signal-args ; symbol matched
+        `(nil . ,(buttercup--simple-format
+                  spec
+                  "Expected `%E' to throw %s%a, but instead it threw `%S'%A")))
+       ((not matching-signal-symbol) ; args matched
+        `(nil . ,(buttercup--simple-format
+                  spec
+                  "Expected `%E' to throw %s%a, but instead it threw `%S'%A")))
+       (t (error "`buttercup--handle-to-throw' could not handle args %S %S"
+                 thrown-signal expected-signal))))))
 
 (buttercup-define-matcher :to-have-been-called (spy)
   (cl-assert (symbolp (funcall spy)))
