@@ -254,7 +254,8 @@ The BODY will receive ARGS as functions that can be called (using
 simple boolean, or a cons cell of the form (RESULT . MESSAGE). If
 RESULT is nil, MESSAGE should describe why the matcher failed. If
 RESULT is non-nil, MESSAGE should describe why a negated matcher
-failed."
+failed.
+BODY may start with a docstring."
   (declare (indent defun))
   `(put ,matcher 'buttercup-matcher
         (lambda ,args
@@ -611,6 +612,14 @@ See also `buttercup-define-matcher'."
                 a-expr b tolerance a (abs (- a b)))))))
 
 (buttercup-define-matcher :to-throw (expr &optional signal signal-args)
+  "Check that EXPR raises SIGNAL with SIGNAL-ARGS.
+EXPR, SIGNAL, and SIGNAL-ARGS should all be buttercup-wrapped
+objects. EXPR is the test code that will be evaluated. The signal
+raised by EXPR must be SIGNAL or an error signal derived from
+SIGNAL. If SIGNAL is nil match any error signal. If SIGNAL-ARGS
+are given they must be `equal' to the arguments of the caught
+signal. Do not consider the signal arguments if SIGNAL-ARGS is
+nil."
   (let ((expected-signal-symbol (and signal (funcall signal)))
         (expected-signal-args (and signal-args (funcall signal-args)))
         (unevaluated-expr (buttercup--enclosed-expr expr))
