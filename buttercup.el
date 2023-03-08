@@ -1175,23 +1175,18 @@ none of them is equivalent to `:return-value nil'.
 
 (defun spy-on (symbol &optional keyword arg)
   "Create a spy (mock) for the function SYMBOL.
+The spy will track call information that can be queried with the
+:to-have-been-called matchers.
+The default spy will always return nil, but that can be changed
+by setting KEYWORD to one of:
 
-KEYWORD can have one of the following values:
+  :and-call-through -- call the original function.
 
-  :and-call-through -- Track calls, but call the original
-      function.
+  :and-return-value -- return ARG.
 
-  :and-return-value -- Track calls, but return ARG instead of
-      calling the original function.
+  :and-call-fake -- call ARG, a function that matches SYMBOL.
 
-  :and-call-fake -- Track calls, but call ARG instead of the
-      original function.
-
-  :and-throw-error -- Signal ARG as an error instead of calling
-      the original function.
-
-  nil -- Track calls, but simply return nil instead of calling
-      the original function.
+  :and-throw-error -- Signal ARG without arguments.
 
 If the original function was a command, the generated spy will
 also be a command with the same interactive form, unless
@@ -1241,7 +1236,7 @@ responsibility to ensure ARG is a command."
             (_
              (error "Invalid `spy-on' keyword: `%S'" keyword)))))
     (unless (buttercup--spy-on-and-call-replacement symbol replacement)
-      (error "Spies can only be created in `before-each'"))))
+      (error "Spies can only be created in `before-each' or `it'"))))
 
 
 (defun buttercup--spy-on-and-call-replacement (spy fun)
