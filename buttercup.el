@@ -1285,7 +1285,11 @@ in a `buttercup-with-cleanup' environment.")
 
 (defmacro buttercup-with-cleanup (&rest body)
   "Execute BODY, cleaning spys and the rest afterwards."
-  `(let ((buttercup--cleanup-functions nil))
+  `(let ((buttercup--cleanup-functions nil)
+         ;; Redefining certain primitive's trampolines will cause problems,
+         ;; see https://github.com/jorgenschaefer/emacs-buttercup/issues/230 and
+         ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=61880
+         (native-comp-enable-subr-trampolines nil))
      (unwind-protect (progn ,@body)
        (dolist (fun buttercup--cleanup-functions)
          (ignore-errors
@@ -1586,12 +1590,10 @@ Signal an error if any spec fail or if no suites have been
 defined. Signal no errors if NOERROR is non-nil. Return t if all
 specs pass, nil if at least one spec fail, and :no-suites if no suites
 have been defined."
-  ;; See https://github.com/jorgenschaefer/emacs-buttercup/issues/230.
-  (let ((native-comp-enable-subr-trampolines nil))
-    (if buttercup-suites
-        (buttercup--run-suites buttercup-suites noerror)
-      (or (and noerror :no-suites)
-          (error "No suites defined")))))
+  (if buttercup-suites
+      (buttercup--run-suites buttercup-suites noerror)
+    (or (and noerror :no-suites)
+        (error "No suites defined"))))
 
 (define-error 'buttercup-run-specs-failed "buttercup-run failed" 'buttercup-error-base)
 

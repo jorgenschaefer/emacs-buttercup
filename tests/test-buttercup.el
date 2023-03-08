@@ -1344,6 +1344,17 @@ text properties using `ansi-color-apply'."
          (test-function 1 2)
          :to-throw 'error))
 
+      (it "works on native-compilation primitives"
+        ;; Redefining certain primitive's trampolines will cause problems,
+        ;; see https://github.com/jorgenschaefer/emacs-buttercup/issues/230 and
+        ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=61880
+        (spy-on 'file-exists-p :and-return-value t)
+        (expect (spy-on 'buffer-file-name) :not :to-throw)
+        (expect (file-exists-p "foobar"))
+        (expect (buffer-file-name) :not :to-be-truthy)
+        (expect 'file-exists-p :to-have-been-called)
+        (expect 'buffer-file-name :to-have-been-called))
+
       (describe "will signal en error if"
         (it "used in before-all"
           (with-local-buttercup
