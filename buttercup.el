@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2015-2017  Jorgen Schaefer <contact@jorgenschaefer.de>
 
-;; Version: 1.29
+;; Version: 1.30
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>
 ;; Maintainer: Ola Nilsson <ola.nilsson@gmail.com>
 ;; Package-Requires: ((emacs "24.3"))
