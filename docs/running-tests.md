@@ -30,7 +30,7 @@ feature/feature.el
 
 **feature.el**
 
-```Emacs-Lisp
+```elisp
 (defun featurize (bug feature)
   (format "It's not a %s, it's a %s" bug feature))
 
@@ -39,7 +39,7 @@ feature/feature.el
 
 **Cask**
 
-```
+```elisp
 (source gnu)
 (source melpa-stable)
 
@@ -49,7 +49,7 @@ feature/feature.el
 
 **tests/test-feature.el**
 
-```Lisp
+```elisp
 (require 'feature)
 
 (describe "The feature"
@@ -66,7 +66,7 @@ You can now use Cask to run your tests.
 First, you have to install the dependencies. You only have to do this
 once, or when the dependencies change:
 
-```
+```console
 $ cask
 Extracting buttercup-1.1/
 Extracting buttercup-1.1/buttercup-compat.el
@@ -84,7 +84,7 @@ Generating autoloads for buttercup.el...done
 
 Now, you can run your tests:
 
-```
+```console
 $ cask exec buttercup -L .
 Running 1 specs.
 
@@ -137,7 +137,7 @@ testing: Eldev will determine that on-the-fly.
 
 To run your test, just execute:
 
-````
+```console
 $ eldev test
 [1/1] Installing package ‘buttercup’ (1.23) from ‘melpa-stable’...
 Running 1 specs.
@@ -146,21 +146,21 @@ The feature
   can use bug and feature (2.58ms)
 
 Ran 1 specs, 0 failed, in 2.68ms.
-````
+```
 
 You can also specify patterns on the command line, to avoid running
 all the tests at once, i.e.:
 
-````
+```console
 $ eldev test foo
-````
+```
 
 If you have several test files, you can avoid running all the tests by
 specifying filename after `-f` (`--file`) option:
 
-````
+```console
 $ eldev test -f main.el
-````
+```
 
 For more information, please see tool’s own documentation, especially
 [the section about testing](https://github.com/doublep/eldev#testing).
@@ -188,7 +188,7 @@ feature/feature.el
 
 **feature.el**
 
-```Emacs-Lisp
+```elisp
 (defun featurize (bug feature)
   (format "It's not a %s, it's a %s" bug feature))
 
@@ -221,10 +221,10 @@ feature/feature.el
 
 You can now use Eask to run your tests.
 
-First, you have to install the dependencies. You only have to do this once, or 
+First, you have to install the dependencies. You only have to do this once, or
 when the dependencies change:
 
-```
+```console
 $ eask install-deps --dev
 ...
 
@@ -236,7 +236,7 @@ Loading package information... done
 
 Now, you can run your tests:
 
-```
+```console
 $ eask exec buttercup -L .
 ...
 
@@ -258,7 +258,7 @@ patterns. Combine with the `--no-skip` option to filter out the
 skipped tests.
 
 You can run this command whichever way you like. Common choices
-include a makefile or shell scripts.
+include a Makefile or shell scripts.
 
 See [relevant documentation](https://emacs-eask.github.io/) on Eask's own page
 for more information.
@@ -272,7 +272,7 @@ file in the the root of your project tree (next to your Cask file).  An example:
 
 **.dir-locals.el**
 
-```
+```elisp
 ((nil . ((eval . (progn
                    (require 'projectile)
                    (puthash (projectile-project-root)
@@ -292,7 +292,7 @@ If your project is hosted on github, you can use
 environment. Buttercup can easily be used in such a setup. Simply add
 the following `.travis.yml` file:
 
-```
+```yaml
 language: emacs-lisp
 sudo: false
 cache: apt
@@ -318,7 +318,7 @@ project using different Emacs versions.
 
 For Eldev, use the following `.travis.yml` file:
 
-````
+```yaml
 language: emacs-lisp
 dist: trusty
 
@@ -332,7 +332,7 @@ install:
 
 script:
   - eldev -p -dtT test
-````
+```
 
 For details, see [tool’s own documentation](https://github.com/doublep/eldev#continuous-integration).
 
