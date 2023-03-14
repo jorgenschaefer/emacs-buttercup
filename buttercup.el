@@ -701,7 +701,9 @@ UNEVALUATED-EXPR if it did not raise any signal."
      ((not calls)
       (cons nil
             (format "Expected `%s' to have been called with %S, but it was not called at all" spy args)))
-     ((not (member args calls))
+     ((not (cl-some
+            (lambda (call) (spy--match-args-to-call args call))
+            calls))
       (cons nil
             (format "Expected `%s' to have been called with %S, but it was called with %s"
                     spy
@@ -1357,6 +1359,30 @@ in a `buttercup-with-cleanup' environment.")
 (defun spy-calls-first (spy)
   "Return the context of the first call to SPY."
   (car (spy-calls-all spy)))
+
+(cl-defstruct (spy-arg-matcher
+               (:constructor spy-arg-matcher (test))
+               (:constructor spy-arg-matcher-any (&aux (test (lambda (_) t))))
+               (:constructor spy-arg-matcher-any-of
+                (values &aux (test (lambda (x) (member x values))))))
+  test)
+
+(defun spy--match-args-to-call (args call)
+  "Match ARGS to CALL.
+
+ARGS is the real arguments the function was called with possibly
+wrapped by an argument matcher.
+
+CALL is arguments of `spy-context'."
+  (cl-every
+   #'identity
+   (cl-map
+    'list
+    (lambda (arg call-arg)
+      (if (spy-arg-matcher-p arg)
+          (funcall (spy-arg-matcher-test arg) call-arg)
+        (equal arg call-arg)))
+    args call)))
 
 ;;;;;;;;;;;;;;;;
 ;;; Test Runners

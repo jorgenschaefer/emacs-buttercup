@@ -1414,7 +1414,59 @@ text properties using `ansi-color-apply'."
                  :to-have-been-called-with
                  (mapcar #'buttercup--wrap-expr '('test-function 1 2 3)))
                 :to-be
-                t)))
+                t))
+
+      (describe "spy-arg-matcher"
+
+        (it "returns true for any argument passed to spy-arg-matcher-any"
+          (test-function 1)
+          (expect (buttercup--apply-matcher
+                   :to-have-been-called-with
+                   (mapcar #'buttercup--wrap-expr
+                           '('test-function
+                             (spy-arg-matcher-any))))
+                  :to-be
+                  t))
+
+        (it "returns true if argument matches some of the spy-arg-matcher-any-of"
+          (test-function 1)
+          (expect (buttercup--apply-matcher
+                   :to-have-been-called-with
+                   (mapcar #'buttercup--wrap-expr
+                           '('test-function
+                             (spy-arg-matcher-any-of (list 4 3 1 2)))))
+                  :to-be
+                  t))
+
+        (it "returns false if argument matches none of the spy-arg-matcher-any-of"
+          (test-function 1)
+          (expect (car (buttercup--apply-matcher
+                        :to-have-been-called-with
+                        (mapcar #'buttercup--wrap-expr
+                                '('test-function
+                                  (spy-arg-matcher-any-of (list 4 3 2))))))
+                  :to-be
+                  nil))
+
+        (it "returns true if argument matches custom predicate"
+          (test-function 1)
+          (expect (buttercup--apply-matcher
+                   :to-have-been-called-with
+                   (mapcar #'buttercup--wrap-expr
+                           '('test-function
+                             (spy-arg-matcher (lambda (x) (= x 1))))))
+                  :to-be
+                  t))
+
+        (it "returns false if argument does not match custom predicate"
+          (test-function 1)
+          (expect (car (buttercup--apply-matcher
+                        :to-have-been-called-with
+                        (mapcar #'buttercup--wrap-expr
+                                '('test-function
+                                  (spy-arg-matcher (lambda (x) (= x 2)))))))
+                  :to-be
+                  nil))))
 
     (describe ":to-have-been-called-times matcher"
       (before-each
