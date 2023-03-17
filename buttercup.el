@@ -1283,6 +1283,8 @@ responsibility to ensure ARG is a command."
 Should always be set to a value that is not `listp', except while
 in a `buttercup-with-cleanup' environment.")
 
+(defvar native-comp-enable-subr-trampolines)
+
 (defmacro buttercup-with-cleanup (&rest body)
   "Execute BODY, cleaning spys and the rest afterwards."
   `(let ((buttercup--cleanup-functions nil)
