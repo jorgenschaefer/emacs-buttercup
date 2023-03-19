@@ -679,10 +679,10 @@ UNEVALUATED-EXPR if it did not raise any signal."
          ;; buttercup--simple-format for formatting as format-spec
          ;; does not support functions until Emacs 29
          (spec (format-spec-make
-                ?E (format "%S" unevaluated-expr)
-                ?e (lambda () (format "%S" expr-value))
+                ?E (format "`%S'" unevaluated-expr)
+                ?e (lambda () (format "`%S'" expr-value))
                 ?t (lambda () (format "%S" thrown-signal))
-                ?S (lambda () (format "%S" thrown-signal-symbol))
+                ?S (lambda () (format "`%S'" thrown-signal-symbol))
                 ?A (lambda ()
                      (if expected-signal-args
                          (format " with args `%S'" thrown-signal-args)
@@ -698,22 +698,22 @@ UNEVALUATED-EXPR if it did not raise any signal."
       (cond
        (matched ;; should be the most likely result
         `(t . ,(buttercup--simple-format
-                spec "Expected `%E' not to throw %s%a, but it threw `%S'%A")))
+                spec "Expected %E not to throw %s%a, but it threw %S%A")))
        ((null thrown-signal) ; no signal raised
         `(nil . ,(buttercup--simple-format
-                  spec "Expected `%E' to throw %s%a, but instead it returned `%e'")))
+                  spec "Expected %E to throw %s%a, but instead it returned %e")))
        ((and explained-signal-args (not matching-signal-symbol)) ; neither symbol nor args matched
         `(nil . ,(buttercup--simple-format
                   spec
-                  "Expected `%E' to throw %s%a, but instead it threw `%S'%A")))
+                  "Expected %E to throw %s%a, but instead it threw %S%A")))
        (explained-signal-args ; symbol matched
         `(nil . ,(buttercup--simple-format
                   spec
-                  "Expected `%E' to signal %s%a, but instead signalled%A which does not match because %q.")))
+                  "Expected %E to signal %s%a, but instead signalled%A which does not match because %q.")))
        ((not matching-signal-symbol) ; args matched
         `(nil . ,(buttercup--simple-format
                   spec
-                  "Expected `%E' to throw %s%a, but instead it threw `%S'%A")))
+                  "Expected %E to throw %s%a, but instead it threw %S%A")))
        (t (error "`buttercup--handle-to-throw' could not handle args %S %S"
                  thrown-signal expected-signal))))))
 
