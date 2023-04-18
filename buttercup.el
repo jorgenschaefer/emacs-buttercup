@@ -1289,17 +1289,24 @@ responsibility to ensure ARG is a command."
 Should always be set to a value that is not `listp', except while
 in a `buttercup-with-cleanup' environment.")
 
+(defvar native-comp-enable-subr-trampolines)
+(defvar comp-enable-subr-trampolines)
+
 (defmacro buttercup-with-cleanup (&rest body)
   "Execute BODY, cleaning spys and the rest afterwards."
-  `(let ((buttercup--cleanup-functions nil)
-         ;; Redefining certain primitive's trampolines will cause problems,
-         ;; see https://github.com/jorgenschaefer/emacs-buttercup/issues/230 and
-         ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=61880
-         (native-comp-enable-subr-trampolines nil))
-     (unwind-protect (progn ,@body)
-       (dolist (fun buttercup--cleanup-functions)
-         (ignore-errors
-           (funcall fun))))))
+  `(,@(if (fboundp 'with-suppressed-warnings)
+          '(with-suppressed-warnings ((obsolete comp-enable-subr-trampolines)))
+        '(progn))
+     (let ((buttercup--cleanup-functions nil)
+           ;; Redefining certain primitive's trampolines will cause problems,
+           ;; see https://github.com/jorgenschaefer/emacs-buttercup/issues/230 and
+           ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=61880
+           (comp-enable-subr-trampolines nil)
+           (native-comp-enable-subr-trampolines nil))
+       (unwind-protect (progn ,@body)
+         (dolist (fun buttercup--cleanup-functions)
+           (ignore-errors
+             (funcall fun)))))))
 
 (defun buttercup--add-cleanup (function)
   "Register FUNCTION for cleanup in `buttercup-with-cleanup'."
