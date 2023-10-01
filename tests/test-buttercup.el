@@ -2009,9 +2009,15 @@ text properties using `ansi-color-apply'."
                   "suite bc-bt-backtrace\n"
                   "\n"
                   "Traceback (most recent call last):\n"
-                  "λ (bc-bt-foo \"" (regex ,long-string) "\")\n"
-                  "λ (bc-bt-bar \"" (regex ,long-string) "\")\n"
-                  "λ (bc-bt-baz \"" (regex ,long-string) "\")\n"
+                  (seq
+                   "λ (bc-bt-foo \"" (regex ,long-string) "\")"
+                   (optional "\n"))
+                  (seq
+                   "λ (bc-bt-bar \"" (regex ,long-string) "\")"
+                   (optional "\n"))
+                  (seq
+                   "λ (bc-bt-baz \"" (regex ,long-string) "\")"
+                   (optional "\n"))
                   (* (seq (or ?M ?λ) " (" (* not-newline) ; frame start
                           (*? (seq "\n   " (* not-newline))) ; any number of pp lines
                           (* not-newline) ")\n")) ;; frame end
