@@ -709,7 +709,7 @@ UNEVALUATED-EXPR if it did not raise any signal."
        (explained-signal-args ; symbol matched
         `(nil . ,(buttercup--simple-format
                   spec
-                  "Expected `%E' to throw %s%a, but instead it threw `%S'%A")))
+                  "Expected `%E' to signal %s%a, but instead signalled%A which does not match because %q.")))
        ((not matching-signal-symbol) ; args matched
         `(nil . ,(buttercup--simple-format
                   spec
