@@ -671,13 +671,13 @@ text properties using `ansi-color-apply'."
                :to-have-been-called
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye)))
               :not :to-be-truthy))
-    (it "should not match if the spy has been called once"
+    (it "should match if the spy has been called once"
       (i-spy-with-my-little-eye)
       (expect (buttercup--apply-matcher
                :to-have-been-called
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye)))
               :to-be-truthy))
-    (it "should not match if the spy has been called multiple times"
+    (it "should match if the spy has been called multiple times"
       (dotimes (x 1000)
         (i-spy-with-my-little-eye))
       (expect (buttercup--apply-matcher
@@ -725,7 +725,7 @@ text properties using `ansi-color-apply'."
                :to-have-been-called-with
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye 789)))
               :to-be-truthy))
-    (it "should not match if the spy has been called multiple times with the specified arguments"
+    (it "should match if the spy has been called multiple times with the specified arguments"
       (dotimes (x 10)
         (i-spy-with-my-little-eye 123)
         (i-spy-with-my-little-eye 456))
