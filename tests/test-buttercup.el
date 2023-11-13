@@ -759,12 +759,14 @@ text properties using `ansi-color-apply'."
       (expect (buttercup--apply-matcher
                :to-have-been-called-times
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye 6)))
-              :to-be-truthy))
+              :to-equal
+              '(t . "Expected `i-spy-with-my-little-eye' to not have been called exactly 6 times, but it was.")))
     (it "should match if the spy has been called 0 times"
       (expect (buttercup--apply-matcher
                :to-have-been-called-times
                (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye 0)))
-              :to-be-truthy))))
+              :to-equal
+              '(t . "Expected `i-spy-with-my-little-eye' to not have been called exactly 0 times, but it was.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Suite and spec data structures
@@ -1453,7 +1455,8 @@ text properties using `ansi-color-apply'."
         (expect (buttercup--apply-matcher
                  :to-have-been-called-times
                  (mapcar #'buttercup--wrap-expr '('test-function 2)))
-                :to-equal t))
+                :to-equal
+                (cons t "Expected `test-function' to not have been called exactly 2 times, but it was.")))
 
       (it "use plural words in error message"
         (test-function)
@@ -1591,7 +1594,8 @@ text properties using `ansi-color-apply'."
         (expect (buttercup--apply-matcher
                  :to-have-been-called-times
                  (mapcar #'buttercup--wrap-expr '('test-function-throws-on-negative 2)))
-                :to-equal t))
+                :to-equal
+                '(t . "Expected `test-function-throws-on-negative' to not have been called exactly 2 times, but it was.")))
 
       (it "records args to the function whether it throw an error or not"
         (test-function-throws-on-negative 5)

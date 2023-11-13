@@ -754,7 +754,9 @@ UNEVALUATED-EXPR if it did not raise any signal."
   (let* ((call-count (spy-calls-count spy)))
     (cond
      ((= number call-count)
-      t)
+      (cons t
+            (format "Expected `%s' to not have been called exactly %s %s, but it was."
+                    spy number (if (= number 1) "time" "times"))))
      (t
       (cons nil
             (format "Expected `%s' to have been called %s %s, but it was called %s %s"
