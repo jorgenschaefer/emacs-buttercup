@@ -718,12 +718,14 @@ UNEVALUATED-EXPR if it did not raise any signal."
                  thrown-signal expected-signal))))))
 
 (buttercup-define-matcher :to-have-been-called (spy)
+    "Check that SPY have been called at least once."
   (cl-assert (symbolp (funcall spy)))
   (if (spy-calls-all (funcall spy))
       t
     nil))
 
 (buttercup-define-matcher :to-have-been-called-with (spy &rest args)
+  "Check that SPY has been called at least once with arguments ARGS."
   (setq spy (funcall spy))
   (cl-assert (symbolp spy))
   (setq args (mapcar #'funcall args))
@@ -745,6 +747,7 @@ UNEVALUATED-EXPR if it did not raise any signal."
       t))))
 
 (buttercup-define-matcher :to-have-been-called-times (spy number)
+  "Check that SPY has been called exactly NUMBER times."
   (setq spy (funcall spy)
         number (funcall number))
   (cl-assert (symbolp spy))
