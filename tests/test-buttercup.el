@@ -717,14 +717,15 @@ text properties using `ansi-color-apply'."
       (i-spy-with-my-little-eye 123)
       (i-spy-with-my-little-eye 456)
       (i-spy-with-my-little-eye 789)
+      (i-spy-with-my-little-eye 789 789)
       (i-spy-with-my-little-eye 'ABC)
       (i-spy-with-my-little-eye 'DEF)
       (i-spy-with-my-little-eye 'HIJ)
       (i-spy-with-my-little-eye 'KLM)
       (expect (buttercup--apply-matcher
                :to-have-been-called-with
-               (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye 789)))
-              :to-be-truthy))
+               (mapcar #'buttercup--wrap-expr '('i-spy-with-my-little-eye 789 789)))
+              :to-equal t))
     (it "should match if the spy has been called multiple times with the specified arguments"
       (dotimes (x 10)
         (i-spy-with-my-little-eye 123)
