@@ -29,8 +29,8 @@
 
 ;;; Code:
 
-;;;;;;;;;;;;;;;;;;;;;
-;; Introduced in 24.4
+;;;;;;;;;;;;;;;;;;;;;;
+;;; Introduced in 24.4
 
 (when (not (fboundp 'define-error))
   (defun define-error (name message &optional parent)
@@ -53,8 +53,8 @@ Defaults to `error'."
            (delete-dups (copy-sequence (cons name conditions))))
       (when message (put name 'error-message message)))))
 
-;;;;;;;;;;;;;;;;;;;;;
-;; Introduced in 25.1
+;;;;;;;;;;;;;;;;;;;;;;
+;;; Introduced in 25.1
 
 (when (not (fboundp 'directory-files-recursively))
   (defun directory-files-recursively (dir match &optional include-directories)
@@ -109,8 +109,8 @@ If INCLUDE-DIRECTORIES, also include directories that have matching names."
                            (<= (car here) delay)))
                (concat (format "%.2f" (/ delay (car (cddr here)))) (cadr here)))))))
 
-;;;;;;;;;;;;;;;;;;;;;
-;; Introduced in 26.1
+;;;;;;;;;;;;;;;;;;;;;;
+;;; Introduced in 26.1
 
 (unless (fboundp 'file-attribute-modification-time)
   (defsubst file-attribute-modification-time (attributes)
@@ -119,8 +119,8 @@ This is the time of the last change to the file's contents, and
 is a Lisp timestamp in the style of `current-time'."
 	(nth 5 attributes)))
 
-;;;;;;;;;;;;;;;;;;;;;
-;; Introduced in 29.1
+;;;;;;;;;;;;;;;;;;;;;;
+;;; Introduced in 29.1
 
 (unless (boundp 'backtrace-on-error-noninteractive)
   (defvar backtrace-on-error-noninteractive nil
