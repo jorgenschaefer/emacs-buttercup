@@ -2193,10 +2193,9 @@ ARG is ‘toggle’; disable otherwise."
         (t (remove-hook 'after-load-functions #'buttercup-check-for-stale-elc))))
 
 (provide 'buttercup)
-;;; buttercup.el ends here
-
 ;; Local Variables:
 ;; indent-tabs-mode: nil
 ;; sentence-end-double-space: nil
 ;; tab-width: 8
 ;; End:
+;;; buttercup.el ends here

@@ -127,10 +127,9 @@ is a Lisp timestamp in the style of `current-time'."
 	"Control early backtrace starting in Emacs 29."))
 
 (provide 'buttercup-compat)
-;;; buttercup-compat.el ends here
-
 ;; Local Variables:
 ;; indent-tabs-mode: nil
 ;; tab-width: 8
 ;; sentence-end-double-space: nil
 ;; End:
+;;; buttercup-compat.el ends here
