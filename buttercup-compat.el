@@ -1,4 +1,4 @@
-;;; buttercup-compat.el --- Compatibility definitions for buttercup
+;;; buttercup-compat.el --- Compatibility definitions for buttercup -*-lexical-binding:nil-*-
 
 ;; Copyright (C) 2015  Jorgen Schaefer
 ;; Copyright (C) 2015  Free Software Foundation, Inc.
