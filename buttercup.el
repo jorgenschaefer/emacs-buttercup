@@ -6,7 +6,7 @@
 ;; Version: 1.32
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>
 ;; Maintainer: Ola Nilsson <ola.nilsson@gmail.com>
-;; Package-Requires: ((emacs "24.3"))
+;; Package-Requires: ((emacs "24.4"))
 ;; URL: https://github.com/jorgenschaefer/emacs-buttercup
 
 ;; This program is free software; you can redistribute it and/or
