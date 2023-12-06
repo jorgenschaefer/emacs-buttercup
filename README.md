@@ -1,6 +1,6 @@
 # Buttercup — Behavior-Driven Emacs Lisp Testing
 
-[![Build and test](https://github.com/jorgenschaefer/emacs-buttercup/workflows/Build%20and%20test/badge.svg)](https://github.com/jorgenschaefer/emacs-buttercup/actions?query=workflow%3A%22Build+and+test%22+branch%3Amaster)
+[![Build and test](https://github.com/jorgenschaefer/emacs-buttercup/actions/workflows/test.yml/badge.svg)](https://github.com/jorgenschaefer/emacs-buttercup/actions/workflows/test.yml)
 [![NonGNU ELPA](https://elpa.nongnu.org/nongnu/buttercup.svg)](https://elpa.nongnu.org/nongnu/buttercup.html)
 [![MELPA Stable](http://stable.melpa.org/packages/buttercup-badge.svg)](http://stable.melpa.org/#/buttercup)
 
