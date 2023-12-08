@@ -633,7 +633,7 @@ text properties using `ansi-color-apply'."
                                           (list 'overflow-error (concat "Foo" "bar" "baz"))
                                           '(myfunc) nil)
               :to-equal
-              '(nil . "Expected `(myfunc)' to throw a child signal of `overflow-error' with args `(\"Foobarbaz\")', but instead it threw `overflow-error' with args `(\"Foobar\")'")))
+              '(nil . "Expected `(myfunc)' to signal a child signal of `overflow-error' with args `(\"Foobarbaz\")', but instead signalled with args `(\"Foobar\")' which does not match because (list-elt 0 (arrays-of-different-length 6 9 \"Foobar\" \"Foobarbaz\" first-mismatch-at 6)).")))
     (it "should not match an unrelated symbol"
       (expect (buttercup--handle-to-throw '(void-variable "Foobar")
                                           (list 'overflow-error (concat "Foo" "bar"))

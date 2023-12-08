@@ -657,27 +657,32 @@ UNEVALUATED-EXPR is the Lisp sexp used before the :to-throw
 matcher keyword in the `expect' statement.
 EXPR-VALUE is the return value from the evaluation of
 UNEVALUATED-EXPR if it did not raise any signal."
-  (let ((thrown-signal-symbol (car thrown-signal))
-        (thrown-signal-args (cdr thrown-signal))
-        (expected-signal-symbol (car expected-signal))
-        (expected-signal-args (cdr expected-signal)))
+  (let* ((thrown-signal-symbol (car thrown-signal))
+         (thrown-signal-args (cdr thrown-signal))
+         (expected-signal-symbol (car expected-signal))
+         (expected-signal-args (cdr expected-signal))
+         (matching-signal-symbol
+          (or (null expected-signal-symbol)
+              (memq expected-signal-symbol (get thrown-signal-symbol 'error-conditions))))
+         (explained-signal-args ; nil for matched, explained or t for mismatched
+          (when expected-signal-args
+              ;; The ert-explainer for equal does an equal internally,
+              ;; so avoid calling equal twice by calling the explainer
+              ;; directly.
+              (funcall (or (get 'equal 'ert-explainer) (lambda (a b) (not (equal a b))))
+                       thrown-signal-args expected-signal-args))))
     (let*
-        ((matched
-          (and thrown-signal
-               (or (null expected-signal-symbol)
-                   (memq expected-signal-symbol (get thrown-signal-symbol 'error-conditions)))
-               (or (null expected-signal-args)
-                   (equal thrown-signal-args expected-signal-args))))
+        ((matched (and thrown-signal matching-signal-symbol (not explained-signal-args)))
          ;; Some of these replacement are always used, there is no
          ;; reason not to format them immediately. But e and t are not
          ;; always used and should be delayed. Use
          ;; buttercup--simple-format for formatting as format-spec
          ;; does not support functions until Emacs 29
          (spec (format-spec-make
-                ?E (format "%S" unevaluated-expr)
-                ?e (lambda () (format "%S" expr-value))
+                ?E (format "`%S'" unevaluated-expr)
+                ?e (lambda () (format "`%S'" expr-value))
                 ?t (lambda () (format "%S" thrown-signal))
-                ?S (lambda () (format "%S" thrown-signal-symbol))
+                ?S (lambda () (format "`%S'" thrown-signal-symbol))
                 ?A (lambda ()
                      (if expected-signal-args
                          (format " with args `%S'" thrown-signal-args)
@@ -687,20 +692,30 @@ UNEVALUATED-EXPR if it did not raise any signal."
                      "a signal")
                 ?a (if expected-signal-args
                        (format " with args `%S'" expected-signal-args)
-                     ""))))
-      (if (null thrown-signal)
-          ;; Match is not possible unless a signal was raied
-          (cons nil (buttercup--simple-format spec "Expected `%E' to throw %s%a, but instead it returned `%e'"))
-        ;; non-matching signal
-        (buttercup--test-expectation matched
-          :expect-match-phrase
-          (buttercup--simple-format
-           spec
-           "Expected `%E' to throw %s%a, but instead it threw `%S'%A")
-          :expect-mismatch-phrase
-          (buttercup--simple-format
-           spec
-           "Expected `%E' not to throw %s%a, but it threw `%S'%A"))))))
+                     "")
+                ?q (lambda () (format "%S" explained-signal-args))
+                )))
+      (cond
+       (matched ;; should be the most likely result
+        `(t . ,(buttercup--simple-format
+                spec "Expected %E not to throw %s%a, but it threw %S%A")))
+       ((null thrown-signal) ; no signal raised
+        `(nil . ,(buttercup--simple-format
+                  spec "Expected %E to throw %s%a, but instead it returned %e")))
+       ((and explained-signal-args (not matching-signal-symbol)) ; neither symbol nor args matched
+        `(nil . ,(buttercup--simple-format
+                  spec
+                  "Expected %E to throw %s%a, but instead it threw %S%A")))
+       (explained-signal-args ; symbol matched
+        `(nil . ,(buttercup--simple-format
+                  spec
+                  "Expected %E to signal %s%a, but instead signalled%A which does not match because %q.")))
+       ((not matching-signal-symbol) ; args matched
+        `(nil . ,(buttercup--simple-format
+                  spec
+                  "Expected %E to throw %s%a, but instead it threw %S%A")))
+       (t (error "`buttercup--handle-to-throw' could not handle args %S %S"
+                 thrown-signal expected-signal))))))
 
 (buttercup-define-matcher :to-have-been-called (spy)
   (cl-assert (symbolp (funcall spy)))
