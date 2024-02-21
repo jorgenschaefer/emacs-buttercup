@@ -1,7 +1,7 @@
 ;;; buttercup.el --- Behavior-Driven Emacs Lisp Testing -*-lexical-binding:t-*-
 
 ;; Copyright (C) 2015-2017  Jorgen Schaefer <contact@jorgenschaefer.de>
-;; Copyright (C) 2018-2023  Ola Nilsson <ola.nilsson@gmail.com>
+;; Copyright (C) 2018-2024  Ola Nilsson <ola.nilsson@gmail.com>
 
 ;; Version: 1.33
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>
@@ -64,9 +64,16 @@
               "Bad test expression"
               'buttercup-internals-error)
 
-(defun buttercup--enclosed-expr (fun)
-  "Given a zero-arg function FUN, return its unevaluated expression.
+(eval-and-compile
+  (when (fboundp 'oclosure-define)      ;Emacs≥29
+    (oclosure-define (buttercup--thunk (:predicate buttercup--thunk-p))
+      "An elisp expression as a function and original code."
+      expr)))
 
+(defun buttercup--enclosed-expr (fun)
+  "Given a FUN `buttercup-thunk', return its unevaluated expression.
+
+For Emacs < 29:
 The function MUST be byte-compiled or have one of the following
 forms:
 
@@ -77,6 +84,9 @@ and the return value will be EXPR, unevaluated. The quoted EXPR
 is useful if EXPR is a macro call, in which case the `quote'
 ensures access to the un-expanded form."
   (cl-assert (functionp fun) t "Expected FUN to be a function")
+  (if (and (fboundp 'buttercup--thunk-p)      ;Emacs≥29
+           (buttercup--thunk-p fun))
+      (buttercup--thunk--expr fun)
   (pcase fun
     ;; This should be the normal case, a closure with unknown enclosed
     ;; variables, empty arglist and a body containing
@@ -103,7 +113,7 @@ ensures access to the un-expanded form."
     ((and (pred byte-code-function-p) (guard (member (aref fun 0) '(nil 0))))
      (aref fun 1))
     ;; Error
-    (_ (signal 'buttercup-enclosed-expression-error (format "Not a zero-arg one-expression closure: %S" fun)))))
+    (_ (signal 'buttercup-enclosed-expression-error (format "Not a zero-arg one-expression closure: %S" fun))))))
 
 (defun buttercup--expr-and-value (fun)
   "Given a function, return its quoted expression and value.
@@ -171,11 +181,15 @@ Does not have the IGNORE-MISSING and SPLIT parameters."
 (define-error 'buttercup-pending "Buttercup test is pending" 'buttercup-error-base)
 
 (defun buttercup--wrap-expr (expr)
-  "Wrap EXPR to be used by `buttercup-expect'."
-  `(lambda ()
-     (quote ,expr)
-     (buttercup--mark-stackframe)
-     ,expr))
+  "Wrap EXPR in a `buttercup--thunk' to be used by `buttercup-expect'."
+  (if (fboundp 'oclosure-lambda)        ;Emacs≥29
+      `(oclosure-lambda (buttercup--thunk (expr ',expr)) ()
+         (buttercup--mark-stackframe)
+         ,expr)
+    `(lambda ()
+       (quote ,expr)
+       (buttercup--mark-stackframe)
+       ,expr)))
 
 (defmacro expect (arg &optional matcher &rest args)
   "Expect a condition to be true.
