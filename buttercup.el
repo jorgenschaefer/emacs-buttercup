@@ -1957,7 +1957,7 @@ Colorize parts of the output if COLOR is non-nil."
 FMT and ARGS are passed to `format'."
   (send-string-to-terminal (apply #'format fmt args)))
 
-(defun buttercup--display-warning (fn type message &optional level buffer-name)
+(defun buttercup--display-warning (fn type message &optional level buffer-name &rest args)
   "Log all warnings to a special buffer while running buttercup specs.
 
 Emacs' normal display logic for warnings doesn't mix well with
@@ -1977,8 +1977,8 @@ finishes."
       (cl-letf
           ((warning-minimum-level :emergency)
            ((symbol-function 'message) 'ignore))
-        (funcall fn type message level buffer-name))
-    (funcall fn type message level buffer-name)))
+        (apply fn type message level buffer-name args))
+    (apply fn type message level buffer-name args)))
 
 (advice-add 'display-warning :around #'buttercup--display-warning)
 
