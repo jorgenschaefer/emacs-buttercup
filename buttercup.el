@@ -95,11 +95,11 @@ ensures access to the un-expanded form."
     (`(lambda nil
         (quote ,expr) (buttercup--mark-stackframe) ,_expanded)
      expr)
-    ;;; This is when FUN has been byte compiled, as when the entire
-    ;;; test file has been byte compiled. Check that it has an empty
-    ;;; arglist, that is all that is possible at this point. The
-    ;;; return value is byte compiled code, not the original
-    ;;; expressions. Also what is possible at this point.
+    ;; This is when FUN has been byte compiled, as when the entire
+    ;; test file has been byte compiled. Check that it has an empty
+    ;; arglist, that is all that is possible at this point. The
+    ;; return value is byte compiled code, not the original
+    ;; expressions. Also what is possible at this point.
     ((and (pred byte-code-function-p) (guard (member (aref fun 0) '(nil 0))))
      (aref fun 1))
     ;; Error
@@ -729,7 +729,7 @@ UNEVALUATED-EXPR if it did not raise any signal."
   (setq spy (funcall spy))
   (cl-assert (symbolp spy))
   (setq args (mapcar #'funcall args))
-  (let* ((calls (mapcar 'spy-context-args (spy-calls-all spy))))
+  (let* ((calls (mapcar #'spy-context-args (spy-calls-all spy))))
     (cond
      ((not calls)
       (cons nil
@@ -809,8 +809,10 @@ Return CHILD."
     (cons (buttercup-suite-or-spec-parent suite-or-spec)
           (buttercup-suite-or-spec-parents (buttercup-suite-or-spec-parent suite-or-spec)))))
 
-(define-obsolete-function-alias 'buttercup-suite-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.10")
-(define-obsolete-function-alias 'buttercup-spec-parents 'buttercup-suite-or-spec-parents "emacs-buttercup 1.10")
+(define-obsolete-function-alias 'buttercup-suite-parents
+  #'buttercup-suite-or-spec-parents "emacs-buttercup 1.10")
+(define-obsolete-function-alias 'buttercup-spec-parents
+  #'buttercup-suite-or-spec-parents "emacs-buttercup 1.10")
 
 (defun buttercup-suites-total-specs-defined (suite-list)
   "Return the number of specs defined in all suites in SUITE-LIST."
@@ -1370,11 +1372,11 @@ in a `buttercup-with-cleanup' environment.")
 
 (defun spy-calls-count-returned (spy)
   "Return the number of times SPY has been called successfully so far."
-  (cl-count-if 'spy-context-return-p (spy-calls-all spy)))
+  (cl-count-if #'spy-context-return-p (spy-calls-all spy)))
 
 (defun spy-calls-count-errors (spy)
   "Return the number of times SPY has been called and thrown errors so far."
-  (cl-count-if 'spy-context-thrown-p (spy-calls-all spy)))
+  (cl-count-if #'spy-context-thrown-p (spy-calls-all spy)))
 
 (defun spy-calls-args-for (spy index)
   "Return the context of the INDEXth call to SPY."
@@ -1386,7 +1388,7 @@ in a `buttercup-with-cleanup' environment.")
 
 (defun spy-calls-all-args (spy)
   "Return the arguments for every recorded call to SPY."
-  (mapcar 'spy-context-args (spy-calls-all spy)))
+  (mapcar #'spy-context-args (spy-calls-all spy)))
 
 (defun spy-calls-most-recent (spy)
   "Return the context of the most recent call to SPY."
@@ -1721,7 +1723,7 @@ Do not change the global value.")
   "Update SUITE-OR-SPEC with the result of calling FUNCTION with ARGS.
 Sets the `status', `failure-description', and `failure-stack' for
 failed and pending specs."
-  (let* ((result (apply 'buttercup--funcall function args))
+  (let* ((result (apply #'buttercup--funcall function args))
          (status (elt result 0))
          (description (elt result 1))
          (stack (elt result 2)))
@@ -2028,7 +2030,7 @@ EVENT and ARG are described in `buttercup-reporter'."
                                 (with-current-buffer buf
                                   (let ((inhibit-read-only t))
                                     (goto-char (point-max))
-                                    (insert (apply 'format fmt args))))))
+                                    (insert (apply #'format fmt args))))))
       (unwind-protect
           (let ((buttercup-color))
             (buttercup-reporter-batch event arg))
@@ -2072,7 +2074,7 @@ ARGS according to `debugger'."
                  (unless (eq signal-type 'buttercup-pending)
                    (buttercup--backtrace))))))
 
-(defalias 'buttercup--mark-stackframe 'ignore
+(defalias 'buttercup--mark-stackframe #'ignore
   "Marker to find where the backtrace start.")
 
 (defun buttercup--backtrace ()
