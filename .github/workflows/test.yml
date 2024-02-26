@@ -46,13 +46,14 @@ jobs:
           - 28.1
           - 28.2
           - 29.1
+          - 29.2
           - snapshot
     steps:
     - uses: purcell/setup-emacs@master
       with:
         version: ${{ matrix.emacs_version }}
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Run tests
       run: make check
 

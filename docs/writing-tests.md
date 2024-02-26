@@ -369,6 +369,21 @@ pending in results.
   (it "can be declared with `it' but without a body"))
 ```
 
+## Conditionally Skipping Specs
+
+Use the `assume` macro to conditionally skip a spec.
+
+```Emacs-Lisp
+(describe "Conditionally skip specs"
+  (it "with the `assume' macro"
+    (assume (fboundp 'new-function) "`new-function' not availeble")
+    (expect (new-function))))
+```
+
+If the first argument to `assume` evals to nil, the spec will be
+marked as pending, and the second arg `message` will be added to the
+output.
+
 ## Spies
 
 Buttercup has test double functions called spies. While other
