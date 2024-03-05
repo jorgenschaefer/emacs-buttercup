@@ -19,13 +19,16 @@ The framework is heavily inspired by
 
 *Full article: [Writing Tests](docs/writing-tests.md)*
 
-A simple test looks like this.
+A simple test looks like this. Note that `lexical-binding: t` is
+**required** in files defining buttercup tests.
 
 ```Lisp
+;;; lexical-binding is required -*- lexical-binding: t; -*-
 (describe "A suite"
   (it "contains a spec with an expectation"
     (expect t :to-be t)))
 ```
+
 
 ## Installation and Usage
 
@@ -53,6 +56,7 @@ simply `apt-get install elpa-buttercup`.
 Now create a file called `test-feature.el` with these contents:
 
 ```Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A suite"
   (it "contains a spec with an expectation"
     (expect t :to-be t)))

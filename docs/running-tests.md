@@ -50,6 +50,7 @@ feature/feature.el
 **tests/test-feature.el**
 
 ```elisp
+;;; -*- lexical-binding: t; -*-
 (require 'feature)
 
 (describe "The feature"
@@ -208,6 +209,7 @@ feature/feature.el
 **tests/test-feature.el**
 
 ```elisp
+;;; -*- lexical-binding: t; -*-
 (require 'feature)
 
 (describe "The feature"

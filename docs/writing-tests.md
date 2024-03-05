@@ -19,7 +19,11 @@ A test suite begins with a call to the Buttercup macro `describe` with
 the first parameter describing the suite and the rest being the body
 of code that implements the suite.
 
+Note that `lexical-binding: t` is **required** in files defining
+buttercup tests.
+
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A suite"
   (it "contains a spec with an expectation"
     (expect t :to-be t)))
@@ -43,6 +47,7 @@ necessary to implement the rules. Emacs Lisp scoping rules apply, so
 make sure to define your spec file to be lexically scoped.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A suite is just a function"
   :var (a)
   (it "and so is a spec"
@@ -70,6 +75,7 @@ Any matcher can evaluate to a negative assertion by prepending it with
 the `:not` matcher.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "The :to-be matcher compares with `eq'"
   (it "and has a positive case"
     (expect t :to-be t))
@@ -86,6 +92,7 @@ information) for when a project’s domain calls for specific assertions
 that are not included below.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "Included matchers:"
   (it "The :to-be matcher compares with `eq'"
     (let* ((a 12)
@@ -174,6 +181,7 @@ macros inside a buttercup test just like you would inside an
 `ert-deftest` form.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (require 'ert)
 (describe "ERT support"
   (it "allows you to use ERT macros in tests"
@@ -194,6 +202,7 @@ as full sentences in traditional
 [BDD](http://en.wikipedia.org/wiki/Behavior-driven_development) style.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spec"
   (it "is just a function, so it can contain any code"
     (let ((foo 0))
@@ -218,6 +227,7 @@ These bind variables for the suite by passing them as a varlist to the
 can not be interspersed between `it` statements.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spec using :VAR"
   :var ((foo 1))
   (it "has access to the variables bound in :VAR"
@@ -255,6 +265,7 @@ block — and initialization code is moved into a `before-each` block.
 The `after-each` block resets the variable before continuing.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spec using `before-each' and `after-each'"
   :var (foo)
   (before-each
@@ -283,6 +294,7 @@ not reset between specs, it is easy to accidentally leak state between
 your specs so that they erroneously pass or fail.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spec using `before-all' and `after-all'"
   :var (foo)
   (before-all
@@ -308,6 +320,7 @@ spec is executed, Buttercup walks down the tree executing each
 walks through the `after-each` functions similarly.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spec"
   :var (foo)
   (before-each
@@ -342,6 +355,7 @@ listed as pending in the results, but the containing code will not be
 run.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (xdescribe "A spec"
   :var (foo)
   (before-each
@@ -362,6 +376,7 @@ Any spec declared without a function body will also be marked as
 pending in results.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "Pending specs"
   (xit "can be declared using `xit'"
     (expect t :to-be nil))
@@ -374,6 +389,7 @@ pending in results.
 Use the `assume` macro to conditionally skip a spec.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "Conditionally skip specs"
   (it "with the `assume' macro"
     (assume (fboundp 'new-function) "`new-function' not availeble")
@@ -400,6 +416,7 @@ at all. The `:to-have-been-called-with` matcher will return true if
 the argument list matches any of the recorded calls to the spy.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spy"
   :var (foo bar)
   (before-each
@@ -441,6 +458,7 @@ The `:to-have-been-called-times` matcher will return true if the spy
 was called a certain number of times.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spy"
   :var (foo bar)
   (before-each
@@ -463,6 +481,7 @@ The keyword argument `:and-call-through` to `spy-on` will make the spy
 call the original function instead of returning `nil`.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spy, when configured to call through"
   :var (bar set-bar get-bar fetched-bar)
   (before-each
@@ -492,6 +511,7 @@ The keyword argument `:and-return-value` specifies the value the
 spied-on function should return.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spy, when configured to fake a return value"
   :var (bar set-bar get-bar fetched-bar)
   (before-each
@@ -521,6 +541,7 @@ The keyword argument `:and-call-fake` delegates calls to a supplied
 function.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spy, when configured with an alternate implementation"
   :var (bar set-bar get-bar fetched-bar)
   (before-each
@@ -550,6 +571,7 @@ With the keyword argument `:and-throw-error`, all calls to the spy
 will `signal` the specified value as an error.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spy, when configured to throw an error"
   :var (bar set-bar get-bar fetched-bar)
   (before-each
@@ -591,6 +613,7 @@ error. Test the context type with `spy-context-return-p` and
 Finally, `spy-calls-reset` clears all tracking for a spy.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A spy"
   :var (set-foo foo)
   (before-each
@@ -760,6 +783,7 @@ with the warnings itself), you can use the macro
 suppresses Buttercup's warning capturing within the body.
 
 ```Emacs-Lisp
+;;; -*- lexical-binding: t; -*-
 (describe "A test"
   (it "can issue warnings while running"
     (display-warning 'buttercup "This warning should be visible after the test report.")
