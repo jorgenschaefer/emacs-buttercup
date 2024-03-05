@@ -1,6 +1,6 @@
 EMACS := emacs
 VERSION := $(shell sed -ne 's/^;; Version: \(.*\)/\1/p' buttercup.el)
-ELISP_FILES := $(wildcard *.el)
+ELISP_FILES := $(filter-out buttercup-pkg.el,$(wildcard *.el))
 
 .PHONY: test compile clean
 
