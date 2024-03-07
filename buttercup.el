@@ -1872,7 +1872,7 @@ EVENT and ARG are described in `buttercup-reporter'."
   "Print the remainder of the SPEC report line for `spec-done'.
 
 If COLOR is non-nil, erace the text so far on the current line
-using '\r' and replace it with the same text colored according to
+using '\\r' and replace it with the same text colored according to
 the SPEC status. Do not erase and replace if the text would have
 been reprinted with the default color.
 
