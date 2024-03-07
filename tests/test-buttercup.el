@@ -1025,29 +1025,38 @@ before it's processed by other functions."
 
 (describe "The `describe' macro"
   (it "should expand to a simple call to the buttercup-describe function"
-    (expect (macroexpand '(describe "description" (+ 1 1)))
-            :to-equal
-            '(buttercup-describe "description" (lambda () (+ 1 1)))))
+    (let ((lexical-binding t))  ; Emacs < 27 needs this?
+      (expect (macroexpand '(describe "description" (+ 1 1)))
+              :to-equal
+              '(buttercup-describe "description" (lambda () (+ 1 1))))))
 
   (it "should support the :var argument"
-    (expect (macroexpand '(describe "description" :var (foo bar) (+ foo bar)))
-            :to-equal
-            '(buttercup-describe "description"
-                                 (lambda () (let (foo bar) (+ foo bar))))))
+    (let ((lexical-binding t))  ; Emacs < 27 needs this?
+      (expect (macroexpand '(describe "description" :var (foo bar) (+ foo bar)))
+              :to-equal
+              '(buttercup-describe "description"
+                                   (lambda () (let (foo bar) (+ foo bar)))))))
   (it "should support the :var* argument"
-    (expect (macroexpand '(describe "description" :var* (foo bar) (+ foo bar)))
-            :to-equal
-            '(buttercup-describe "description"
-                                 (lambda () (let* (foo bar) (+ foo bar))))))
+    (let ((lexical-binding t))  ; Emacs < 27 needs this?
+      (expect (macroexpand '(describe "description" :var* (foo bar) (+ foo bar)))
+              :to-equal
+              '(buttercup-describe "description"
+                                   (lambda () (let* (foo bar) (+ foo bar)))))))
   (describe "should error when "
     (it ":var is not first"
-      (expect (macroexpand '(describe "description" (it "foo") :var (x)))
-              :to-equal
-              '(error "buttercup: :var(*) found in invalid position of describe form \"%s\"" "description")))
+      (let ((lexical-binding t))  ; Emacs < 27 needs this?
+        (expect (macroexpand '(describe "description" (it "foo") :var (x)))
+                :to-equal
+                '(error "buttercup: :var(*) found in invalid position of describe form \"%s\"" "description"))))
     (it ":var* is not first"
-      (expect (macroexpand '(describe "description" (it "foo") :var* (x)))
-              :to-equal
-              '(error "buttercup: :var(*) found in invalid position of describe form \"%s\"" "description")))))
+      (let ((lexical-binding t))  ; Emacs < 27 needs this?
+        (expect (macroexpand '(describe "description" (it "foo") :var* (x)))
+                :to-equal
+                '(error "buttercup: :var(*) found in invalid position of describe form \"%s\"" "description"))))
+    (it "is expanded with `lexical-binding' nil"
+      (let (lexical-binding)
+        (expect (macroexpand '(describe "lexical-binding" (it "nil" (ignore))))
+                :to-throw 'buttercup-dynamic-binding-error)))))
 
 (describe "The `buttercup-describe' function"
   (it "should run the enclosing body"
@@ -1193,33 +1202,35 @@ before it's processed by other functions."
 
 (describe "The `xdescribe' macro"
   (it "expands directly to a function call"
-    (expect (macroexpand '(xdescribe "bla bla" (+ 1 1)))
-            :to-equal
-            '(buttercup-describe "bla bla"
-                                 (lambda ()
-                                   (signal 'buttercup-pending "PENDING")))))
+    (let ((lexical-binding t))  ; Emacs < 27 needs this?
+      (expect (macroexpand '(xdescribe "bla bla" (+ 1 1)))
+              :to-equal
+              '(buttercup-describe "bla bla"
+                                   (lambda ()
+                                     (signal 'buttercup-pending "PENDING"))))))
 
   (it "changes contained it-specs to pending specs"
-    (expect (macroexpand-all
-             '(xdescribe "bla bla"
-                (let ((a 1) b (c 2) (d (it "nested" (+ 1 1))))
-                  (it "spec1" (+ 1 1))
-                  (describe "inner suite"
-                    (it "inner spec"))
-                  (xit "spec2" (+ 1 1)))))
-            :to-equal
-            '(buttercup-describe
-              "bla bla"
-              #'(lambda ()
-                  (buttercup-xit "nested")
-                  (buttercup-xit "spec1")
-                  (buttercup-describe
-                   "inner suite"
-                   #'(lambda ()
-                       (buttercup-xit "inner spec")
-                       (signal 'buttercup-pending "PENDING")))
-                  (buttercup-xit "spec2")
-                  (signal 'buttercup-pending "PENDING")))))
+    (let ((lexical-binding t))  ; Emacs < 27 needs this?
+      (expect (macroexpand-all
+               '(xdescribe "bla bla"
+                  (let ((a 1) b (c 2) (d (it "nested" (+ 1 1))))
+                    (it "spec1" (+ 1 1))
+                    (describe "inner suite"
+                      (it "inner spec"))
+                    (xit "spec2" (+ 1 1)))))
+              :to-equal
+              '(buttercup-describe
+                "bla bla"
+                #'(lambda ()
+                    (buttercup-xit "nested")
+                    (buttercup-xit "spec1")
+                    (buttercup-describe
+                     "inner suite"
+                     #'(lambda ()
+                         (buttercup-xit "inner spec")
+                         (signal 'buttercup-pending "PENDING")))
+                    (buttercup-xit "spec2")
+                    (signal 'buttercup-pending "PENDING"))))))
 
   (it "should add a pending suite"
     (let ((buttercup--current-suite nil)
