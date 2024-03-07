@@ -1,7 +1,7 @@
 ;;; buttercup-test.el --- Tests for buttercup.el -*-lexical-binding:t-*-
 
 ;; Copyright (C) 2015-2017 Jorgen Schaefer <contact@jorgenschaefer.de>
-;; Copyright (C) 2017-2022 Ola Nilsson <ola.nilsson@gmail.com>
+;; Copyright (C) 2017-2024 Ola Nilsson <ola.nilsson@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License
@@ -2480,12 +2480,12 @@ before it's processed by other functions."
 
 (buttercup--test-with-tempdir
   '("ok-test.el"
-    ("test-a.el" "(describe \"foo\"")
-    ("test-b.el" "(describe \"bar\" (it \"baz\" (ignore)))"))
+    ("test-a.el" ";;; -*- lexical-binding: t; -*-\n(describe \"foo\"")
+    ("test-b.el" ";;; -*- lexical-binding: t; -*-\n(describe \"bar\" (it \"baz\" (ignore)))"))
   (let ((load-path (cons default-directory load-path))
         buttercup-status-error-caught)
     (with-local-buttercup
-      (condition-case condition
+      (condition-case _condition
           (buttercup-run-discover)
         (buttercup-run-specs-failed (setq buttercup-status-error-caught t)))
       (unless buttercup-status-error-caught
