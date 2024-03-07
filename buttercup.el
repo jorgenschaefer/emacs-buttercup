@@ -2078,14 +2078,15 @@ failed -- The second value is the description of the expectation
 
 (defun buttercup--debugger (&rest args)
   "Debugger function that return error context with an exception.
-
 ARGS according to `debugger'."
   ;; If we do not do this, Emacs will not run this handler on
   ;; subsequent calls. Thanks to ert for this.
   (setq num-nonmacro-input-events (1+ num-nonmacro-input-events))
   (throw 'buttercup-debugger-continue
          (list 'failed args
-               (cl-destructuring-bind (_ (signal-type . data)) args
+               ;; args is (error (signal . data) ....) where the tail
+               ;; may be empty
+               (cl-destructuring-bind (signal-type . data) (cl-second args)
                  (unless (eq signal-type 'buttercup-pending)
                    (buttercup--backtrace))))))
 
