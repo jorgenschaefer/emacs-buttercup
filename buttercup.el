@@ -56,9 +56,6 @@
 ;; inconsistencies.
 (define-error 'buttercup-internals-error "Internal buttercup error"
               'buttercup-error-base)
-;; Raised when expanding `describe` macros whithout lexical-binding: t
-(define-error 'buttercup-dynamic-binding-error "Lexical binding is not enabled"
-              'buttercup-error-base)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; wrapper function manipulation
@@ -955,9 +952,6 @@ form.")
 DESCRIPTION is a string. BODY is a sequence of instructions,
 mainly calls to `describe', `it' and `before-each'."
   (declare (indent 1) (debug (&define sexp def-body)))
-  (unless lexical-binding
-    (signal 'buttercup-dynamic-binding-error
-            "buttercup requires `lexical-binding' to be t"))
   (let ((new-body
          (cond
           ((eq (elt body 0) :var)
