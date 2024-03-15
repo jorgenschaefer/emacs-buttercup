@@ -1531,7 +1531,7 @@ current directory."
         (setq args (cdr args)))))
     (setq command-line-args-left nil)
     (setq failed-files-suite (make-buttercup-suite
-                              :description "File failed to load correctly:"))
+                              :description "File failed to load completely: "))
     (dolist (dir (or dirs '(".")))
       (dolist (file (directory-files-recursively
                      dir "\\`test-.*\\.el\\'\\|-tests?\\.el\\'"))
@@ -1554,12 +1554,9 @@ spec and add it to FAILURE-SUITE."
   (cl-destructuring-bind (status description stack)
       (buttercup--funcall #'load file nil t)
     (when (eq status 'failed)
-      (if (memq (caadr description)
-                '(buttercup-dynamic-binding-error end-of-file))
-          (setq stack nil)
       ;; Skip all of stack until load is called
       (while (not (eq (nth 1 (car stack)) 'load))
-        (pop stack)))
+        (pop stack))
       (buttercup-suite-add-child
        failure-suite
        (make-buttercup-spec
