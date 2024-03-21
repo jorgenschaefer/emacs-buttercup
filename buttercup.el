@@ -1461,8 +1461,11 @@ each frame, and prefixes each stack frame with lambda or M to
 indicate whether it represents a normal evaluated function call
 or a macro/special form.")
 
-(defvar buttercup-color t
-  "Whether to use colors in output.")
+(defvar buttercup-color (let ((no-color (getenv "NO_COLOR")))
+                          (or (not no-color) (string= no-color "")))
+  "Whether to use colors in output.
+Will be nil if the `NO_COLOR' environment variable is set to any value
+\(see URL https://no-color.org/).")
 
 (defconst buttercup-warning-buffer-name " *Buttercup-Warnings*"
   "Buffer name used to collect warnings issued while running a spec.
@@ -2032,7 +2035,7 @@ the capturing behavior."
 (defun buttercup-colorize (string color)
   "Format STRING with COLOR.
 Return STRING unmodified if COLOR is nil."
-  (if color
+  (if (and color buttercup-color)
       (let ((color-code (cdr (assq color buttercup-colors))))
         (format "\e[%sm%s\e[0m" color-code string))
     string))
