@@ -1820,6 +1820,14 @@ Two special statuses can be listed in
            (string= (buttercup-spec-failure-description spec) "PENDING"))
       ))
 
+(defun buttercup--reporter-batch-preprint-spec-p (spec)
+  "Return non-nil if the SPEC description should be printed at `spec-started'."
+  (not (or buttercup-reporter-batch-quiet-statuses
+           ;; Do not 'pre-print' in github actions unless color is
+           ;; disabled. See #181.
+           (and buttercup-color
+                (string-match-p "[\n\v\f]" (buttercup-spec-description spec))))))
+
 (defun buttercup-reporter-batch (event arg)
   "A reporter that handles batch sessions.
 
@@ -1844,10 +1852,8 @@ EVENT and ARG are described in `buttercup-reporter'."
            (push arg buttercup-reporter-batch--suite-stack)
          (buttercup--print "%s\n" (buttercup--indented-description arg))))
       (`spec-started
-       (or buttercup-reporter-batch-quiet-statuses
-           (and buttercup-color
-                (string-match-p "[\n\v\f]" (buttercup-spec-description arg)))
-           (buttercup--print "%s" (buttercup--indented-description arg))))
+       (when (buttercup--reporter-batch-preprint-spec-p arg)
+         (buttercup--print "%s" (buttercup--indented-description arg))))
       (`spec-done
        (when (and buttercup-reporter-batch-quiet-statuses
                   (not (buttercup-reporter-batch--quiet-spec-p arg)))
