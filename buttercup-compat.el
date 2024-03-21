@@ -96,6 +96,26 @@ is a Lisp timestamp in the style of `current-time'."
 	(nth 5 attributes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;
+;;; Introduced in 28.1
+
+(unless (fboundp 'with-environment-variables)
+  (defmacro with-environment-variables (variables &rest body)
+    "Set VARIABLES in the environment and execute BODY.
+VARIABLES is a list of variable settings of the form (VAR VALUE),
+where VAR is the name of the variable (a string) and VALUE
+is its value (also a string).
+
+The previous values will be restored upon exit."
+    (declare (indent 1) (debug (sexp body)))
+    (unless (consp variables)
+      (error "Invalid VARIABLES: %s" variables))
+    `(let ((process-environment (copy-sequence process-environment)))
+       ,@(mapcar (lambda (elem)
+                   `(setenv ,(car elem) ,(cadr elem)))
+                 variables)
+       ,@body)))
+
+;;;;;;;;;;;;;;;;;;;;;;
 ;;; Introduced in 29.1
 
 (unless (boundp 'backtrace-on-error-noninteractive)

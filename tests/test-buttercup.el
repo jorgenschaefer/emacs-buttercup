@@ -36,23 +36,33 @@
 (defmacro with-local-buttercup (&rest body)
   "Execute BODY with local buttercup state variables.
 Keyword arguments kan be used to override the values of certain
-variables:
- :color       -> `buttercup-color'
- :frame-style -> `buttercup-stack-frame-style'
- :reporter    -> `buttercup-reporter'
- :suites      -> `buttercup-suites'
- :quiet       -> `buttercup-reporter-batch-quiet-statuses'
-\n(fn &keys COLOR SUITES REPORTER &rest BODY)"
+variables or environment variables while executing BODY:
+ :color         -> `buttercup-color'
+ :frame-style   -> `buttercup-stack-frame-style'
+ :quiet         -> `buttercup-reporter-batch-quiet-statuses'
+ :reporter      -> `buttercup-reporter'
+ :suites        -> `buttercup-suites'
+ :no-color      -> `NO_COLOR'
+ :github-action -> `GITHUB_ACTION'
+\n(fn &keys COLOR FRAME-STYLE QUIET REPORTER SUITES
+          NO-COLOR GITHUB-ACTION
+    &rest BODY)"
   (declare (debug t) (indent defun))
   ;; extract keyword arguments
   (let ((keys '(:color buttercup-color
                        :frame-style buttercup-stack-frame-style
                        :reporter buttercup-reporter
                        :suites buttercup-suites
-                       :quiet buttercup-reporter-batch-quiet-statuses))
+                       :quiet buttercup-reporter-batch-quiet-statuses
+                       :no-color "NO_COLOR"
+                       :github-action "GITHUB_ACTION"))
+        env-vars
         extra-vars)
     (while (plist-member keys (car body))
-      (push (list (plist-get keys (pop body)) (pop body)) extra-vars))
+      (let* ((key (pop body))
+             (var (plist-get keys key)))
+        (push (list var (pop body))
+              (if (symbolp var) extra-vars env-vars))))
   `(let (buttercup--after-each
          buttercup--before-each
          (buttercup--cleanup-functions :invalid)
@@ -66,7 +76,11 @@ variables:
          (buttercup-stack-frame-style 'crop)
          (buttercup-warning-buffer-name " *ignored buttercup warnings*")
          ,@(nreverse extra-vars))
-     ,@body)))
+     (with-environment-variables (("NO_COLOR" nil)
+                                  ("GITHUB_ACTION" nil)
+                                  ,@(nreverse env-vars)
+                                  )
+       ,@body))))
 
 (defmacro buttercup--test-with-tempdir (files &rest body)
   "Create FILES and execute BODY in a temporary directory.
