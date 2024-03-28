@@ -1825,6 +1825,7 @@ Two special statuses can be listed in
   (not (or buttercup-reporter-batch-quiet-statuses
            ;; Do not 'pre-print' in github actions unless color is
            ;; disabled. See #181.
+           (and (getenv "GITHUB_ACTION") buttercup-color)
            (and buttercup-color
                 (string-match-p "[\n\v\f]" (buttercup-spec-description spec))))))
 
