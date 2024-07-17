@@ -174,6 +174,10 @@ before it's processed by other functions."
       (expect (buttercup--enclosed-expr (buttercup--wrap-expr-and-eval '(ignore)))
               :to-equal '(ignore)))
     (it "a closure with expression copy?"
+      ;; This is for before Oclosures were added, and is not testable
+      ;; once interpreted-function types were added in Emacs 30.
+      (assume (not (fboundp 'interpreted-function-p))
+              "Not testable on Emacs 30+, not relevant for Emacs 29+")
       (expect (buttercup--enclosed-expr
                (let ((_foo 1))
                  (lambda () '(ignore) (buttercup--mark-stackframe) (ignore))))
