@@ -89,7 +89,6 @@ forms:
 and the return value will be EXPR, unevaluated. The quoted EXPR
 is useful if EXPR is a macro call, in which case the `quote'
 ensures access to the un-expanded form."
-  (cl-assert (functionp fun) t "Expected FUN to be a function")
   (if (buttercup--thunk-p fun)
       (buttercup--thunk--expr fun)
   (pcase fun
@@ -2122,30 +2121,21 @@ ARGS according to `debugger'."
                   (backtrace-frame n #'buttercup--debugger))
            (frame-list nil))
       ((not frame) frame-list)
-    (push frame frame-list)
-      ;; keep frames until one of the known functions are found, after
-      ;; this is just the buttercup framework and not interesting for
-      ;; users (incorrect for testing buttercup). Some frames before the
-      ;; function also have to be discarded
-      (cl-labels ((tree-find (key tree)
-                             (cl-block tree-find
-                               (while (consp tree)
-                                 (let ((elem (pop tree)))
-                                   (when (or (and (consp elem)
-                                                  (tree-find key elem))
-                                             (and (buttercup--thunk-p elem)
-                                                  (tree-find key (aref elem 1)))
-                                             (eql key elem))
-                                     (cl-return-from tree-find t))))
-                               (cl-return-from tree-find
-                                 (and tree (eql tree key))))))
-        ;; TODO: Only check the cadr of frame, that is where the function is.
-        ;;       The buttercup--mark-stackframe should only be in wrapped expressions,
-        ;;       optimize by checking if it is a wrapped expression?
-        ;;       Will we even need the marker if we can check that?
-        (when (tree-find 'buttercup--mark-stackframe frame)
-          (pop frame-list)
-          (cl-return frame-list)))))
+    ;; Keep frames until one if the end conditions is met. After
+    ;; this is just the buttercup framework and not interesting for
+    ;; users - except for testing buttercup.
+    (when (or
+           ;; When the error occurs in the calling of one of the
+           ;; wrapped expressions of an expect.
+           (buttercup--wrapper-fun-p (cadr frame))
+           ;; TODO: error in `it' but outside `expect'
+           ;; TODO: matchers that do not match should not collect backtrace
+           ;; TODO: What about an error in a matcher?
+           ;; TODO: What about :to-throw?
+           ;; TODO: What about signals in before and after blocks?
+           )
+      (cl-return frame-list))
+    (push frame frame-list)))
 
 (defun buttercup--format-stack-frame (frame &optional style)
   "Format stack FRAME according to STYLE.
