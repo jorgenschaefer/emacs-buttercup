@@ -2116,19 +2116,13 @@ ARGS according to `debugger'."
 
 (defun buttercup--backtrace ()
   "Create a backtrace, a list of frames returned from `backtrace-frame'."
-  ;; Read the backtrace frames from 0 (the closest) upward.
-  (cl-do* ((n 0 (1+ n))
-           (frame (backtrace-frame n) (backtrace-frame n))
-           (frame-list nil)
-           (in-program-stack nil))
+  ;; Read the backtrace frames from `buttercup--debugger' + 1  upward.
+  (cl-do* ((n 1 (1+ n))
+           (frame (backtrace-frame n #'buttercup--debugger)
+                  (backtrace-frame n #'buttercup--debugger))
+           (frame-list nil))
       ((not frame) frame-list)
-      ;; discard frames until (and including) `buttercup--debugger', they
-      ;; only contain buttercup code
-      (when in-program-stack
-        (push frame frame-list))
-      (when (eq (elt frame 1)
-                'buttercup--debugger)
-        (setq in-program-stack t))
+    (push frame frame-list)
       ;; keep frames until one of the known functions are found, after
       ;; this is just the buttercup framework and not interesting for
       ;; users (incorrect for testing buttercup). Some frames before the
@@ -2149,7 +2143,7 @@ ARGS according to `debugger'."
         ;;       The buttercup--mark-stackframe should only be in wrapped expressions,
         ;;       optimize by checking if it is a wrapped expression?
         ;;       Will we even need the marker if we can check that?
-        (when (and in-program-stack (tree-find 'buttercup--mark-stackframe frame))
+        (when (tree-find 'buttercup--mark-stackframe frame)
           (pop frame-list)
           (cl-return frame-list)))))
 
