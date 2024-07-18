@@ -180,18 +180,18 @@ before it's processed by other functions."
               "Not testable on Emacs 30+, not relevant for Emacs 29+")
       (expect (buttercup--enclosed-expr
                (let ((_foo 1))
-                 (lambda () '(ignore) (buttercup--mark-stackframe) (ignore))))
+                 (lambda () '(ignore) (ignore))))
               :to-equal '(ignore)))
     (it "a lambda with expression copy?"
       ;; I suspect there is nothing to make sure that the quoted
       ;; expression matches the actual expression
       (expect (buttercup--enclosed-expr
-               '(lambda () (quote (ignore)) (buttercup--mark-stackframe) (ignore))))
+               '(lambda () (quote (ignore)) (ignore))))
       :to-equal '(ignore))
     (describe "byte compiled"
       (it "lambda objects"
         (expect (buttercup--enclosed-expr
-                 (byte-compile-sexp '(lambda () '(ignore) (buttercup--mark-stackframe) (ignore))))))
+                 (byte-compile-sexp '(lambda () '(ignore) (ignore))))))
       (it "wrapped expression"
         (assume (not (fboundp 'buttercup--thunk-p)) "Not with Oclosures")
         (expect (buttercup--enclosed-expr (byte-compile-sexp (buttercup--wrap-expr '(ignore))))))))
@@ -202,15 +202,15 @@ before it's processed by other functions."
        :to-throw 'buttercup-enclosed-expression-error))
     (it "on a closure with stackframe marker but no quoted expression"
       (expect
-       (buttercup--enclosed-expr (let ((_foo 1)) (lambda () (buttercup--mark-stackframe) (ignore))))
+       (buttercup--enclosed-expr (let ((_foo 1)) (lambda () (ignore))))
        :to-throw 'buttercup-enclosed-expression-error))
     (it "for multi-statement closures"
       (expect (buttercup--enclosed-expr
-               (lambda () '(+ 1 2) (buttercup--mark-stackframe) (+ 1 2) (ignore)))
+               (lambda () '(+ 1 2) (+ 1 2) (ignore)))
               :to-throw 'buttercup-enclosed-expression-error))
     (it "for closures with non-empty argument lists"
       (expect (buttercup--enclosed-expr
-               (lambda (foo) '(ignore foo) (buttercup--mark-stackframe) (ignore foo)))
+               (lambda (foo) '(ignore foo) (ignore foo)))
               :to-throw 'buttercup-enclosed-expression-error))
     (it "on simple lambda objects"
       (expect (buttercup--enclosed-expr
@@ -218,7 +218,7 @@ before it's processed by other functions."
               :to-throw))
     (it "on a lambda with stackframe marker but no quoted expression"
       (expect (buttercup--enclosed-expr
-               '(lambda () (buttercup--mark-stackframe) (ignore)))
+               '(lambda () (ignore)))
               :to-throw 'buttercup-enclosed-expression-error))
     (it "for multi-statement lambdas"
       (expect (buttercup--enclosed-expr
@@ -230,7 +230,7 @@ before it's processed by other functions."
               :to-throw 'buttercup-enclosed-expression-error))
     (it "on byte-compiled functions with arguments"
       (expect (buttercup--enclosed-expr
-               (byte-compile-sexp '(lambda (_a) '(ignore) (buttercup--mark-stackframe) (ignore))))
+               (byte-compile-sexp '(lambda (_a) '(ignore) (ignore))))
               :to-throw 'buttercup-enclosed-expression-error))))
 
 ;;;;;;;;;;
@@ -1121,7 +1121,6 @@ before it's processed by other functions."
             '(buttercup-it "description"
                (lambda ()
                  (buttercup-with-converted-ert-signals
-                   (buttercup--mark-stackframe)
                    body)))))
 
   (it "without argument should expand to xit."

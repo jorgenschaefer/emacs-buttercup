@@ -83,8 +83,8 @@ For Emacs < 29:
 The function MUST be byte-compiled or have one of the following
 forms:
 
-\(closure (ENVLIST) () (quote EXPR) (buttercup--mark-stackframe) EXPANDED)
-\(lambda () (quote EXPR) (buttercup--mark-stackframe) EXPR)
+\(closure (ENVLIST) () (quote EXPR) EXPANDED)
+\(lambda () (quote EXPR) EXPR)
 
 and the return value will be EXPR, unevaluated. The quoted EXPR
 is useful if EXPR is a macro call, in which case the `quote'
@@ -98,7 +98,7 @@ ensures access to the un-expanded form."
     ;; * the stackframe marker
     ;; * the macroexpanded original expression
     (`(closure ,(pred listp) nil
-        (quote ,expr) (buttercup--mark-stackframe) ,_expanded)
+        (quote ,expr) ,_expanded)
      expr)
     ;; This a when FUN has not been evaluated.
     ;; Why does that happen?
@@ -107,7 +107,7 @@ ensures access to the un-expanded form."
     ;; * the stackframe marker
     ;; * the expanded expression
     (`(lambda nil
-        (quote ,expr) (buttercup--mark-stackframe) ,_expanded)
+        (quote ,expr) ,_expanded)
      expr)
     ;; This is when FUN has been byte compiled, as when the entire
     ;; test file has been byte compiled. Check that it has an empty
@@ -188,11 +188,9 @@ Does not have the IGNORE-MISSING and SPLIT parameters."
   "Wrap EXPR in a `buttercup--thunk' to be used by `buttercup-expect'."
   (if (fboundp 'oclosure-lambda)        ;Emacs≥29
       `(oclosure-lambda (buttercup--thunk (expr ',expr)) ()
-         (buttercup--mark-stackframe)
          ,expr)
     `(lambda ()
        (quote ,expr)
-       (buttercup--mark-stackframe)
        ,expr)))
 
 (defmacro expect (arg &optional matcher &rest args)
@@ -1015,7 +1013,6 @@ most probably including one or more calls to `expect'."
       `(buttercup-it ,description
          (lambda ()
            (buttercup-with-converted-ert-signals
-             (buttercup--mark-stackframe)
              ,@body)))
     `(buttercup-xit ,description)))
 
@@ -2110,9 +2107,6 @@ ARGS according to `debugger'."
                  (cl-case signal-type
                    ((buttercup-pending buttercup-failed))
                    (otherwise (buttercup--backtrace)))))))
-
-(defalias 'buttercup--mark-stackframe #'ignore
-  "Marker to find where the backtrace start.")
 
 (defun buttercup--backtrace ()
   "Create a backtrace, a list of frames returned from `backtrace-frame'."
