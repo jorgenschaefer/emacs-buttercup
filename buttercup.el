@@ -2131,7 +2131,7 @@ ARGS according to `debugger'."
         (setq in-program-stack t))
       ;; keep frames until one of the known functions are found, after
       ;; this is just the buttercup framework and not interesting for
-      ;; users incorrect for testing buttercup. Some frames before the
+      ;; users (incorrect for testing buttercup). Some frames before the
       ;; function also have to be discarded
       (cl-labels ((tree-find (key tree)
                              (cl-block tree-find
@@ -2139,10 +2139,16 @@ ARGS according to `debugger'."
                                  (let ((elem (pop tree)))
                                    (when (or (and (consp elem)
                                                   (tree-find key elem))
+                                             (and (buttercup--thunk-p elem)
+                                                  (tree-find key (aref elem 1)))
                                              (eql key elem))
                                      (cl-return-from tree-find t))))
                                (cl-return-from tree-find
                                  (and tree (eql tree key))))))
+        ;; TODO: Only check the cadr of frame, that is where the function is.
+        ;;       The buttercup--mark-stackframe should only be in wrapped expressions,
+        ;;       optimize by checking if it is a wrapped expression?
+        ;;       Will we even need the marker if we can check that?
         (when (and in-program-stack (tree-find 'buttercup--mark-stackframe frame))
           (pop frame-list)
           (cl-return frame-list)))))
