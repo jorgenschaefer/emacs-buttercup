@@ -69,10 +69,12 @@
               'buttercup-internals-error)
 
 (eval-and-compile
-  (when (fboundp 'oclosure-define)      ;Emacs≥29
+  (if (fboundp 'oclosure-define)      ;Emacs≥29
     (oclosure-define (buttercup--thunk (:predicate buttercup--thunk-p))
       "An elisp expression as a function and original code."
-      expr)))
+      expr)
+    (defalias 'buttercup--thunk-p #'ignore
+      "Always return nil when Oclosures are not available.")))
 
 (defun buttercup--enclosed-expr (fun)
   "Given a FUN `buttercup-thunk', return its unevaluated expression.
@@ -88,8 +90,7 @@ and the return value will be EXPR, unevaluated. The quoted EXPR
 is useful if EXPR is a macro call, in which case the `quote'
 ensures access to the un-expanded form."
   (cl-assert (functionp fun) t "Expected FUN to be a function")
-  (if (and (fboundp 'buttercup--thunk-p)      ;Emacs≥29
-           (buttercup--thunk-p fun))
+  (if (buttercup--thunk-p fun)
       (buttercup--thunk--expr fun)
   (pcase fun
     ;; This should be the normal case, a closure with unknown enclosed
