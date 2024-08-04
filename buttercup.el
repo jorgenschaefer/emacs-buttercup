@@ -185,7 +185,8 @@ Does not have the IGNORE-MISSING and SPLIT parameters."
 (define-error 'buttercup-pending "Buttercup test is pending" 'buttercup-error-base)
 
 (defun buttercup--wrap-expr (expr)
-  "Wrap EXPR in a `buttercup--thunk' to be used by `buttercup-expect'."
+  "Wrap EXPR in a `buttercup--thunk' to be used by `buttercup-expect'.
+This function is only usable from within the buttercup `expect' macro."
   (if (fboundp 'oclosure-lambda)        ;Emacs≥29
       `(oclosure-lambda (buttercup--thunk (expr ',expr)) ()
          ,expr)
