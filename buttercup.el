@@ -2107,8 +2107,9 @@ ARGS according to `debugger'."
                ;; args is (error (signal . data) ....) where the tail
                ;; may be empty
                (cl-destructuring-bind (signal-type . data) (cl-second args)
-                 (unless (eq signal-type 'buttercup-pending)
-                   (buttercup--backtrace))))))
+                 (cl-case signal-type
+                   ((buttercup-pending buttercup-failed))
+                   (otherwise (buttercup--backtrace)))))))
 
 (defalias 'buttercup--mark-stackframe #'ignore
   "Marker to find where the backtrace start.")
@@ -2129,7 +2130,6 @@ ARGS according to `debugger'."
            ;; wrapped expressions of an expect.
            (buttercup--wrapper-fun-p (cadr frame))
            ;; TODO: error in `it' but outside `expect'
-           ;; TODO: matchers that do not match should not collect backtrace
            ;; TODO: What about an error in a matcher?
            ;; TODO: What about :to-throw?
            ;; TODO: What about signals in before and after blocks?
