@@ -1947,7 +1947,7 @@ before it's processed by other functions."
     (kill-buffer print-buffer)
     (setq print-buffer nil))
   ;; define a buttercup-reporter-batch variant that only outputs on
-  ;; buttercup-done
+  ;; buttercup-done, because that is where backtraces are printed
   (before-each
     (spy-on 'backtrace-reporter :and-call-fake
             (lambda (event arg)
@@ -1960,11 +1960,12 @@ before it's processed by other functions."
     (spy-on 'buttercup-reporter-batch--print-summary))
   ;; define a known backtrace with a typical error
   (before-all
-	(defun bc-bt-foo (a) (bc-bt-bar a))
-	(defun bc-bt-bar (a) (bc-bt-baz a))
-	(defun bc-bt-baz (a)
+    (defun bc-bt-baz (a)
       (or (number-or-marker-p a)
-        (signal 'wrong-type-argument `(number-or-marker-p ,a)))))
+          (signal 'wrong-type-argument `(number-or-marker-p ,a))))
+    (with-no-warnings
+      (defun bc-bt-bar (a) (bc-bt-baz a))
+      (defun bc-bt-foo (a) (bc-bt-bar a))))
   (after-all
 	(fmakunbound 'bc-bt-foo)
 	(fmakunbound 'bc-bt-bar)
@@ -2007,6 +2008,8 @@ before it's processed by other functions."
             (bc-bt-foo long-string)
             :to-be-truthy)))
        (setq test-suites buttercup-suites)))
+    (after-each
+      (setq test-suites nil))
     (it "`crop' should print truncated lines"
       (with-local-buttercup
        :suites test-suites :reporter #'backtrace-reporter
