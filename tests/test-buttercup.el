@@ -1970,9 +1970,13 @@ before it's processed by other functions."
 	(fmakunbound 'bc-bt-foo)
 	(fmakunbound 'bc-bt-bar)
 	(fmakunbound 'bc-bt-baz))
-  (it "should not be collected or printed for failed specs"
-    (let (test-suites)
+  (describe "should not be collected or printed for"
+    :var (test-suites)
+    (before-each
+      (setq test-suites nil)
       (spy-on 'buttercup--backtrace :and-call-through)
+      )
+    (it "failed specs"
       (with-local-buttercup
        :reporter #'backtrace-reporter
        (describe "suite"
@@ -1990,7 +1994,22 @@ before it's processed by other functions."
               (rx string-start
                   (= 40 ?=) "\nsuite expect " "2"   "\nFAILED: " (+ not-newline) "\n\n"
                   (= 40 ?=) "\nsuite expect " "nil" "\nFAILED: " (+ not-newline) "\n\n"
-                  string-end))))
+                  string-end)))
+    (it "passed specs"
+      (with-local-buttercup
+       :reporter #'backtrace-reporter
+       (describe "suite"
+         (it "expect 2" (expect (+ 1 1) :to-equal 2))
+         (it "expect t" (expect t)))
+       (buttercup-run :noerror)
+       (setq test-suites buttercup-suites))
+      (expect 'buttercup--backtrace :not :to-have-been-called)
+      ;; Checking both if buttercup--backtrace have been called and
+      ;; the failure-stack value might be overkill
+      (expect (cl-every #'null
+                        (mapcar #'buttercup-spec-failure-stack
+                                (buttercup-suite-children (car test-suites)))))
+      (expect (buttercup-output) :to-equal "")))
   (describe "with style"
     :var (test-suites long-string)
     ;; Set up tests to test
