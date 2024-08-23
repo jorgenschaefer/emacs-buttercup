@@ -2009,6 +2009,24 @@ before it's processed by other functions."
       (expect (cl-every #'null
                         (mapcar #'buttercup-spec-failure-stack
                                 (buttercup-suite-children (car test-suites)))))
+      (expect (buttercup-output) :to-equal ""))
+    (it "skipped specs"
+      (with-local-buttercup
+       :reporter #'backtrace-reporter
+        (describe "one description with"
+          (it "one skipped spec"
+            (buttercup-skip "skip"))
+          (xit "one empty spec")
+          (it "one un-assumed spec"
+            (assume nil "A very unassuming spec")))
+        (buttercup-run :noerror)
+        (setq test-suites buttercup-suites))
+      (expect 'buttercup--backtrace :not :to-have-been-called)
+      ;; Checking both if buttercup--backtrace have been called and
+      ;; the failure-stack value might be overkill
+      (expect (cl-every #'null
+                        (mapcar #'buttercup-spec-failure-stack
+                                (buttercup-suite-children (car test-suites)))))
       (expect (buttercup-output) :to-equal "")))
   (describe "with style"
     :var (test-suites long-string)
@@ -2159,18 +2177,7 @@ before it's processed by other functions."
       (matcher-spec ":to-have-been-called-with" :to-have-been-called-with 2)
       (matcher-spec ":not :to-have-been-called-with" :not :to-have-been-called-with 2)
       (matcher-spec ":to-have-been-called-times" :to-have-been-called-times 2)
-      (matcher-spec ":not :to-have-been-called-times" :not :to-have-been-called-times 2)))
-  (it "should not generate backtraces for skipped specs"
-    (let (test-spec)
-      (spy-on 'buttercup--backtrace :and-call-through)
-      (with-local-buttercup
-        (describe "one description"
-          (it "with a pending spec")
-          (buttercup-skip "skip"))
-        (buttercup-run :noerror)
-        (setq test-spec (car (buttercup-suite-children (car buttercup-suites)))))
-      (expect 'buttercup--backtrace :not :to-have-been-called)
-      (expect (buttercup-spec-failure-stack test-spec) :to-be nil))))
+      (matcher-spec ":not :to-have-been-called-times" :not :to-have-been-called-times 2))))
 
 
 (describe "When using quiet specs in the batch reporter"
