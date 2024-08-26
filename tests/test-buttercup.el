@@ -2028,6 +2028,28 @@ before it's processed by other functions."
                         (mapcar #'buttercup-spec-failure-stack
                                 (buttercup-suite-children (car test-suites)))))
       (expect (buttercup-output) :to-equal "")))
+  (describe "should be collected for errors in"
+    (it "matchers"
+      (put :--failing-matcher 'buttercup-matcher
+           (lambda (&rest _) (/ 1 0)))
+      (with-local-buttercup
+       :reporter #'backtrace-reporter
+       (describe "One suite with"
+         (it "a bad matcher"
+           (expect 1 :--failing-matcher 1)))
+       (buttercup-run :no-error))
+      (put :--failing-matcher 'buttercup-matcher nil)
+      (expect (buttercup-output) :to-equal
+              (concat
+                (make-string 40 ?=) "\n"
+                "One suite with a bad matcher\n"
+                "\n"
+                "Traceback (most recent call last):\n"
+                "  :--failing-matcher(1 1)\n"
+                "  /(1 0)\n"
+                "error: (arith-error)\n\n"
+                )))
+    )
   (describe "with style"
     :var (test-suites long-string)
     ;; Set up tests to test

@@ -2143,9 +2143,51 @@ ARGS according to `debugger'."
                 (eq 'let (cadr frame))
                 (equal '((buttercup--stackframe-marker 1)) (car (cddr frame)))
                 )
-           ;; TODO: What about an error in a matcher?
            ;; TODO: What about :to-throw?
+           ;; buttercup--update-with-funcall (spec ...
+           ;;  apply buttercup--funcall
+           ;;   buttercup--funcall   -- sets the debugger
+           ;;    apply FUNCTION
+           ;;     FUNCTION -- spec body function
+           ;;      condition-case -- from buttercup-with-converted-ert-signals
+           ;;       (let ((buttercup--stackframe-marker 1))
+           ;;        (buttercup-expect
+           ;;         (buttercup--apply-matcher
+           ;;          (apply to-throw-matcher
+           ;;           (to-throw-matcher
+           ;;             We need a new debugger here, the
+           ;;             condition-case can not be used to collect
+           ;;             backtrace.
+           ;; When the error happens in the matcher function
+           ;;  (buttercup-expect
+           ;;   (buttercup--apply-matcher
+           ;;    (apply some-kind-of-function
+           ;;     (matcher
+           ;;      ACTUAL CODE
+           (and (eq 'buttercup--apply-matcher (cadr frame))
+                ;; The two preceeding frames are not of user interest
+                (pop frame-list) (pop frame-list)
+                ;; Add a fake frame for the matcher function
+                (push (cons t
+                            (cons (car (cddr frame))
+                                  (mapcar (lambda (x)
+                                            (if (buttercup--wrapper-fun-p x)
+                                                (buttercup--enclosed-expr x)
+                                              x))
+                                          (cadr (cddr frame)))))
+                      frame-list))
            ;; TODO: What about signals in before and after blocks?
+           ;; BEFORE-EACH:
+           ;; buttercup--run-suite
+           ;;  (let* ...
+           ;;   (dolist (f (buttercup-suite-before-all ...
+           ;;    (buttercup--update-with-funcall suite f
+           ;;     (apply buttercup--funcall
+           ;;      (buttercup-funcall f
+           ;;       (f)
+           ;; Currently, buttercup silently ignores error in
+           ;; (before|after)-(all|each). As long as that is the case,
+           ;; there is nothing we can do about stacktraces.
            )
       (cl-return frame-list))
     (push frame frame-list)))
