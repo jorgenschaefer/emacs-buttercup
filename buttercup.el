@@ -2129,7 +2129,20 @@ ARGS according to `debugger'."
            ;; When the error occurs in the calling of one of the
            ;; wrapped expressions of an expect.
            (buttercup--wrapper-fun-p (cadr frame))
-           ;; TODO: error in `it' but outside `expect'
+           ;; When an error happens in spec code but outside an expect
+           ;; statement
+           ;; buttercup--update-with-funcall
+           ;;  apply buttercup--funcall
+           ;;   buttercup--funcall   -   sets debugger
+           ;;    apply FUNCTION
+           ;;     FUNCTION  -- spec body function
+           ;;      condition-case   -- from buttercup-with-converted-ert-signals
+           ;;       (let ((buttercup--stackframe-marker 1))  -- the same
+           ;;        ACTUAL CODE
+           (and (null (car frame))
+                (eq 'let (cadr frame))
+                (equal '((buttercup--stackframe-marker 1)) (car (cddr frame)))
+                )
            ;; TODO: What about an error in a matcher?
            ;; TODO: What about :to-throw?
            ;; TODO: What about signals in before and after blocks?
@@ -2184,7 +2197,9 @@ Specifically, `ert-test-failed' is converted to
 `buttercup-pending'."
   (declare (indent 0))
   `(condition-case err
-       (progn ,@body)
+       (let ((buttercup--stackframe-marker 1))
+         (ignore buttercup--stackframe-marker)
+         ,@body)
      (ert-test-failed
       (buttercup-fail "%S" err))
      (ert-test-skipped
