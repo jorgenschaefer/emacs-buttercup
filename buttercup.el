@@ -196,17 +196,19 @@ Does not have the IGNORE-MISSING and SPLIT parameters."
 (defmacro expect (arg &optional matcher &rest args)
   "Expect a condition to be true.
 
-This macro knows three forms:
+This macro knows two forms:
 
-\(expect ARG :MATCHER ARGS...)
-  Fail the current test if the matcher does not match these arguments.
+\(expect ARG :MATCHER [ARGS...])
+  Fail the current test if the MATCHER does not match these arguments.
+  The correct number of arguments depend on the MATCHER.
   See `buttercup-define-matcher' for more information on matchers.
 
-\(expect (function ARG...))
-  Fail the current test if the function call does not return a true value.
-
 \(expect ARG)
-  Fail the current test if ARG is not true."
+  Fail the current test if ARG is not true.
+  This is the same as (expect ARG :to-be-truthy).
+
+All arguments can be a value or a single Lisp form. The evaluation of
+the arguments is delayed until the containing spec is executed."
   `(buttercup-expect ,(buttercup--wrap-expr arg)
                      ,(or matcher :to-be-truthy)
                      ,@(mapcar #'buttercup--wrap-expr args)))
