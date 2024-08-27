@@ -263,16 +263,16 @@ MESSAGE is omitted or nil show the condition form instead."
 
 (defmacro buttercup-define-matcher (matcher args &rest body)
   "Define a matcher named MATCHER to be used in `expect'.
-
+MATCHER is a keyword, for instance `:to-be'.
 ARGS is a list of the elements to match together.
-
 The BODY will receive ARGS as functions that can be called (using
 `funcall') to get their values. BODY should return either a
 simple boolean, or a cons cell of the form (RESULT . MESSAGE). If
 RESULT is nil, MESSAGE should describe why the matcher failed. If
 RESULT is non-nil, MESSAGE should describe why a negated matcher
 failed.
-BODY may start with a docstring."
+
+\(fn MATCHER ARGS [DOCSTRING] BODY...)"
   (declare (indent defun))
   `(put ,matcher 'buttercup-matcher
         (lambda ,args
