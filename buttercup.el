@@ -614,6 +614,8 @@ See also `buttercup-define-matcher'."
   :expect-mismatch-phrase "Expected `%A' < %b, but `%A' was %a.")
 
 (buttercup-define-matcher :to-be-close-to (a b precision)
+  "Verify that |A-B| < 10^-PRECISION.
+\(expect A :to-be-close-to B PRECISION)"
   (cl-destructuring-bind
       (precision (a-expr . a) (_b-expr . b))
       (cons (funcall precision)
