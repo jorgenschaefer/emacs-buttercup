@@ -2198,7 +2198,9 @@ before it's processed by other functions."
       (matcher-spec ":to-have-been-called-with" :to-have-been-called-with 2)
       (matcher-spec ":not :to-have-been-called-with" :not :to-have-been-called-with 2)
       (matcher-spec ":to-have-been-called-times" :to-have-been-called-times 2)
-      (matcher-spec ":not :to-have-been-called-times" :not :to-have-been-called-times 2))))
+      (matcher-spec ":not :to-have-been-called-times" :not :to-have-been-called-times 2)
+      (matcher-spec "function matcher" (lambda (_) t))
+      (matcher-spec ":not function matcher" :not (lambda (_) nil)))))
 
 
 (describe "When using quiet specs in the batch reporter"
