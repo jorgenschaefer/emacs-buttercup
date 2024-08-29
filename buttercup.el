@@ -220,24 +220,14 @@ the arguments is delayed until the containing spec is executed."
 See the macro documentation for details and the definition of
 ARG, MATCHER and ARGS."
   (cl-assert (cl-every #'buttercup--wrapper-fun-p (cons arg args)) t)
-  (if (not matcher)
-      (progn
-        (cl-assert (not args) t)
-        (when (not (funcall arg))
-          (buttercup-fail "Expected %S to be non-nil"
-                          (buttercup--enclosed-expr arg))))
-    (let ((result (buttercup--apply-matcher matcher (cons arg args))))
-      (if (consp result)
-          (when (not (car result))
-            (buttercup-fail "%s" (cdr result)))
-        (when (not result)
-          (buttercup-fail "Expected %S %S %s"
-                          (buttercup--enclosed-expr arg)
-                          matcher
-                          (mapconcat (lambda (obj)
-                                       (format "%S" (funcall obj)))
-                                     args
-                                     " ")))))))
+  (pcase (buttercup--apply-matcher (or matcher :to-be-truthy) (cons arg args))
+    (`(,result . ,message) (unless result (buttercup-fail message)))
+    (result (unless result (buttercup-fail "Expected %S %S %s"
+                                           (buttercup--enclosed-expr arg)
+                                           matcher
+                                           (mapconcat (lambda (obj)
+                                                        (format "%S" (funcall obj)))
+                                                      args " "))))))
 
 (defun buttercup-fail (format &rest args)
   "Fail the current test with the given description.
