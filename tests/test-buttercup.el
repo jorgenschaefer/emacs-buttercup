@@ -180,18 +180,18 @@ before it's processed by other functions."
               "Not testable on Emacs 30+, not relevant for Emacs 29+")
       (expect (buttercup--enclosed-expr
                (let ((_foo 1))
-                 (lambda () '(ignore) (buttercup--mark-stackframe) (ignore))))
+                 (lambda () '(ignore) (ignore))))
               :to-equal '(ignore)))
     (it "a lambda with expression copy?"
       ;; I suspect there is nothing to make sure that the quoted
       ;; expression matches the actual expression
       (expect (buttercup--enclosed-expr
-               '(lambda () (quote (ignore)) (buttercup--mark-stackframe) (ignore))))
+               '(lambda () (quote (ignore)) (ignore))))
       :to-equal '(ignore))
     (describe "byte compiled"
       (it "lambda objects"
         (expect (buttercup--enclosed-expr
-                 (byte-compile-sexp '(lambda () '(ignore) (buttercup--mark-stackframe) (ignore))))))
+                 (byte-compile-sexp '(lambda () '(ignore) (ignore))))))
       (it "wrapped expression"
         (assume (not (fboundp 'buttercup--thunk-p)) "Not with Oclosures")
         (expect (buttercup--enclosed-expr (byte-compile-sexp (buttercup--wrap-expr '(ignore))))))))
@@ -202,15 +202,15 @@ before it's processed by other functions."
        :to-throw 'buttercup-enclosed-expression-error))
     (it "on a closure with stackframe marker but no quoted expression"
       (expect
-       (buttercup--enclosed-expr (let ((_foo 1)) (lambda () (buttercup--mark-stackframe) (ignore))))
+       (buttercup--enclosed-expr (let ((_foo 1)) (lambda () (ignore))))
        :to-throw 'buttercup-enclosed-expression-error))
     (it "for multi-statement closures"
       (expect (buttercup--enclosed-expr
-               (lambda () '(+ 1 2) (buttercup--mark-stackframe) (+ 1 2) (ignore)))
+               (lambda () '(+ 1 2) (+ 1 2) (ignore)))
               :to-throw 'buttercup-enclosed-expression-error))
     (it "for closures with non-empty argument lists"
       (expect (buttercup--enclosed-expr
-               (lambda (foo) '(ignore foo) (buttercup--mark-stackframe) (ignore foo)))
+               (lambda (foo) '(ignore foo) (ignore foo)))
               :to-throw 'buttercup-enclosed-expression-error))
     (it "on simple lambda objects"
       (expect (buttercup--enclosed-expr
@@ -218,7 +218,7 @@ before it's processed by other functions."
               :to-throw))
     (it "on a lambda with stackframe marker but no quoted expression"
       (expect (buttercup--enclosed-expr
-               '(lambda () (buttercup--mark-stackframe) (ignore)))
+               '(lambda () (ignore)))
               :to-throw 'buttercup-enclosed-expression-error))
     (it "for multi-statement lambdas"
       (expect (buttercup--enclosed-expr
@@ -230,7 +230,7 @@ before it's processed by other functions."
               :to-throw 'buttercup-enclosed-expression-error))
     (it "on byte-compiled functions with arguments"
       (expect (buttercup--enclosed-expr
-               (byte-compile-sexp '(lambda (_a) '(ignore) (buttercup--mark-stackframe) (ignore))))
+               (byte-compile-sexp '(lambda (_a) '(ignore) (ignore))))
               :to-throw 'buttercup-enclosed-expression-error))))
 
 ;;;;;;;;;;
@@ -1121,7 +1121,6 @@ before it's processed by other functions."
             '(buttercup-it "description"
                (lambda ()
                  (buttercup-with-converted-ert-signals
-                   (buttercup--mark-stackframe)
                    body)))))
 
   (it "without argument should expand to xit."
@@ -1947,7 +1946,7 @@ before it's processed by other functions."
     (kill-buffer print-buffer)
     (setq print-buffer nil))
   ;; define a buttercup-reporter-batch variant that only outputs on
-  ;; buttercup-done
+  ;; buttercup-done, because that is where backtraces are printed
   (before-each
     (spy-on 'backtrace-reporter :and-call-fake
             (lambda (event arg)
@@ -1960,31 +1959,96 @@ before it's processed by other functions."
     (spy-on 'buttercup-reporter-batch--print-summary))
   ;; define a known backtrace with a typical error
   (before-all
-	(defun bc-bt-foo (a) (bc-bt-bar a))
-	(defun bc-bt-bar (a) (bc-bt-baz a))
-	(defun bc-bt-baz (a)
+    (defun bc-bt-baz (a)
       (or (number-or-marker-p a)
-        (signal 'wrong-type-argument `(number-or-marker-p ,a)))))
+          (signal 'wrong-type-argument `(number-or-marker-p ,a))))
+    (with-no-warnings
+      (defun bc-bt-bar (a) (bc-bt-baz a))
+      (defun bc-bt-foo (a) (bc-bt-bar a))))
   (after-all
 	(fmakunbound 'bc-bt-foo)
 	(fmakunbound 'bc-bt-bar)
 	(fmakunbound 'bc-bt-baz))
-  (it "should be printed for each failed spec"
-    (with-local-buttercup
-      :reporter #'backtrace-reporter
-      (describe "suite"
-        (it "expect 2" (expect (+ 1 2) :to-equal 2))
-        (it "expect nil" (expect nil)))
-      (buttercup-run :noerror))
-    (expect (buttercup-output) :to-match
-            (rx string-start
-                (= 2 (seq (= 40 ?=) "\n"
-                          "suite expect " (or "2" "nil") "\n"
-                          "\n"
-                          "Traceback (most recent call last):\n"
-                          (* (seq "  " (+ not-newline) "\n"))
-                          (or "FAILED" "error") ": " (+ not-newline) "\n\n"))
-                string-end)))
+  (describe "should not be collected or printed for"
+    :var (test-suites)
+    (before-each
+      (setq test-suites nil)
+      (spy-on 'buttercup--backtrace :and-call-through)
+      )
+    (it "failed specs"
+      (with-local-buttercup
+       :reporter #'backtrace-reporter
+       (describe "suite"
+         (it "expect 2" (expect (+ 1 2) :to-equal 2))
+         (it "expect nil" (expect nil)))
+       (buttercup-run :noerror)
+       (setq test-suites buttercup-suites))
+      (expect 'buttercup--backtrace :not :to-have-been-called)
+      ;; Checking both if buttercup--backtrace have been called and
+      ;; the failure-stack value might be overkill
+      (expect (cl-every #'null
+                        (mapcar #'buttercup-spec-failure-stack
+                                (buttercup-suite-children (car test-suites)))))
+      (expect (buttercup-output) :to-match
+              (rx string-start
+                  (= 40 ?=) "\nsuite expect " "2"   "\nFAILED: " (+ not-newline) "\n\n"
+                  (= 40 ?=) "\nsuite expect " "nil" "\nFAILED: " (+ not-newline) "\n\n"
+                  string-end)))
+    (it "passed specs"
+      (with-local-buttercup
+       :reporter #'backtrace-reporter
+       (describe "suite"
+         (it "expect 2" (expect (+ 1 1) :to-equal 2))
+         (it "expect t" (expect t)))
+       (buttercup-run :noerror)
+       (setq test-suites buttercup-suites))
+      (expect 'buttercup--backtrace :not :to-have-been-called)
+      ;; Checking both if buttercup--backtrace have been called and
+      ;; the failure-stack value might be overkill
+      (expect (cl-every #'null
+                        (mapcar #'buttercup-spec-failure-stack
+                                (buttercup-suite-children (car test-suites)))))
+      (expect (buttercup-output) :to-equal ""))
+    (it "skipped specs"
+      (with-local-buttercup
+       :reporter #'backtrace-reporter
+        (describe "one description with"
+          (it "one skipped spec"
+            (buttercup-skip "skip"))
+          (xit "one empty spec")
+          (it "one un-assumed spec"
+            (assume nil "A very unassuming spec")))
+        (buttercup-run :noerror)
+        (setq test-suites buttercup-suites))
+      (expect 'buttercup--backtrace :not :to-have-been-called)
+      ;; Checking both if buttercup--backtrace have been called and
+      ;; the failure-stack value might be overkill
+      (expect (cl-every #'null
+                        (mapcar #'buttercup-spec-failure-stack
+                                (buttercup-suite-children (car test-suites)))))
+      (expect (buttercup-output) :to-equal "")))
+  (describe "should be collected for errors in"
+    (it "matchers"
+      (put :--failing-matcher 'buttercup-matcher
+           (lambda (&rest _) (/ 1 0)))
+      (with-local-buttercup
+       :reporter #'backtrace-reporter
+       (describe "One suite with"
+         (it "a bad matcher"
+           (expect 1 :--failing-matcher 1)))
+       (buttercup-run :no-error))
+      (put :--failing-matcher 'buttercup-matcher nil)
+      (expect (buttercup-output) :to-equal
+              (concat
+                (make-string 40 ?=) "\n"
+                "One suite with a bad matcher\n"
+                "\n"
+                "Traceback (most recent call last):\n"
+                "  :--failing-matcher(1 1)\n"
+                "  /(1 0)\n"
+                "error: (arith-error)\n\n"
+                )))
+    )
   (describe "with style"
     :var (test-suites long-string)
     ;; Set up tests to test
@@ -2002,6 +2066,8 @@ before it's processed by other functions."
             (bc-bt-foo long-string)
             :to-be-truthy)))
        (setq test-suites buttercup-suites)))
+    (after-each
+      (setq test-suites nil))
     (it "`crop' should print truncated lines"
       (with-local-buttercup
        :suites test-suites :reporter #'backtrace-reporter
@@ -2132,18 +2198,7 @@ before it's processed by other functions."
       (matcher-spec ":to-have-been-called-with" :to-have-been-called-with 2)
       (matcher-spec ":not :to-have-been-called-with" :not :to-have-been-called-with 2)
       (matcher-spec ":to-have-been-called-times" :to-have-been-called-times 2)
-      (matcher-spec ":not :to-have-been-called-times" :not :to-have-been-called-times 2)))
-  (it "should not generate backtraces for skipped specs"
-    (let (test-spec)
-      (spy-on 'buttercup--backtrace :and-call-through)
-      (with-local-buttercup
-        (describe "one description"
-          (it "with a pending spec")
-          (buttercup-skip "skip"))
-        (buttercup-run :noerror)
-        (setq test-spec (car (buttercup-suite-children (car buttercup-suites)))))
-      (expect 'buttercup--backtrace :not :to-have-been-called)
-      (expect (buttercup-spec-failure-stack test-spec) :to-be nil))))
+      (matcher-spec ":not :to-have-been-called-times" :not :to-have-been-called-times 2))))
 
 
 (describe "When using quiet specs in the batch reporter"

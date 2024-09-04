@@ -83,13 +83,12 @@ For Emacs < 29:
 The function MUST be byte-compiled or have one of the following
 forms:
 
-\(closure (ENVLIST) () (quote EXPR) (buttercup--mark-stackframe) EXPANDED)
-\(lambda () (quote EXPR) (buttercup--mark-stackframe) EXPR)
+\(closure (ENVLIST) () (quote EXPR) EXPANDED)
+\(lambda () (quote EXPR) EXPR)
 
 and the return value will be EXPR, unevaluated. The quoted EXPR
 is useful if EXPR is a macro call, in which case the `quote'
 ensures access to the un-expanded form."
-  (cl-assert (functionp fun) t "Expected FUN to be a function")
   (if (buttercup--thunk-p fun)
       (buttercup--thunk--expr fun)
   (pcase fun
@@ -99,7 +98,7 @@ ensures access to the un-expanded form."
     ;; * the stackframe marker
     ;; * the macroexpanded original expression
     (`(closure ,(pred listp) nil
-        (quote ,expr) (buttercup--mark-stackframe) ,_expanded)
+        (quote ,expr) ,_expanded)
      expr)
     ;; This a when FUN has not been evaluated.
     ;; Why does that happen?
@@ -108,7 +107,7 @@ ensures access to the un-expanded form."
     ;; * the stackframe marker
     ;; * the expanded expression
     (`(lambda nil
-        (quote ,expr) (buttercup--mark-stackframe) ,_expanded)
+        (quote ,expr) ,_expanded)
      expr)
     ;; This is when FUN has been byte compiled, as when the entire
     ;; test file has been byte compiled. Check that it has an empty
@@ -189,11 +188,9 @@ Does not have the IGNORE-MISSING and SPLIT parameters."
   "Wrap EXPR in a `buttercup--thunk' to be used by `buttercup-expect'."
   (if (fboundp 'oclosure-lambda)        ;Emacs≥29
       `(oclosure-lambda (buttercup--thunk (expr ',expr)) ()
-         (buttercup--mark-stackframe)
          ,expr)
     `(lambda ()
        (quote ,expr)
-       (buttercup--mark-stackframe)
        ,expr)))
 
 (defmacro expect (arg &optional matcher &rest args)
@@ -1016,7 +1013,6 @@ most probably including one or more calls to `expect'."
       `(buttercup-it ,description
          (lambda ()
            (buttercup-with-converted-ert-signals
-             (buttercup--mark-stackframe)
              ,@body)))
     `(buttercup-xit ,description)))
 
@@ -2108,50 +2104,87 @@ ARGS according to `debugger'."
                ;; args is (error (signal . data) ....) where the tail
                ;; may be empty
                (cl-destructuring-bind (signal-type . data) (cl-second args)
-                 (unless (eq signal-type 'buttercup-pending)
-                   (buttercup--backtrace))))))
-
-(defalias 'buttercup--mark-stackframe #'ignore
-  "Marker to find where the backtrace start.")
+                 (cl-case signal-type
+                   ((buttercup-pending buttercup-failed))
+                   (otherwise (buttercup--backtrace)))))))
 
 (defun buttercup--backtrace ()
   "Create a backtrace, a list of frames returned from `backtrace-frame'."
-  ;; Read the backtrace frames from 0 (the closest) upward.
-  (cl-do* ((n 0 (1+ n))
-           (frame (backtrace-frame n) (backtrace-frame n))
-           (frame-list nil)
-           (in-program-stack nil))
+  ;; Read the backtrace frames from `buttercup--debugger' + 1  upward.
+  (cl-do* ((n 1 (1+ n))
+           (frame (backtrace-frame n #'buttercup--debugger)
+                  (backtrace-frame n #'buttercup--debugger))
+           (frame-list nil))
       ((not frame) frame-list)
-      ;; discard frames until (and including) `buttercup--debugger', they
-      ;; only contain buttercup code
-      (when in-program-stack
-        (push frame frame-list))
-      (when (eq (elt frame 1)
-                'buttercup--debugger)
-        (setq in-program-stack t))
-      ;; keep frames until one of the known functions are found, after
-      ;; this is just the buttercup framework and not interesting for
-      ;; users (incorrect for testing buttercup). Some frames before the
-      ;; function also have to be discarded
-      (cl-labels ((tree-find (key tree)
-                             (cl-block tree-find
-                               (while (consp tree)
-                                 (let ((elem (pop tree)))
-                                   (when (or (and (consp elem)
-                                                  (tree-find key elem))
-                                             (and (buttercup--thunk-p elem)
-                                                  (tree-find key (aref elem 1)))
-                                             (eql key elem))
-                                     (cl-return-from tree-find t))))
-                               (cl-return-from tree-find
-                                 (and tree (eql tree key))))))
-        ;; TODO: Only check the cadr of frame, that is where the function is.
-        ;;       The buttercup--mark-stackframe should only be in wrapped expressions,
-        ;;       optimize by checking if it is a wrapped expression?
-        ;;       Will we even need the marker if we can check that?
-        (when (and in-program-stack (tree-find 'buttercup--mark-stackframe frame))
-          (pop frame-list)
-          (cl-return frame-list)))))
+    ;; Keep frames until one if the end conditions is met. After
+    ;; this is just the buttercup framework and not interesting for
+    ;; users - except for testing buttercup.
+    (when (or
+           ;; When the error occurs in the calling of one of the
+           ;; wrapped expressions of an expect.
+           (buttercup--wrapper-fun-p (cadr frame))
+           ;; When an error happens in spec code but outside an expect
+           ;; statement
+           ;; buttercup--update-with-funcall
+           ;;  apply buttercup--funcall
+           ;;   buttercup--funcall   -   sets debugger
+           ;;    apply FUNCTION
+           ;;     FUNCTION  -- spec body function
+           ;;      condition-case   -- from buttercup-with-converted-ert-signals
+           ;;       (let ((buttercup--stackframe-marker 1))  -- the same
+           ;;        ACTUAL CODE
+           (and (null (car frame))
+                (eq 'let (cadr frame))
+                (equal '((buttercup--stackframe-marker 1)) (car (cddr frame)))
+                )
+           ;; TODO: What about :to-throw?
+           ;; buttercup--update-with-funcall (spec ...
+           ;;  apply buttercup--funcall
+           ;;   buttercup--funcall   -- sets the debugger
+           ;;    apply FUNCTION
+           ;;     FUNCTION -- spec body function
+           ;;      condition-case -- from buttercup-with-converted-ert-signals
+           ;;       (let ((buttercup--stackframe-marker 1))
+           ;;        (buttercup-expect
+           ;;         (buttercup--apply-matcher
+           ;;          (apply to-throw-matcher
+           ;;           (to-throw-matcher
+           ;;             We need a new debugger here, the
+           ;;             condition-case can not be used to collect
+           ;;             backtrace.
+           ;; When the error happens in the matcher function
+           ;;  (buttercup-expect
+           ;;   (buttercup--apply-matcher
+           ;;    (apply some-kind-of-function
+           ;;     (matcher
+           ;;      ACTUAL CODE
+           (and (eq 'buttercup--apply-matcher (cadr frame))
+                ;; The two preceeding frames are not of user interest
+                (pop frame-list) (pop frame-list)
+                ;; Add a fake frame for the matcher function
+                (push (cons t
+                            (cons (car (cddr frame))
+                                  (mapcar (lambda (x)
+                                            (if (buttercup--wrapper-fun-p x)
+                                                (buttercup--enclosed-expr x)
+                                              x))
+                                          (cadr (cddr frame)))))
+                      frame-list))
+           ;; TODO: What about signals in before and after blocks?
+           ;; BEFORE-EACH:
+           ;; buttercup--run-suite
+           ;;  (let* ...
+           ;;   (dolist (f (buttercup-suite-before-all ...
+           ;;    (buttercup--update-with-funcall suite f
+           ;;     (apply buttercup--funcall
+           ;;      (buttercup-funcall f
+           ;;       (f)
+           ;; Currently, buttercup silently ignores error in
+           ;; (before|after)-(all|each). As long as that is the case,
+           ;; there is nothing we can do about stacktraces.
+           )
+      (cl-return frame-list))
+    (push frame frame-list)))
 
 (defun buttercup--format-stack-frame (frame &optional style)
   "Format stack FRAME according to STYLE.
@@ -2200,7 +2233,9 @@ Specifically, `ert-test-failed' is converted to
 `buttercup-pending'."
   (declare (indent 0))
   `(condition-case err
-       (progn ,@body)
+       (let ((buttercup--stackframe-marker 1))
+         (ignore buttercup--stackframe-marker)
+         ,@body)
      (ert-test-failed
       (buttercup-fail "%S" err))
      (ert-test-skipped
