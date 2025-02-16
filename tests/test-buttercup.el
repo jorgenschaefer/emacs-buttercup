@@ -2233,51 +2233,119 @@ before it's processed by other functions."
     (kill-buffer print-buffer)
     (setq print-buffer nil))
 
-  (it "should print nothing if all specs are quiet"
-    (with-local-buttercup :color nil :quiet '(pending) :reporter #'buttercup-reporter-batch
-      (describe "top"
-        (it "spec 1")
-        (describe "second"
-          (it "spec 2")
-          (it "spec 3")))
-      (describe "empty")
-      (buttercup-run))
-    (expect (buttercup-output) :to-equal
-            "Running 0 out of 3 specs.\n\nRan 0 out of 3 specs, 0 failed, in 13.00s.\n"))
+  (describe "it should print nothing if all specs are quiet"
+    :var (test-suites)
+    (before-each
+      (with-local-buttercup
+        (describe "top"
+          (it "spec 1")
+          (describe "second"
+            (it "spec 2")
+            (it "spec 3")))
+        (describe "empty")
+        (setq test-suites buttercup-suites)))
+    (after-each
+      (setq test-suites nil))
 
-  (it "should print the containing suites for non-quiet specs"
-    (with-local-buttercup :color nil :quiet '(pending) :reporter #'buttercup-reporter-batch
-      (describe "top"
-        (it "spec 1" (ignore))
-        (describe "second"
-          (it "spec 2")
-          (it "spec 3" (ignore))
-          (describe "third"
-            (it "spec 4"))))
-      (describe "empty")
-      (buttercup-run))
-    (expect (buttercup-output) :to-equal
-            (concat "Running 2 out of 4 specs.\n\n"
-                    "top\n"
-                    "  spec 1 (1.00s)\n"
-                    "  second\n"
-                    "    spec 3 (1.00s)\n\n"
-                    "Ran 2 out of 4 specs, 0 failed, in 19.00s.\n")))
+    (it "and color is disabled"
+      (with-local-buttercup
+        :color nil
+        :quiet '(pending)
+        :reporter #'buttercup-reporter-batch
+        :suites test-suites
+        (buttercup-run))
+      (expect (buttercup-output) :to-equal
+              "Running 0 out of 3 specs.\n\nRan 0 out of 3 specs, 0 failed, in 13.00s.\n"))
 
-  (it "should quiet all of the given spec statuses"
-    ;; suppress stacktraces printed at buttercup-done
-    (spy-on 'buttercup-reporter-batch--print-failed-spec-report)
-    (with-local-buttercup
-      :color nil :quiet '(pending passed failed) :reporter #'buttercup-reporter-batch
-      (describe "passed"
-        (it "passed" (ignore)))
-      (describe "failed"
-        (it "failed" (buttercup-fail "because")))
-      (describe "pending"
-        (it "pending"))
-      (buttercup-run t))
-    (expect (buttercup-output) :to-equal
-            "Running 2 out of 3 specs.\n\nRan 2 out of 3 specs, 1 failed, in 13.00s.\n"))
+    (it "and color is enabled"
+      (with-local-buttercup
+        :color t
+        :quiet '(pending)
+        :reporter #'buttercup-reporter-batch
+        :suites test-suites
+        (buttercup-run))
+      (expect (buttercup-output) :to-equal
+              "Running 0 out of 3 specs.\n\nRan 0 out of 3 specs, 0 failed, in 13.00s.\n")))
+
+  (describe "should print the containing suites for non-quiet specs"
+    :var (test-suites)
+    (before-each
+      (with-local-buttercup
+        (describe "top"
+          (it "spec 1" (ignore))
+          (describe "second"
+            (it "spec 2")
+            (it "spec 3" (ignore))
+            (describe "third"
+              (it "spec 4"))))
+        (describe "empty")
+        (setq test-suites buttercup-suites)))
+    (after-each
+      (setq test-suites nil))
+
+    (it "and color is disabled"
+      (with-local-buttercup
+        :color nil
+        :quiet '(pending)
+        :reporter #'buttercup-reporter-batch
+        :suites test-suites
+        (buttercup-run))
+      (expect (buttercup-output) :to-equal
+              (concat "Running 2 out of 4 specs.\n\n"
+                      "top\n"
+                      "  spec 1 (1.00s)\n"
+                      "  second\n"
+                      "    spec 3 (1.00s)\n\n"
+                      "Ran 2 out of 4 specs, 0 failed, in 19.00s.\n")))
+    (it "and color is enabled"
+      (with-local-buttercup
+        :color t
+        :quiet '(pending)
+        :reporter #'buttercup-reporter-batch
+        :suites test-suites
+        (buttercup-run))
+      (expect (buttercup-output) :to-equal
+              (concat "Running 2 out of 4 specs.\n\n"
+                      "top\n"
+                      "  spec 1 (1.00s)\n"
+                      "  second\n"
+                      "    spec 3 (1.00s)\n\n"
+                      "Ran 2 out of 4 specs, 0 failed, in 19.00s.\n"))))
+
+  (describe "should quiet all of the given spec statuses"
+    :var (test-suites)
+    (before-each
+      (with-local-buttercup
+        (describe "passed"
+          (it "passed" (ignore)))
+        (describe "failed"
+          (it "failed" (buttercup-fail "because")))
+        (describe "pending"
+          (it "pending"))
+        (setq test-suites buttercup-suites)))
+    (after-each (setq test-suites nil))
+    (it "and color is disabled"
+      ;; suppress stacktraces printed at buttercup-done
+      (spy-on 'buttercup-reporter-batch--print-failed-spec-report)
+      (with-local-buttercup
+        :color nil
+        :quiet '(pending passed failed)
+        :reporter #'buttercup-reporter-batch
+        :suites test-suites
+        (buttercup-run t))
+      (expect (buttercup-output) :to-equal
+              "Running 2 out of 3 specs.\n\nRan 2 out of 3 specs, 1 failed, in 13.00s.\n"))
+    (it "and color is enabled"
+      ;; suppress stacktraces printed at buttercup-done
+      (spy-on 'buttercup-reporter-batch--print-failed-spec-report)
+      (with-local-buttercup
+        :color t
+        :quiet '(pending passed failed)
+        :reporter #'buttercup-reporter-batch
+        :suites test-suites
+        (buttercup-run t))
+      (expect (buttercup-output) :to-equal
+              "Running 2 out of 3 specs.\n\nRan 2 out of 3 specs, 1 failed, in 13.00s.\n")))
 
   (it "should handle `skipped' virtual status in quiet list"
     ;; suppress stacktraces printed at buttercup-done
