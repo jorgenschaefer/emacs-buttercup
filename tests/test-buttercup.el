@@ -2211,8 +2211,15 @@ before it's processed by other functions."
 
 
 (describe "When using quiet specs in the batch reporter"
-  :var (print-buffer)
+  :var (print-buffer spytime)
   (before-each
+    ;; Make sure each fake spec is reporting exactly 1 second elapsed time
+    (setq spytime (current-time))
+    (spy-on 'current-time :and-call-fake
+            (lambda ()
+              (setq spytime (time-add spytime (seconds-to-time 1.0))))))
+  (before-each
+    ;; Collect output in a buffer instead of printing to terminal
     (setq print-buffer (generate-new-buffer "*btrcp-reporter-test*"))
     (spy-on 'send-string-to-terminal :and-call-fake
             (apply-partially #'send-string-to-ansi-buffer print-buffer))
@@ -2235,8 +2242,8 @@ before it's processed by other functions."
           (it "spec 3")))
       (describe "empty")
       (buttercup-run))
-    (expect (buttercup-output) :to-match
-            "^Running 0 out of 3 specs\\.\n\nRan 0 out of 3 specs, 0 failed, in [0-9.]+ms\\.$"))
+    (expect (buttercup-output) :to-equal
+            "Running 0 out of 3 specs.\n\nRan 0 out of 3 specs, 0 failed, in 13.00s.\n"))
 
   (it "should print the containing suites for non-quiet specs"
     (with-local-buttercup :color nil :quiet '(pending) :reporter #'buttercup-reporter-batch
@@ -2249,13 +2256,13 @@ before it's processed by other functions."
             (it "spec 4"))))
       (describe "empty")
       (buttercup-run))
-    (expect (buttercup-output) :to-match
-            (concat "^Running 2 out of 4 specs\\.\n\n"
+    (expect (buttercup-output) :to-equal
+            (concat "Running 2 out of 4 specs.\n\n"
                     "top\n"
-                    "  spec 1 ([0-9.]+ms)\n"
+                    "  spec 1 (1.00s)\n"
                     "  second\n"
-                    "    spec 3 ([0-9.]+ms)\n\n"
-                    "Ran 2 out of 4 specs, 0 failed, in [0-9.]+ms\\.$")))
+                    "    spec 3 (1.00s)\n\n"
+                    "Ran 2 out of 4 specs, 0 failed, in 19.00s.\n")))
 
   (it "should quiet all of the given spec statuses"
     ;; suppress stacktraces printed at buttercup-done
@@ -2269,8 +2276,8 @@ before it's processed by other functions."
       (describe "pending"
         (it "pending"))
       (buttercup-run t))
-    (expect (buttercup-output) :to-match
-            "^Running 2 out of 3 specs\\.\n\nRan 2 out of 3 specs, 1 failed, in [0-9.]+ms\\.$"))
+    (expect (buttercup-output) :to-equal
+            "Running 2 out of 3 specs.\n\nRan 2 out of 3 specs, 1 failed, in 13.00s.\n"))
 
   (it "should handle `skipped' virtual status in quiet list"
     ;; suppress stacktraces printed at buttercup-done
@@ -2287,12 +2294,12 @@ before it's processed by other functions."
         (it "skipped" (ignore)))
       (buttercup-mark-skipped "skipped")
       (buttercup-run t))
-    (expect (buttercup-output) :to-match
-            (concat "^Running 2 out of 4 specs\\.\n\n"
-                    "passed\n  passed ([0-9.]+ms)\n\n"
-                    "failed\n  failed  because ([0-9.]+ms)\n\n"
-                    "pending\n  pending  PENDING ([0-9.]+ms)\n\n"
-                    "Ran 2 out of 4 specs, 1 failed, in [0-9.]+ms\\.\n$")))
+    (expect (buttercup-output) :to-equal
+            (concat "Running 2 out of 4 specs.\n\n"
+                    "passed\n  passed (1.00s)\n\n"
+                    "failed\n  failed  because (1.00s)\n\n"
+                    "pending\n  pending  PENDING (1.00s)\n\n"
+                    "Ran 2 out of 4 specs, 1 failed, in 20.00s.\n")))
 
     (it "should handle `disabled' virtual status in quiet list"
       ;; suppress stacktraces printed at buttercup-done
@@ -2309,12 +2316,12 @@ before it's processed by other functions."
           (it "skipped" (ignore)))
         (buttercup-mark-skipped "skipped")
         (buttercup-run t))
-      (expect (buttercup-output) :to-match
-              (concat "^Running 2 out of 4 specs\\.\n\n"
-                      "passed\n  passed ([0-9.]+ms)\n\n"
-                      "failed\n  failed  because ([0-9.]+ms)\n\n"
-                      "skipped\n  skipped  SKIPPED ([0-9.]+ms)\n\n"
-                      "Ran 2 out of 4 specs, 1 failed, in [0-9.]+ms\\.\n$"))))
+      (expect (buttercup-output) :to-equal
+              (concat "Running 2 out of 4 specs.\n\n"
+                      "passed\n  passed (1.00s)\n\n"
+                      "failed\n  failed  because (1.00s)\n\n"
+                      "skipped\n  skipped  SKIPPED (1.00s)\n\n"
+                      "Ran 2 out of 4 specs, 1 failed, in 20.00s.\n"))))
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; buttercup-run
