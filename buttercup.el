@@ -1848,13 +1848,20 @@ EVENT and ARG are described in `buttercup-reporter'."
        (when (buttercup--reporter-batch-preprint-spec-p arg)
          (buttercup--print "%s" (buttercup--indented-description arg))))
       (`spec-done
+       ;; When printing has been held back but we will print the
+       ;; result of this spec, print the all of the containing suite
+       ;; descriptions that have been held back
        (when (and buttercup-reporter-batch-quiet-statuses
                   (not (buttercup-reporter-batch--quiet-spec-p arg)))
          (dolist (suite (nreverse buttercup-reporter-batch--suite-stack))
            (buttercup--print "%s\n" (buttercup--indented-description suite)))
          (setq buttercup-reporter-batch--suite-stack nil)
-         (buttercup--print "%s" (buttercup--indented-description arg)))
+         ;; Also print the spec description unless it should not be preprinted
+         (unless (buttercup--reporter-batch-preprint-spec-p arg)
+           (buttercup--print "%s" (buttercup--indented-description arg))))
 
+       ;; print the result of the spec. This should erase any
+       ;; non-colored spec text.
        (unless (buttercup-reporter-batch--quiet-spec-p arg)
          (buttercup-reporter-batch--print-spec-done-line arg buttercup-color))
 
@@ -1914,11 +1921,14 @@ Finally print the elapsed time for SPEC."
                              (`failed 'red)
                              (`skipped nil))))
     (when color
-      ;; Carriage returns (\r) should not be colorized. It would mess
-      ;; up color handling in Emacs compilation buffers using
-      ;; `ansi-color-apply-on-region' in `compilation-filter-hook'.
-      (buttercup--print "%s%s"
-                        (if (buttercup--reporter-batch-preprint-spec-p spec) "\r" "")
+      ;; Clear the line if
+      (when (or buttercup-reporter-batch-quiet-statuses
+                (buttercup--reporter-batch-preprint-spec-p spec))
+        ;; Carriage returns (\r) should not be colorized. It would mess
+        ;; up color handling in Emacs compilation buffers using
+        ;; `ansi-color-apply-on-region' in `compilation-filter-hook'.
+        (buttercup--print "\r"))
+      (buttercup--print "%s"
                         (buttercup-colorize
                          (buttercup--indented-description spec) color)))
     (unless (eq 'passed status)
