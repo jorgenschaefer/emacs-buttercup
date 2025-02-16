@@ -35,7 +35,7 @@
 
 (defmacro with-local-buttercup (&rest body)
   "Execute BODY with local buttercup state variables.
-Keyword arguments kan be used to override the values of certain
+Keyword arguments can be used to override the values of certain
 variables or environment variables while executing BODY:
  :color         -> `buttercup-color'
  :frame-style   -> `buttercup-stack-frame-style'
@@ -1663,8 +1663,15 @@ before it's processed by other functions."
 
 ;;;;;;;;;;;;;
 ;;; Reporters
+(if (and (fboundp 'equal-including-properties)
+         (plist-member (symbol-plist 'ert-equal-including-properties)
+                       'byte-obsolete-info))
+    (defalias 'buttercup--test-equal-including-properties 'equal-including-properties
+      "`equal-including-properties' works as a replacement for `ert-equal-including-properties'.")
+  (defalias 'buttercup--test-equal-including-properties 'ert-equal-including-properties
+      "Still needs `ert-equal-including-properties'."))
 (buttercup-define-matcher-for-binary-function
-    :to-equal-including-properties ert-equal-including-properties)
+    :to-equal-including-properties buttercup--test-equal-including-properties)
 
 (describe "The batch reporters"
   :var (print-buffer)
