@@ -38,7 +38,7 @@ Buttercup options:
 --no-skip               Do not print the descriptions for tests that
                           are filtered out with "--pattern" or disabled
                           with "xit". Tests skipped wiath "assume" will
-                          still be priuted,
+                          still be printed,
 
 --only-error            Only print failed tests and their containing suites.
                           Implies "--no-skip".
