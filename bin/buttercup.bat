@@ -42,7 +42,7 @@ echo.
 echo --no-skip               Do not print the descriptions for tests that
 echo                           are filtered out with "--pattern" or disabled
 echo                           with "xit". Tests skipped wiath "assume" will
-echo                           still be priuted,
+echo                           still be printed,
 echo.
 echo --only-error            Only print failed tests and their containing suites.
 echo                           Implies "--no-skip".
