@@ -964,9 +964,9 @@ mainly calls to `describe', `it' and `before-each'."
        when (special-variable-p var)
        do (display-warning
            'buttercup-describe
-           (concat "Possible erroneous use of special variable `"
-                   (symbol-name var)
-                   "' in :var(*) form")))
+           (format
+            "Possible erroneous use of special variable `%s' in :var(*) form"
+            var)))
       ;; Wrap new body in the appropriate let form
       (setq body
             `((,let-form-to-use
