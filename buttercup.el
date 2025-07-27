@@ -951,19 +951,33 @@ mainly calls to `describe', `it' and `before-each'."
   (unless lexical-binding
     (signal 'buttercup-dynamic-binding-error
             "buttercup requires `lexical-binding' to be t"))
-  (let ((new-body
-         (cond
-          ((eq (elt body 0) :var)
-           `((let ,(elt body 1)
-               ,@(cddr body))))
-          ((eq (elt body 0) :var*)
-           `((let* ,(elt body 1)
-               ,@(cddr body))))
-          (t body))))
-    (if (or (memq :var new-body)
-              (memq :var* new-body))
+  ;; Convert `:var' or `:var*' to a lexical let form
+  (when
+      (memq (elt body 0) '(:var :var*))
+    (let ((let-form-to-use (if (eq (elt body 0) :var) 'let 'let*))
+          (let-bindings (elt body 1))
+          (let-body (cddr body)))
+      ;; Verify that all the specified variables are lexical
+      (cl-loop
+       for binding in let-bindings
+       for var = (if (symbolp binding) binding (car binding))
+       when (special-variable-p var)
+       do (display-warning
+           'buttercup-describe
+           (concat "Possible erroneous use of special variable `"
+                   (symbol-name var)
+                   "' in :var(*) form")))
+      ;; Wrap new body in the appropriate let form
+      (setq body
+            `((,let-form-to-use
+               ;; Let bindings
+               ,let-bindings
+               ;; Let body
+               ,@let-body)))))
+  (if (or (memq :var body)
+          (memq :var* body))
       `(error "buttercup: :var(*) found in invalid position of describe form \"%s\"" ,description)
-    `(buttercup-describe ,description (lambda () ,@new-body)))))
+    `(buttercup-describe ,description (lambda () ,@body))))
 
 (defun buttercup-describe (description body-function)
   "Function to handle a `describe' form.
