@@ -1,7 +1,7 @@
 ;;; buttercup-test.el --- Tests for buttercup.el -*-lexical-binding:t-*-
 
 ;; Copyright (C) 2015-2017 Jorgen Schaefer <contact@jorgenschaefer.de>
-;; Copyright (C) 2017-2024 Ola Nilsson <ola.nilsson@gmail.com>
+;; Copyright (C) 2017-2025 Ola Nilsson <ola.nilsson@gmail.com>
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License
@@ -71,6 +71,7 @@ variables or environment variables while executing BODY:
          buttercup-suites
          buttercup-color
          buttercup-reporter-batch-quiet-statuses
+         (buttercup-reporter-batch--start-time (current-time))
          buttercup-reporter-batch--suite-stack
          buttercup-reporter-batch--failures
          (buttercup-stack-frame-style 'crop)
@@ -1696,11 +1697,7 @@ before it's processed by other functions."
       (setq print-buffer nil))
 
     (describe "on the buttercup-started event"
-      :var (skipped
-            ;; Local var for testing. The real variable is used by the
-            ;; reporter attached to the buttercup instance running
-            ;; these tests.
-            buttercup-reporter-batch--start-time)
+      :var (skipped)
       (before-each
         (setq skipped (make-buttercup-spec :description "skipped" :status 'pending)))
 
@@ -1871,8 +1868,7 @@ before it's processed by other functions."
         (expect (buttercup-output) :to-equal-including-properties "")))
 
     (describe "on the buttercup-done event"
-      :var ((buttercup-reporter-batch--start-time (current-time))
-            defined-specs pending-specs failed-specs)
+      :var (defined-specs pending-specs failed-specs)
 
       (before-each
         (setq defined-specs 10 pending-specs 0 failed-specs 0)

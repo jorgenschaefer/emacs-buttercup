@@ -1,7 +1,7 @@
 ;;; buttercup.el --- Behavior-Driven Emacs Lisp Testing -*-lexical-binding:t-*-
 
 ;; Copyright (C) 2015-2017  Jorgen Schaefer <contact@jorgenschaefer.de>
-;; Copyright (C) 2018-2024  Ola Nilsson <ola.nilsson@gmail.com>
+;; Copyright (C) 2018-2025  Ola Nilsson <ola.nilsson@gmail.com>
 
 ;; Version: 1.37
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>
@@ -1793,7 +1793,9 @@ EVENT and ARG are described in `buttercup-reporter'."
     (buttercup-reporter-interactive event arg)))
 
 (defvar buttercup-reporter-batch--start-time nil
-  "The time the last batch report started.")
+  "The time the last batch report started.
+Shall be set to a Lisp timestamp (see Info node `(elisp)Time of Day') at
+the `buttercup-started' event.")
 
 (defvar buttercup-reporter-batch--failures nil
   "List of failed specs of the current batch report.")
