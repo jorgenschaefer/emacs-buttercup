@@ -82,6 +82,12 @@ variables or environment variables while executing BODY:
                                   )
        ,@body))))
 
+(defmacro buttercup--gensym (&optional prefix)
+  "Generate a new uninterned symbol.
+The name is made by appending a number to PREFIX, default \"G\".
+Uses `gensym' if available, otherwise `cl-gensym'."
+  `(,(if (fboundp 'gensym) 'gensym 'cl-gensym) ,prefix))
+
 (defmacro buttercup--test-with-tempdir (files &rest body)
   "Create FILES and execute BODY in a temporary directory.
 FILES shall be a list of file names. An empty file with that name
@@ -91,8 +97,8 @@ can also be a list of up to two elements where the first is the
 filename as above and the second is the file contents.
 Return the value of the last form in BODY."
   (declare (debug t) (indent defun))
-  (let ((tmproot (cl-gensym))
-        (olddir (cl-gensym)))
+  (let ((tmproot (buttercup--gensym))
+        (olddir  (buttercup--gensym)))
     `(let ((,tmproot (make-temp-file "buttercup-test-temp-" t))
            (,olddir default-directory))
        (cl-labels ((make-file (file &optional content)
