@@ -379,9 +379,6 @@ before it's processed by other functions."
 
 (describe "The included matcher"
   (describe ":to-be-truthy"
-    :var (matcher-function)
-    (before-all
-      (setq matcher-function (buttercup--find-matcher-function :to-be-truthy)))
     (it "should match for a truthy expression"
       (expect (buttercup--apply-matcher :to-be-truthy
                                         (mapcar #'buttercup--wrap-expr-and-eval '((not nil))))
