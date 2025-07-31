@@ -25,7 +25,6 @@
 ;;; Code:
 
 (require 'buttercup)
-(require 'autoload)
 (require 'ansi-color)
 (require 'bytecomp)
 (require 'ert)
@@ -1364,8 +1363,7 @@ before it's processed by other functions."
                (function-name 'test-autoloaded-function)
                (defun-form `(defun ,function-name ()
                               "An autoloaded function"
-                              :loaded-successfully))
-               (autoload-form (make-autoload defun-form function-file)))
+                              :loaded-successfully)))
           (unwind-protect
               (progn
                 ;; Create the real function in a file
@@ -1374,12 +1372,14 @@ before it's processed by other functions."
                           (pp-to-string defun-form)))
                 ;; Define the autoload for the function
                 (fmakunbound function-name)
-                (eval autoload-form)
+                (autoload function-name function-file "An autoloaded function")
                 (expect (autoloadp (symbol-function function-name)))
                 (spy-on function-name :and-call-through)
                 (expect (not (autoloadp (symbol-function function-name))))
                 (expect (funcall function-name)
-                        :to-be :loaded-successfully))
+                        :to-be :loaded-successfully)
+                (expect function-name :to-have-been-called))
+            (fmakunbound function-name)
             (delete-file function-file nil))))
 
       (it "can spy on non-existing functions"
