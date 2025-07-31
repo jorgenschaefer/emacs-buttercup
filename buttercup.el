@@ -1,7 +1,7 @@
 ;;; buttercup.el --- Behavior-Driven Emacs Lisp Testing -*-lexical-binding:t-*-
 
 ;; Copyright (C) 2015-2017  Jorgen Schaefer <contact@jorgenschaefer.de>
-;; Copyright (C) 2018-2024  Ola Nilsson <ola.nilsson@gmail.com>
+;; Copyright (C) 2018-2025  Ola Nilsson <ola.nilsson@gmail.com>
 
 ;; Version: 1.37
 ;; Author: Jorgen Schaefer <contact@jorgenschaefer.de>
@@ -951,19 +951,33 @@ mainly calls to `describe', `it' and `before-each'."
   (unless lexical-binding
     (signal 'buttercup-dynamic-binding-error
             "buttercup requires `lexical-binding' to be t"))
-  (let ((new-body
-         (cond
-          ((eq (elt body 0) :var)
-           `((let ,(elt body 1)
-               ,@(cddr body))))
-          ((eq (elt body 0) :var*)
-           `((let* ,(elt body 1)
-               ,@(cddr body))))
-          (t body))))
-    (if (or (memq :var new-body)
-              (memq :var* new-body))
+  ;; Convert `:var' or `:var*' to a lexical let form
+  (when
+      (memq (elt body 0) '(:var :var*))
+    (let ((let-form-to-use (if (eq (elt body 0) :var) 'let 'let*))
+          (let-bindings (elt body 1))
+          (let-body (cddr body)))
+      ;; Verify that all the specified variables are lexical
+      (cl-loop
+       for binding in let-bindings
+       for var = (if (symbolp binding) binding (car binding))
+       when (special-variable-p var)
+       do (display-warning
+           'buttercup-describe
+           (format
+            "Possible erroneous use of special variable `%s' in :var(*) form"
+            var)))
+      ;; Wrap new body in the appropriate let form
+      (setq body
+            `((,let-form-to-use
+               ;; Let bindings
+               ,let-bindings
+               ;; Let body
+               ,@let-body)))))
+  (if (or (memq :var body)
+          (memq :var* body))
       `(error "buttercup: :var(*) found in invalid position of describe form \"%s\"" ,description)
-    `(buttercup-describe ,description (lambda () ,@new-body)))))
+    `(buttercup-describe ,description (lambda () ,@body))))
 
 (defun buttercup-describe (description body-function)
   "Function to handle a `describe' form.
@@ -1779,7 +1793,9 @@ EVENT and ARG are described in `buttercup-reporter'."
     (buttercup-reporter-interactive event arg)))
 
 (defvar buttercup-reporter-batch--start-time nil
-  "The time the last batch report started.")
+  "The time the last batch report started.
+Shall be set to a Lisp timestamp (see Info node `(elisp)Time of Day') at
+the `buttercup-started' event.")
 
 (defvar buttercup-reporter-batch--failures nil
   "List of failed specs of the current batch report.")
