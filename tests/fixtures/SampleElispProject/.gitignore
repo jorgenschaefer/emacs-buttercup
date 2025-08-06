@@ -1,0 +1,5 @@
+*.elc
+/dist
+
+# Eask generated
+/.eask
