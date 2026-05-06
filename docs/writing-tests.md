@@ -454,6 +454,34 @@ the argument list matches any of the recorded calls to the spy.
     (expect bar :to-be nil)))
 ```
 
+The `:to-have-been-called-with` matcher can also take special
+`spy-arg-matcher` arguments to perform more complex tests of the
+argument.  For example, if you only care about the second argument to
+the function call you might want to express "first argument can be
+anything".  This can be achieved with `spy-arg-matcher-any`:
+
+``` Emacs-Lisp
+(it "second argument matches :keyword"
+  (spy-on 'bar)
+  (bar "anything" :keyword)
+  (expect 'bar :to-have-been-called-with (spy-arg-matcher-any) :keyword))
+```
+
+Other built in matcher is `(spy-arg-matcher-any-of list)` witch
+matches if argument is `equal` to any of the elements of `list`.
+Finally, you can construct your own custom matcher by passing a single
+argument lambda to `(spy-arg-matcher pred)` to use that predicate to
+test the argument:
+
+``` Emacs-Lisp
+(cl-defstruct person name)
+
+(it "was called with a person struct"
+  (spy-on 'bar)
+  (bar (person :name "XYZ"))
+  (expect 'bar :to-have-been-called-with (spy-arg-matcher #'person-p)))
+```
+
 The `:to-have-been-called-times` matcher will return true if the spy
 was called a certain number of times.
 
