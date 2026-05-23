@@ -4,3 +4,6 @@
 # ELPA-generated files
 /buttercup-autoloads.el
 /buttercup-pkg.el
+
+# Eask generated
+/.eask
