@@ -963,14 +963,14 @@ before it's processed by other functions."
       (let ((suite (make-buttercup-suite)))
         (buttercup--set-start-time suite)
         (buttercup--set-end-time suite)
-        (expect (buttercup-elapsed-time suite)
-                :to-equal (seconds-to-time 1.5))))
+        (expect (float-time (buttercup-elapsed-time suite))
+                :to-equal 1.5)))
     (it "should report elapsed time for specs"
       (let ((spec (make-buttercup-spec)))
         (buttercup--set-start-time spec)
         (buttercup--set-end-time spec)
-        (expect (buttercup-elapsed-time spec)
-                :to-equal (seconds-to-time 1.5))))))
+        (expect (float-time (buttercup-elapsed-time spec))
+                :to-equal 1.5)))))
 
 (describe "The `buttercup--run-suite' function"
   (before-each
