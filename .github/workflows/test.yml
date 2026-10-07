@@ -51,11 +51,12 @@ jobs:
           - 29.4
           - 30.1
           - 30.2
+          - 31.1
           - release-snapshot
           - snapshot
     steps:
     # purcell/setup-emacs@v8.0
-    - uses: purcell/setup-emacs@bdc64dc730ae1fcba200bfd52cb1b4cf6159cbe5
+    - uses: purcell/setup-emacs@34c6ded44899fd1bf74d2889558befd1750e61a7
       with:
         version: ${{ matrix.emacs_version }}
 
